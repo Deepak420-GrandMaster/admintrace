@@ -74,7 +74,42 @@
 /* The page commits to a light palette rather than following the host theme:
    the design is built around paper-like surfaces and would not survive an
    automatic inversion. */
-.gradio-container, .gradio-container * { color-scheme: light; }
+.gradio-container, .gradio-container * { color-scheme: light !important; }
+
+/* Gradio paints from its own variables. Setting ours on individual elements
+   left every component we had not thought of on its dark defaults, which is
+   how the accordion and the glossary search came out black. Point Gradio's
+   own tokens at our palette once, and the whole library follows. */
+.gradio-container {
+  --body-background-fill: var(--bg);
+  --background-fill-primary: var(--surface);
+  --background-fill-secondary: var(--surface-2);
+  --block-background-fill: var(--surface);
+  --block-label-background-fill: var(--surface);
+  --block-title-background-fill: transparent;
+  --input-background-fill: var(--surface);
+  --input-background-fill-focus: var(--surface);
+  --border-color-primary: var(--border);
+  --border-color-accent: var(--accent-line);
+  --block-border-color: var(--border);
+  --input-border-color: var(--border);
+  --input-border-color-focus: var(--accent-line);
+  --body-text-color: var(--ink);
+  --body-text-color-subdued: var(--ink-muted);
+  --block-label-text-color: var(--ink-muted);
+  --block-title-text-color: var(--ink);
+  --input-text-color: var(--ink);
+  --input-placeholder-color: var(--ink-faint);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-wash);
+  --link-text-color: var(--accent);
+  --neutral-50: var(--bg);      --neutral-100: var(--surface-2);
+  --neutral-200: var(--border); --neutral-700: var(--ink-soft);
+  --neutral-800: var(--ink);    --neutral-900: var(--ink);
+  --panel-background-fill: var(--surface);
+  --table-even-background-fill: var(--surface);
+  --table-odd-background-fill: var(--surface-2);
+}
 .gradio-container {
   background: var(--bg) !important;
   font-family: var(--sans) !important;
@@ -652,7 +687,6 @@ footer, .gradio-container > .main > .wrap > .contain > footer { display: none !i
 /* ===================================================================
    Source cards open in place
    =================================================================== */
-.rp-source { cursor: pointer; }
 .rp-source-link {
   position: absolute; top: 12px; right: 13px; z-index: 3;
   display: inline-flex; align-items: center; justify-content: center;
@@ -666,7 +700,16 @@ footer, .gradio-container > .main > .wrap > .contain > footer { display: none !i
 .rp-source-link:hover {
   background: var(--accent-wash); color: var(--accent) !important;
 }
+.rp-peek {
+  display: inline-block; margin-top: 10px;
+  font-size: 12px; color: var(--ink-faint);
+  border-bottom: 1px dashed var(--border); cursor: pointer;
+  transition: color .16s var(--ease), border-color .16s var(--ease);
+}
+.rp-peek:hover { color: var(--accent); border-bottom-color: var(--accent-line); }
+.rp-source.rp-open .rp-peek { color: var(--accent); }
 .rp-excerpt {
+  display: block;
   max-height: 0; opacity: 0; overflow: hidden;
   font-size: 13px; line-height: 1.6; color: var(--ink-muted);
   border-top: 1px dashed transparent; margin-top: 0; padding-top: 0;
@@ -771,3 +814,170 @@ footer, .gradio-container > .main > .wrap > .contain > footer { display: none !i
   font-size: 12.5px !important;
 }
 .rp-footer strong { color: var(--warn); }
+
+
+/* ===================================================================
+   Sources, tucked away
+   The licence requires the source and its date to be stated and it is
+   how a reader checks an answer, so it stays — one quiet line instead
+   of a wall of cards.
+   =================================================================== */
+.rp-sources { margin-top: 22px; }
+.rp-sources > summary { list-style: none; }
+.rp-sources > summary::-webkit-details-marker { display: none; }
+.rp-sources-toggle {
+  display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+  font-size: 13px; font-weight: 550; color: var(--ink-muted);
+  padding: 8px 14px 8px 11px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--surface);
+  transition: color .18s var(--ease), border-color .18s var(--ease),
+              background .18s var(--ease);
+  user-select: none;
+}
+.rp-sources-toggle:hover {
+  color: var(--accent); border-color: var(--accent-line);
+  background: var(--accent-wash);
+}
+.rp-chev { transition: transform .24s var(--ease); flex: 0 0 auto; }
+.rp-sources[open] > summary .rp-chev { transform: rotate(90deg); }
+.rp-sources-body { padding-top: 12px; animation: rp-rise .34s var(--ease) both; }
+
+
+/* A notice, not an alarm. */
+.gradio-container .rp-notice,
+.gradio-container [class*="toast"].rp-notice {
+  background: var(--surface) !important;
+  color: var(--ink-soft) !important;
+  border: 1px solid var(--border) !important;
+  border-left: 3px solid var(--accent) !important;
+  border-radius: var(--radius-sm) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+.gradio-container .rp-notice [class*="title"] {
+  color: var(--accent) !important; font-weight: 650 !important;
+}
+.gradio-container .rp-notice svg { color: var(--accent) !important; }
+
+
+/* ===================================================================
+   Atmosphere
+   Borrowed from cinematic work and dialled almost to nothing: depth
+   and light, no scenes. A page that feels made rather than generated,
+   without a single frame of anything that could hold an anxious
+   reader up.
+   =================================================================== */
+.gradio-container { position: relative; }
+
+/* Grain. At 3.5% it is felt rather than seen — it stops large flat
+   areas reading as dead screen. Fixed, so it never slides with scroll. */
+.gradio-container::before {
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  opacity: .035; mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+/* A vignette so the page has a centre. */
+.gradio-container::after {
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(130% 96% at 50% 12%,
+    transparent 44%, rgba(28,26,23,.045) 100%);
+}
+.gradio-container > * { position: relative; z-index: 1; }
+
+/* The light follows the cursor. The reference swings a clock hand at the
+   pointer; here it is a soft warmth under the question, so the page
+   answers the hand before it answers the question. */
+.rp-spot {
+  position: fixed; left: 0; top: 0; z-index: 0; pointer-events: none;
+  width: 520px; height: 520px; margin: -260px 0 0 -260px; border-radius: 50%;
+  background: radial-gradient(circle,
+    color-mix(in oklch, var(--accent) 13%, transparent) 0%,
+    transparent 62%);
+  opacity: 0; transition: opacity .55s var(--ease);
+  transform: translate3d(var(--sx, 50vw), var(--sy, 40vh), 0);
+  will-change: transform;
+}
+.rp-spot.rp-lit { opacity: 1; }
+
+/* ===================================================================
+   Hover that answers
+   Every surface a pointer can land on says so, in one vocabulary:
+   lift, a warmed ground, and a light that tracks the cursor across it.
+   =================================================================== */
+.rp-source, .rp-service, .rp-gloss, .rp-stat,
+.gradio-container button.rp-chip {
+  position: relative; isolation: isolate;
+}
+.rp-source::before, .rp-service::before, .rp-gloss::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+  opacity: 0; transition: opacity .3s var(--ease);
+  background: radial-gradient(220px circle at var(--mx, 50%) var(--my, 50%),
+    color-mix(in oklch, var(--accent) 9%, transparent), transparent 70%);
+}
+.rp-source:hover::before, .rp-service:hover::before, .rp-gloss:hover::before {
+  opacity: 1;
+}
+
+/* ===================================================================
+   Popovers
+   A hover should answer the question it raises. A source says what it
+   actually contains; a link says where it will take you.
+   =================================================================== */
+.rp-pop {
+  position: fixed; z-index: 60; max-width: 360px; pointer-events: none;
+  background: var(--ink); color: #fff;
+  border-radius: 11px; padding: 13px 15px;
+  box-shadow: var(--shadow-lg);
+  font-size: 12.5px; line-height: 1.55;
+  opacity: 0; transform: translateY(6px) scale(.97); transform-origin: top left;
+  transition: opacity .17s var(--ease), transform .2s var(--ease);
+}
+.rp-pop.rp-pop-on { opacity: 1; transform: translateY(0) scale(1); }
+.rp-pop-label {
+  display: block; font-size: 10px; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: color-mix(in oklch, var(--accent) 60%, white);
+  margin-bottom: 7px;
+}
+.rp-pop-meta {
+  display: block; margin-top: 9px; padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,.16);
+  font-family: var(--mono); font-size: 10.5px; color: rgba(255,255,255,.6);
+}
+
+/* ===================================================================
+   Arrival
+   The reference stages its opening rather than cutting to it. Same
+   idea, one second long: the page assembles, then settles.
+   =================================================================== */
+@keyframes rp-arrive {
+  from { opacity: 0; transform: translateY(16px); filter: blur(6px); }
+  to   { opacity: 1; transform: none; filter: blur(0); }
+}
+.rp-stage-in > * { animation: rp-arrive .62s cubic-bezier(.22,.61,.36,1) both; }
+.rp-stage-in > *:nth-child(1) { animation-delay: .02s; }
+.rp-stage-in > *:nth-child(2) { animation-delay: .10s; }
+.rp-stage-in > *:nth-child(3) { animation-delay: .18s; }
+.rp-stage-in > *:nth-child(4) { animation-delay: .26s; }
+.rp-stage-in > *:nth-child(5) { animation-delay: .34s; }
+
+/* The mark draws itself, then the wordmark arrives behind it. */
+.rp-wordmark {
+  animation: rp-arrive .7s cubic-bezier(.22,.61,.36,1) .18s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rp-spot { display: none; }
+  .rp-stage-in > *, .rp-wordmark { animation: none !important; }
+  .gradio-container::before { display: none; }
+}
+
+
+/* A headline the page can be read from across a room, and a subhead that
+   does the explaining. One long sentence was doing both jobs badly. */
+.rp-headline {
+  font-family: var(--serif);
+  font-size: 40px; line-height: 1.08; font-weight: 600;
+  letter-spacing: -0.026em; color: var(--ink);
+  margin: 18px 0 0; max-width: 20ch; text-wrap: pretty;
+}
+.rp-masthead .rp-tagline { margin-top: 12px; max-width: 58ch; }
+@media (max-width: 720px) { .rp-headline { font-size: 31px; } }

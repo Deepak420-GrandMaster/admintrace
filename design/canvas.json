@@ -1,0 +1,21 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html",       "x": 0,    "y": 0,   "w": 900, "h": 760, "title": "A · Warm editorial" },
+    { "file": "CivicBold.dc.html",  "x": 1000, "y": 0,   "w": 900, "h": 760, "title": "B · Civic bold" },
+    { "file": "SoftCalm.dc.html",   "x": 0,    "y": 900, "w": 900, "h": 760, "title": "C · Soft & calm" },
+    { "file": "PaperStamp.dc.html", "x": 1000, "y": 900, "w": 900, "h": 760, "title": "D · Paper & stamp" }
+  ],
+  "annotations": [
+    { "id": "brief", "x": 0, "y": -210, "w": 560,
+      "text": "Sésame — four directions for the look & feel.\n\nSame screen, same copy, four aesthetics. Pick one and I'll build it into the real app.\n\nEach has a different bet about the reader: someone anxious, often reading their second or third language, usually in a hurry." },
+    { "id": "note-a", "x": 0, "y": 790, "w": 900,
+      "text": "A · WARM EDITORIAL — reads like a good guidebook. Serif headline, ruled sections, warm paper.\nBet: calm and authority come from restraint. Best legibility for long answers.\nTradeoff: quiet. Less memorable at a glance than B or D." },
+    { "id": "note-b", "x": 1000, "y": 790, "w": 900,
+      "text": "B · CIVIC BOLD — Swiss signage. Heavy type, flat colour blocks, hard edges, no shadows.\nBet: newcomers scan before they read, so shout the structure. Strongest at a glance and in translation.\nTradeoff: loud. Can read as institutional — the very thing the reader is anxious about." },
+    { "id": "note-c", "x": 0, "y": 1690, "w": 900,
+      "text": "C · SOFT & CALM — rounded, airy, gentle indigo. Centred, generous, low-pressure.\nBet: the emotional problem is fear, so lower the temperature.\nTradeoff: the most conventional of the four. Closest to the current design, and to every other app." },
+    { "id": "note-d", "x": 1000, "y": 1690, "w": 900,
+      "text": "D · PAPER & STAMP — kraft paper, stamp red, monospace metadata, dossier framing.\nBet: lean into the subject. Makes officialdom feel handled rather than hostile.\nTradeoff: the most opinionated. Charm could read as flippant about something people are genuinely worried about." }
+  ],
+  "launch": { "view": "canvas" }
+}

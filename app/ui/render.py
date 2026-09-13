@@ -223,10 +223,10 @@ def sources_html(citations: list[Citation], lang: str = "en") -> str:
         date_class = "" if citation.last_updated_is_plausible else " class='rp-date-suspect'"
         percent = max(4, min(100, round(citation.score * 100)))
         cards.append(
-            f"<div class='rp-source' style='--i:{index}' data-expandable>"
-            f"<a class='rp-source-link' href='{html.escape(citation.url)}'"
-            f" target='_blank' rel='noopener noreferrer' "
-            f"title='{html.escape(citation.url)}'>&#8599;</a>"
+            f"<a class='rp-source' style='--i:{index}' "
+            f"href='{html.escape(citation.url)}' target='_blank' "
+            f"rel='noopener noreferrer' title='{html.escape(citation.url)}'>"
+            f"<span class='rp-source-link'>&#8599;</span>"
             f"<div class='rp-source-title'>{html.escape(citation.title_fr)}</div>"
             f"<div class='rp-source-meta'>"
             f"<span class='rp-source-id'>{html.escape(citation.fiche_id)}</span>"
@@ -236,12 +236,29 @@ def sources_html(citations: list[Citation], lang: str = "en") -> str:
             f"<span class='rp-score-track'><span class='rp-score-fill' style='--w:{percent}%;--i:{index}'></span></span>"
             f"<span class='rp-score-value'>{citation.score:.2f}</span>"
             f"</span></div>"
-            + (f"<div class='rp-excerpt'>{html.escape(citation.excerpt)}</div>"
+            + (f"<span class='rp-peek' data-expandable>"
+               f"{html.escape(t(lang, 'peek'))}</span>"
+               f"<span class='rp-excerpt'>{html.escape(citation.excerpt)}</span>"
                if citation.excerpt else "")
-            + "</div>"
+            + "</a>"
         )
-    head = f"{t(lang, 'sources_head')} · service-public.gouv.fr"
-    return f"<div class='rp-sources-head'>{html.escape(head)}</div>" + "".join(cards)
+    # Closed by default. The licence the data ships under requires the source
+    # and its update date to be stated, and it is the only way a reader can
+    # check an answer — so it is tucked away, never dropped.
+    count = len(citations)
+    label = (t(lang, "sources_toggle_one") if count == 1
+             else t(lang, "sources_toggle_many", n=count))
+    return (
+        "<details class='rp-sources'>"
+        f"<summary class='rp-sources-toggle'>"
+        f"<svg class='rp-chev' width='11' height='11' viewBox='0 0 12 12' "
+        f"fill='none' aria-hidden='true'>"
+        f"<path d='M4 2.5 L8 6 L4 9.5' stroke='currentColor' stroke-width='1.7' "
+        f"stroke-linecap='round' stroke-linejoin='round'/></svg>"
+        f"{html.escape(label)}</summary>"
+        f"<div class='rp-sources-body'>{''.join(cards)}</div>"
+        "</details>"
+    )
 
 
 # ------------------------------------------------------------------- debug --

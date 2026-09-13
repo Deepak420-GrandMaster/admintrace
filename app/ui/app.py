@@ -102,6 +102,139 @@ HEAD = f"""
     if (event.key === "Escape" && document.activeElement === field) field.blur();
   }});
 
+  // --- the light follows the hand -----------------------------------------
+  // The reference swings a clock hand toward the cursor; the same idea, far
+  // quieter: the page warms where the pointer is, so it feels answered before
+  // it has answered anything.
+  const spot = document.createElement("div");
+  spot.className = "rp-spot";
+  document.body.appendChild(spot);
+
+  let frame = 0;
+  document.addEventListener("pointermove", (event) => {{
+    if (event.pointerType === "touch") return;
+    if (frame) return;
+    frame = requestAnimationFrame(() => {{
+      frame = 0;
+      spot.style.setProperty("--sx", event.clientX + "px");
+      spot.style.setProperty("--sy", event.clientY + "px");
+      spot.classList.add("rp-lit");
+
+      // Cards light from where the pointer actually is, not from their middle.
+      const card = event.target.closest(
+        ".rp-source, .rp-service, .rp-gloss, .rp-stat");
+      if (card) {{
+        const box = card.getBoundingClientRect();
+        card.style.setProperty("--mx", ((event.clientX - box.left) / box.width * 100) + "%");
+        card.style.setProperty("--my", ((event.clientY - box.top) / box.height * 100) + "%");
+      }}
+    }});
+  }}, {{ passive: true }});
+  document.addEventListener("pointerleave", () => spot.classList.remove("rp-lit"));
+
+  // --- popovers -------------------------------------------------------------
+  // A hover should answer the question it raises: what does this source
+  // actually say, and where will this link take me.
+  const pop = document.createElement("div");
+  pop.className = "rp-pop";
+  document.body.appendChild(pop);
+  let popTimer = 0;
+
+  const showPop = (target, label, body, meta) => {{
+    pop.innerHTML = "";
+    const tag = document.createElement("span");
+    tag.className = "rp-pop-label";
+    tag.textContent = label;
+    pop.appendChild(tag);
+    pop.appendChild(document.createTextNode(body));
+    if (meta) {{
+      const m = document.createElement("span");
+      m.className = "rp-pop-meta";
+      m.textContent = meta;
+      pop.appendChild(m);
+    }}
+    const box = target.getBoundingClientRect();
+    const width = Math.min(360, window.innerWidth - 32);
+    pop.style.width = width + "px";
+    pop.style.left = Math.max(16, Math.min(box.left, window.innerWidth - width - 16)) + "px";
+    const below = box.bottom + 12;
+    pop.style.top = (below + 170 > window.innerHeight
+      ? Math.max(16, box.top - 12 - 170) : below) + "px";
+    pop.classList.add("rp-pop-on");
+  }};
+
+  const hidePop = () => {{
+    clearTimeout(popTimer);
+    pop.classList.remove("rp-pop-on");
+  }};
+
+  document.addEventListener("pointerover", (event) => {{
+    const source = event.target.closest(".rp-source");
+    const service = event.target.closest(".rp-service");
+    const target = source || service;
+    if (!target) return;
+    clearTimeout(popTimer);
+    popTimer = setTimeout(() => {{
+      if (source) {{
+        const excerpt = source.querySelector(".rp-excerpt");
+        const title = source.querySelector(".rp-source-title");
+        if (!excerpt || !excerpt.textContent.trim()) return;
+        showPop(source, source.dataset.popLabel || "What this page says",
+                excerpt.textContent.trim().slice(0, 300),
+                title ? title.textContent.trim() : "");
+      }} else {{
+        const host = service.querySelector(".rp-service-host");
+        showPop(service, service.dataset.popLabel || "Opens the official service",
+                service.querySelector(".rp-service-title").textContent.trim(),
+                host ? host.textContent.trim() : "");
+      }}
+    }}, 320);
+  }});
+  document.addEventListener("pointerout", (event) => {{
+    if (event.target.closest(".rp-source, .rp-service")) hidePop();
+  }});
+  document.addEventListener("scroll", hidePop, {{ passive: true }});
+
+  // --- the connection notice ----------------------------------------------
+  // Gradio's stock wording ("Connection to the server was lost") reads like
+  // something has gone badly wrong, to an audience already braced for bad
+  // news. Same information, said the way a person would.
+  const NOTICES = {{
+    en: [
+      "We've been put on hold. Reconnecting — no ticket number needed.",
+      "Lost you for a second. Getting back in the queue…",
+      "The connection went for a coffee. It'll be right back."
+    ],
+    fr: [
+      "On nous a mis en attente. Reconnexion — sans ticket, promis.",
+      "On s'est perdus une seconde. On se remet dans la file…",
+      "La connexion est partie prendre un café. Elle revient."
+    ]
+  }};
+  const STOCK = [
+    "connection to the server was lost",
+    "attempting reconnection",
+    "connection errored out",
+    "reconnecting"
+  ];
+
+  const softenNotices = () => {{
+    const french = !!document.querySelector(".rp-theme-fr");
+    const lines = french ? NOTICES.fr : NOTICES.en;
+    document.querySelectorAll(".toast-body, .toast-text, [class*='toast']")
+      .forEach((node) => {{
+        if (node.dataset.rpSoftened) return;
+        const said = (node.textContent || "").toLowerCase();
+        if (!STOCK.some((phrase) => said.includes(phrase))) return;
+        const title = node.querySelector(".toast-title, [class*='title']");
+        if (title) title.textContent = french ? "Un instant" : "One moment";
+        const body = node.querySelector(".toast-text, p") || node;
+        body.textContent = lines[Math.floor(Math.random() * lines.length)];
+        node.dataset.rpSoftened = "1";
+        node.classList.add("rp-notice");
+      }});
+  }};
+
   // --- reveal sources as they come into view -------------------------------
   const watcher = new IntersectionObserver((entries) => {{
     entries.forEach((entry) => {{
@@ -112,9 +245,9 @@ HEAD = f"""
     }});
   }}, {{ rootMargin: "0px 0px -40px 0px", threshold: 0.05 }});
 
-  const watch = () => document
+  const watch = () => (softenNotices(), document
     .querySelectorAll(".rp-source:not(.rp-reveal), .rp-gloss:not(.rp-reveal)")
-    .forEach((node) => {{ node.classList.add("rp-reveal"); watcher.observe(node); }});
+    .forEach((node) => {{ node.classList.add("rp-reveal"); watcher.observe(node); }}));
 
   new MutationObserver(watch).observe(document.documentElement,
     {{ childList: true, subtree: true }});
@@ -128,8 +261,9 @@ def brand_block(lang: str) -> str:
     """Wordmark, tagline, and the marker the palette keys off."""
     return f"""
 <span class="rp-theme rp-theme-{lang}"></span>
-<div class="rp-masthead">
+<div class="rp-masthead rp-stage-in">
   {brand.wordmark()}
+  <h1 class="rp-headline">{html.escape(t(lang, 'headline'))}</h1>
   <p class="rp-tagline">{html.escape(t(lang, 'tagline'))}</p>
 </div>
 """
@@ -247,7 +381,7 @@ def corpus_html(lang: str = "en") -> str:
 def ask(question: str, ui_lang: str, answer_lang: str):
     """Stream the answer, its sources, and the retrieval trace."""
     hidden = gr.update(visible=False)
-    shown = gr.update(visible=True)
+    shown = gr.update(visible=get_settings().debug_panel)
 
     question = (question or "").strip()
     if not question:
@@ -294,7 +428,8 @@ def build() -> gr.Blocks:
     settings = get_settings()
     start = "en"
 
-    with gr.Blocks(title="Sésame", analytics_enabled=False) as demo:
+    with gr.Blocks(title="Sésame — French paperwork, in plain words",
+                   analytics_enabled=False) as demo:
         with gr.Row(elem_classes="rp-topbar"):
             head = gr.HTML(brand_block(start))
             site_lang = gr.Radio(
@@ -332,6 +467,9 @@ def build() -> gr.Blocks:
                 answer_box = gr.HTML(visible=False)
                 services_box = gr.HTML(visible=False)
                 sources_box = gr.HTML(visible=False)
+                # Off unless DEBUG_PANEL is switched on. It is a developer's
+                # view of retrieval, not something a person with a deadline
+                # and a form to fill in needs to see.
                 with gr.Accordion(t(start, "debug_title"), open=False,
                                   visible=False) as debug_acc:
                     debug_box = gr.HTML()
@@ -401,9 +539,6 @@ def build() -> gr.Blocks:
              try_label, *chips, debug_acc, tab_ask, tab_gloss, tab_corpus,
              gloss_intro, search, gloss_box, corpus_intro, refresh, corpus_box],
         )
-
-        if not settings.debug_panel:
-            debug_box.visible = False
 
     return demo
 

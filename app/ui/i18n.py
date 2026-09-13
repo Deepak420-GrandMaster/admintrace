@@ -14,9 +14,10 @@ from __future__ import annotations
 
 STRINGS: dict[str, dict[str, str]] = {
     "en": {
-        "tagline": "You've just arrived in France. Ask anything about the "
-                   "paperwork, in English or French — every answer comes "
-                   "straight from official government sources, with a link.",
+        "headline": "The paperwork, in plain words.",
+        "tagline": "You've just arrived in France. Ask in English or French — "
+                   "every answer comes from an official government page, with "
+                   "the link and the date it was last checked.",
         "disclaimer_lead": "This isn't legal advice.",
         "disclaimer_body": "Sésame tells you what the official pages say, and "
                            "shows you which ones. It can't advise you on a "
@@ -46,6 +47,11 @@ STRINGS: dict[str, dict[str, str]] = {
         "copy": "Copy",
         "copied": "Copied",
         "sources_head": "Where this came from",
+        "peek": "see the exact wording",
+        "pop_source": "What this page says",
+        "pop_service": "This opens the official service",
+        "sources_toggle_one": "Check it against the official page",
+        "sources_toggle_many": "Check it against the {n} official pages",
         "services_head": "Do it here",
         "services_note": "Official government service — opens in a new tab.",
         "stage_search": "Looking through the official pages…",
@@ -58,9 +64,10 @@ STRINGS: dict[str, dict[str, str]] = {
         "no_match": "No word matches “{q}”.",
     },
     "fr": {
-        "tagline": "Vous venez d'arriver en France. Posez vos questions sur les "
-                   "démarches, en français ou en anglais — chaque réponse vient "
-                   "directement des sources officielles, avec le lien.",
+        "headline": "Les démarches, en mots simples.",
+        "tagline": "Vous venez d'arriver en France. Posez vos questions en "
+                   "français ou en anglais — chaque réponse vient d'une page "
+                   "officielle, avec le lien et la date.",
         "disclaimer_lead": "Ceci n'est pas un conseil juridique.",
         "disclaimer_body": "Sésame vous dit ce que disent les pages "
                            "officielles, et vous montre lesquelles. Il ne peut "
@@ -92,6 +99,11 @@ STRINGS: dict[str, dict[str, str]] = {
         "copy": "Copier",
         "copied": "Copié",
         "sources_head": "D'où vient cette réponse",
+        "peek": "voir le texte exact",
+        "pop_source": "Ce que dit cette page",
+        "pop_service": "Ouvre le service officiel",
+        "sources_toggle_one": "Vérifier sur la page officielle",
+        "sources_toggle_many": "Vérifier sur les {n} pages officielles",
         "services_head": "C'est ici que ça se passe",
         "services_note": "Service officiel de l'administration — s'ouvre dans un nouvel onglet.",
         "stage_search": "Recherche dans les pages officielles…",
