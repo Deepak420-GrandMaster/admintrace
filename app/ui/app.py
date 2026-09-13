@@ -269,8 +269,62 @@ def brand_block(lang: str) -> str:
 """
 
 
+def privacy_block(lang: str) -> str:
+    """What actually happens to a question, read off the live configuration.
+
+    Written from settings rather than hand-typed, so the claim cannot drift
+    away from what the system does. Running fully locally and sending the
+    question to a hosted model are materially different promises, and for
+    people whose immigration status is at stake the difference is not a
+    footnote.
+    """
+    settings = get_settings()
+    if settings.llm_provider == "ollama":
+        body = t(lang, "privacy_local")
+    else:
+        # The company the question is actually sent to, not whoever trained
+        # the model. "openai/gpt-oss-120b" runs ON Groq; naming OpenAI here
+        # would be a false statement about where someone's words go.
+        body = t(lang, "privacy_hosted", provider=settings.llm_provider.title())
+    return f"""
+<div class="rp-privacy">
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+    <path d="M8 1.6 2.9 3.8v3.5c0 3 2.2 5.8 5.1 6.8 2.9-1 5.1-3.8 5.1-6.8V3.8L8 1.6Z"
+          stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+    <path d="M5.9 8.1 7.3 9.6 10.3 6.4" stroke="currentColor" stroke-width="1.5"
+          stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  <div><strong>{html.escape(t(lang, 'privacy_lead'))}</strong> {html.escape(body)}</div>
+</div>
+"""
+
+
+def credit_block(lang: str) -> str:
+    """Who made it, and the invitation.
+
+    The gaps in this thing are not gaps in the code — they are the things no
+    official page will ever say (which bank actually accepts which paper, how
+    long a prefecture really takes). Only the people who have just been
+    through it know those, so the footer asks.
+    """
+    return f"""
+<div class="rp-credit">
+  <div class="rp-credit-made">
+    <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M8 14S1.8 10.3 1.8 6.1A3.3 3.3 0 0 1 8 4.3a3.3 3.3 0 0 1 6.2 1.8
+               C14.2 10.3 8 14 8 14Z" fill="currentColor"/>
+    </svg>
+    <span>{html.escape(t(lang, 'made_by'))}</span>
+    <span class="rp-credit-year">{html.escape(t(lang, 'made_year'))}</span>
+  </div>
+  <p class="rp-credit-community">{html.escape(t(lang, 'community'))}</p>
+</div>
+"""
+
+
 def disclaimer_block(lang: str) -> str:
     return f"""
+{privacy_block(lang)}
 <div class="rp-disclaimer rp-footer">
   <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
     <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
@@ -280,6 +334,7 @@ def disclaimer_block(lang: str) -> str:
   <div><strong>{html.escape(t(lang, 'disclaimer_lead'))}</strong>
   {html.escape(t(lang, 'disclaimer_body'))}</div>
 </div>
+{credit_block(lang)}
 """
 
 
@@ -440,7 +495,7 @@ def build() -> gr.Blocks:
 
 
         with gr.Tabs():
-            with gr.Tab(t(start, "tab_ask")) as tab_ask:
+            with gr.Tab("01 · " + t(start, "tab_ask")) as tab_ask:
                 question = gr.Textbox(
                     placeholder=t(start, "placeholder"), lines=2,
                     elem_classes="rp-ask", show_label=False,
@@ -474,7 +529,7 @@ def build() -> gr.Blocks:
                                   visible=False) as debug_acc:
                     debug_box = gr.HTML()
 
-            with gr.Tab(t(start, "tab_glossary")) as tab_gloss:
+            with gr.Tab("02 · " + t(start, "tab_glossary")) as tab_gloss:
                 gloss_intro = gr.HTML(
                     f"<p class='rp-tagline' style='margin:2px 0 14px'>"
                     f"{html.escape(t(start, 'glossary_intro'))}</p>")
@@ -482,7 +537,7 @@ def build() -> gr.Blocks:
                                     show_label=False, elem_classes="rp-gloss-search")
                 gloss_box = gr.HTML(render.glossary_html("", start))
 
-            with gr.Tab(t(start, "tab_corpus")) as tab_corpus:
+            with gr.Tab("03 · " + t(start, "tab_corpus")) as tab_corpus:
                 corpus_intro = gr.HTML(
                     f"<p class='rp-tagline' style='margin:2px 0 14px'>"
                     f"{html.escape(t(start, 'corpus_intro'))}</p>")
@@ -519,9 +574,9 @@ def build() -> gr.Blocks:
                 f"<div class='rp-chip-label'>{html.escape(t(lang, 'try'))}</div>",
                 *[gr.update(value=text) for text in EXAMPLES[lang]],
                 gr.update(label=t(lang, "debug_title")),
-                gr.update(label=t(lang, "tab_ask")),
-                gr.update(label=t(lang, "tab_glossary")),
-                gr.update(label=t(lang, "tab_corpus")),
+                gr.update(label="01 · " + t(lang, "tab_ask")),
+                gr.update(label="02 · " + t(lang, "tab_glossary")),
+                gr.update(label="03 · " + t(lang, "tab_corpus")),
                 f"<p class='rp-tagline' style='margin:2px 0 14px'>"
                 f"{html.escape(t(lang, 'glossary_intro'))}</p>",
                 gr.update(placeholder=t(lang, "glossary_search")),

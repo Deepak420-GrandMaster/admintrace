@@ -42,6 +42,12 @@
   /* The whole surface animates when the palette swaps, so changing language
      reads as the page turning over rather than as text being replaced. */
   --swap: 620ms cubic-bezier(.22,.61,.36,1);
+
+  /* The reading column. Wide enough to feel like a page rather than a
+     letterbox, narrow enough that a line of an answer stays readable —
+     long measures are hard work in any language and harder in a second
+     one. The ground around it is full-bleed. */
+  --measure: 1240px;
 }
 
 /* ------------------------------------------------------------ palettes
@@ -49,7 +55,7 @@
    indigo accent; French on warm ivory under a deeper blue, with the red of
    the tricolore kept for small emphasis. The marker element is rendered by
    the masthead, so the palette follows the language with no scripting. */
-.gradio-container:has(.rp-theme-fr) {
+:root:has(.rp-theme-fr) {
   --accent:      #123a8c;
   --accent-deep: #0c2860;
   --accent-wash: #eef2fb;
@@ -61,7 +67,7 @@
   --ink:         #171922;
   --stop:        #a5262b;
 }
-.gradio-container:has(.rp-theme-fr) .rp-wordmark .rp-accent { color: #c8102e; }
+:root:has(.rp-theme-fr) .rp-wordmark .rp-accent { color: #c8102e; }
 
 .gradio-container, .gradio-container .rp-answer, .gradio-container .rp-source,
 .gradio-container .rp-gloss, .gradio-container .rp-stat,
@@ -74,6 +80,11 @@
 /* The page commits to a light palette rather than following the host theme:
    the design is built around paper-like surfaces and would not survive an
    automatic inversion. */
+html, body {
+  background: var(--bg);
+  color-scheme: light;
+  margin: 0;
+}
 .gradio-container, .gradio-container * { color-scheme: light !important; }
 
 /* Gradio paints from its own variables. Setting ours on individual elements
@@ -114,9 +125,18 @@
   background: var(--bg) !important;
   font-family: var(--sans) !important;
   color: var(--ink) !important;
-  max-width: 1080px !important;
+  max-width: var(--measure) !important;
+  width: 100% !important;
   margin: 0 auto !important;
-  padding: 0 20px 72px !important;
+  padding: 0 clamp(18px, 4vw, 44px) 84px !important;
+  background: transparent !important;
+}
+/* Gradio wraps the app in its own shells; none of them may paint. */
+body > gradio-app, gradio-app, .gradio-app,
+.gradio-container > .main, .gradio-container > .wrap {
+  background: transparent !important;
+  width: 100% !important;
+  max-width: none !important;
 }
 .gradio-container .prose :is(h1,h2,h3,h4) { font-family: var(--sans); }
 footer, .gradio-container > .main > .wrap > .contain > footer { display: none !important; }
@@ -358,8 +378,8 @@ footer, .gradio-container > .main > .wrap > .contain > footer { display: none !i
   border-bottom: 1px solid var(--border-soft);
 }
 .rp-answer h2:first-child { margin-top: 0; }
-.rp-answer p { font-size: 15.5px; line-height: 1.68; color: var(--ink-soft); margin: 0 0 12px; }
-.rp-answer li { font-size: 15.5px; line-height: 1.62; color: var(--ink-soft); margin: 0 0 7px; }
+.rp-answer p { max-width: 76ch; font-size: 15.5px; line-height: 1.68; color: var(--ink-soft); margin: 0 0 12px; }
+.rp-answer li { max-width: 74ch; font-size: 15.5px; line-height: 1.62; color: var(--ink-soft); margin: 0 0 7px; }
 .rp-answer ul, .rp-answer ol { margin: 0 0 14px; padding-left: 22px; }
 .rp-answer strong { color: var(--ink); font-weight: 620; }
 
@@ -870,13 +890,13 @@ footer, .gradio-container > .main > .wrap > .contain > footer { display: none !i
 
 /* Grain. At 3.5% it is felt rather than seen — it stops large flat
    areas reading as dead screen. Fixed, so it never slides with scroll. */
-.gradio-container::before {
+body::before {
   content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
   opacity: .035; mix-blend-mode: multiply;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 /* A vignette so the page has a centre. */
-.gradio-container::after {
+body::after {
   content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
   background: radial-gradient(130% 96% at 50% 12%,
     transparent 44%, rgba(28,26,23,.045) 100%);
@@ -967,7 +987,7 @@ footer, .gradio-container > .main > .wrap > .contain > footer { display: none !i
 @media (prefers-reduced-motion: reduce) {
   .rp-spot { display: none; }
   .rp-stage-in > *, .rp-wordmark { animation: none !important; }
-  .gradio-container::before { display: none; }
+  body::before { display: none; }
 }
 
 
@@ -981,3 +1001,93 @@ footer, .gradio-container > .main > .wrap > .contain > footer { display: none !i
 }
 .rp-masthead .rp-tagline { margin-top: 12px; max-width: 58ch; }
 @media (max-width: 720px) { .rp-headline { font-size: 31px; } }
+
+
+/* What happens to a question, said plainly and without a cookie banner. */
+.rp-privacy {
+  display: flex; gap: 10px; align-items: flex-start;
+  margin: 40px 0 0; padding: 16px 18px;
+  background: var(--good-wash); border: 1px solid #cceadd;
+  border-radius: var(--radius-sm);
+  font-size: 13px; line-height: 1.58; color: #14604a;
+}
+.rp-privacy strong { color: var(--good); font-weight: 650; }
+.rp-privacy svg { flex: 0 0 auto; margin-top: 1px; color: var(--good); }
+.rp-privacy + .rp-footer { margin-top: 16px !important; }
+
+
+/* ===================================================================
+   Gradio's own progress chrome
+   A blue bar sliding across the top says "system busy". Our staged
+   lines already say what is happening, in words, so the bar is noise.
+   =================================================================== */
+.gradio-container .progress-bar,
+.gradio-container .progress-text,
+.gradio-container .progress-level,
+.gradio-container .progress-level-inner,
+.gradio-container .eta-bar,
+.gradio-container > .main .wrap.default:not(.rp-skeleton) > .progress-text {
+  display: none !important;
+}
+.gradio-container .wrap.default { opacity: 1 !important; background: transparent !important; }
+
+/* ===================================================================
+   Glossary cards open
+   The card shows what a word means; opening it shows the other ways it
+   gets written, which is how you actually recognise it on a form.
+   =================================================================== */
+.rp-gloss { cursor: pointer; }
+.rp-gloss-fr {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+}
+.rp-gloss-chev {
+  flex: 0 0 auto; color: var(--ink-faint);
+  transition: transform .28s var(--ease), color .18s var(--ease);
+}
+.rp-gloss:hover .rp-gloss-chev { color: var(--accent); }
+.rp-gloss.rp-open .rp-gloss-chev { transform: rotate(180deg); color: var(--accent); }
+.rp-gloss:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-line); }
+.rp-gloss-more {
+  max-height: 0; opacity: 0; overflow: hidden;
+  transition: max-height .4s var(--ease), opacity .3s var(--ease),
+              margin-top .3s var(--ease);
+}
+.rp-gloss.rp-open .rp-gloss-more { max-height: 420px; opacity: 1; margin-top: 4px; }
+.rp-gloss-aliases { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 5px;
+  align-items: baseline; }
+.rp-gloss-aliases-label {
+  font-size: 10.5px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--ink-faint); margin-right: 3px;
+}
+.rp-alias {
+  font-size: 11.5px; color: var(--ink-soft); background: var(--surface-2);
+  border-radius: 5px; padding: 2px 7px;
+}
+
+/* ===================================================================
+   The footer credit
+   =================================================================== */
+.rp-credit { margin-top: 26px; padding-top: 18px; border-top: 1px solid var(--border); }
+.rp-credit-made {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; font-weight: 550; color: var(--ink-soft);
+}
+.rp-credit-made svg { color: #c0392b; animation: rp-beat 2.6s ease-in-out infinite; }
+@keyframes rp-beat {
+  0%, 88%, 100% { transform: scale(1); }
+  92% { transform: scale(1.22); }
+  96% { transform: scale(1.05); }
+}
+.rp-credit-year { color: var(--ink-faint); font-weight: 400; }
+.rp-credit-community {
+  margin: 9px 0 0; font-size: 12.5px; line-height: 1.6;
+  color: var(--ink-muted); max-width: 62ch;
+}
+
+/* The language switcher holds the top-right corner on every width. */
+.rp-topbar > *:last-child { align-self: flex-start !important; }
+@media (max-width: 640px) {
+  .rp-topbar { flex-wrap: wrap !important; }
+  .rp-topbar > *:last-child { padding-top: 0 !important; order: -1;
+    width: 100% !important; justify-content: flex-end !important; }
+}

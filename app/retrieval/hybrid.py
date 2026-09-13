@@ -139,14 +139,30 @@ def search_many(queries: list[str], limit: int | None = None, pool: int = 25,
         ranked_lists.append(("keyword", keyword.search(query, pool, settings)))
 
     merged = _rrf(ranked_lists, settings)
-    ordered = sorted(merged.values(), key=lambda h: (-h.fused_score, -h.dense_score))
-    selected = _diversify(ordered, limit, settings.max_passages_per_document)
 
-    # Every candidate needs a comparable semantic score for the gate.
-    missing = [h.chunk_id for h in selected if h.dense_rank is None]
+    # Fusion decides WHICH passages are considered, not in WHAT ORDER.
+    #
+    # Keyword search earns its place by recall: it finds passages carrying an
+    # exact French term that semantic search blurred past. It is a poor judge
+    # of rank, because it scores any passage sharing the words — asked how to
+    # open a bank account, BM25 rates the sole-trader and joint-account pages
+    # as highly as the personal one, and rank fusion then lets that outvote a
+    # much stronger semantic match. Observed: the personal-account page fell
+    # from second to fifth and the page on your legal right to an account —
+    # the one thing a newcomer refused by a bank most needs — fell out of the
+    # results entirely.
+    #
+    # So the pool is fused, every candidate is scored on the one comparable
+    # scale, and that score orders them.
+    pool = sorted(merged.values(),
+                  key=lambda h: (-h.fused_score, -h.dense_score))[:pool]
+
+    missing = [h.chunk_id for h in pool if h.dense_rank is None]
     if missing:
         scores = dense.similarity_for(missing, queries[0], settings)
-        for hit in selected:
+        for hit in pool:
             if hit.dense_rank is None:
                 hit.dense_score = max(hit.dense_score, scores.get(hit.chunk_id, 0.0))
-    return selected
+
+    ordered = sorted(pool, key=lambda h: (-h.dense_score, -h.fused_score))
+    return _diversify(ordered, limit, settings.max_passages_per_document)

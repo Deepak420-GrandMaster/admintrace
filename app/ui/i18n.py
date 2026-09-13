@@ -44,6 +44,17 @@ STRINGS: dict[str, dict[str, str]] = {
         "debug_empty": "Ask something, and this panel will show exactly how the "
                        "answer was found — what was searched, what was "
                        "retrieved, and what was thrown away.",
+        "privacy_lead": "Nothing about you is kept.",
+        "privacy_local": "No account, no cookies, no history. Your question "
+                         "isn't saved anywhere, and nothing leaves this "
+                         "computer — the search and the answer both run here.",
+        "privacy_hosted": "No account, no cookies, no history. Your question "
+                          "isn't saved anywhere and never written to disk. The "
+                          "search runs on this computer; the wording of your "
+                          "question is sent to {provider} to write the answer, "
+                          "so don't type anything into it you wouldn't send a "
+                          "stranger.",
+        "also_called": "Also written",
         "copy": "Copy",
         "copied": "Copied",
         "sources_head": "Where this came from",
@@ -54,9 +65,14 @@ STRINGS: dict[str, dict[str, str]] = {
         "sources_toggle_many": "Check it against the {n} official pages",
         "services_head": "Do it here",
         "services_note": "Official government service — opens in a new tab.",
-        "stage_search": "Looking through the official pages…",
-        "stage_read": "Reading what they say…",
-        "stage_write": "Putting it together…",
+        "stage_search": "Queueing at the right counter…",
+        "stage_read": "Reading the small print so you don't have to…",
+        "stage_write": "Putting it in plain words…",
+        "made_by": "Made with love by Deepak Prajapati",
+        "made_year": "© 2026",
+        "community": "Built so the next person arriving has an easier time of "
+                     "it than you did. Know something the official pages don't? "
+                     "That's exactly what this needs.",
         "grounded_one": "Based on 1 official page",
         "grounded_many": "Based on {n} official pages",
         "refused": "The sources don't cover this",
@@ -96,6 +112,18 @@ STRINGS: dict[str, dict[str, str]] = {
         "debug_empty": "Posez une question et ce panneau montrera exactement "
                        "comment la réponse a été trouvée : ce qui a été "
                        "cherché, ce qui a été retenu, ce qui a été écarté.",
+        "privacy_lead": "Rien de vous n'est conservé.",
+        "privacy_local": "Pas de compte, pas de cookies, pas d'historique. "
+                         "Votre question n'est enregistrée nulle part et rien "
+                         "ne quitte cet ordinateur : la recherche et la réponse "
+                         "se font ici.",
+        "privacy_hosted": "Pas de compte, pas de cookies, pas d'historique. "
+                          "Votre question n'est enregistrée nulle part ni "
+                          "écrite sur le disque. La recherche se fait sur cet "
+                          "ordinateur ; le texte de votre question est envoyé "
+                          "à {provider} pour rédiger la réponse — n'y écrivez "
+                          "donc rien que vous ne confieriez pas à un inconnu.",
+        "also_called": "Aussi écrit",
         "copy": "Copier",
         "copied": "Copié",
         "sources_head": "D'où vient cette réponse",
@@ -106,9 +134,15 @@ STRINGS: dict[str, dict[str, str]] = {
         "sources_toggle_many": "Vérifier sur les {n} pages officielles",
         "services_head": "C'est ici que ça se passe",
         "services_note": "Service officiel de l'administration — s'ouvre dans un nouvel onglet.",
-        "stage_search": "Recherche dans les pages officielles…",
-        "stage_read": "Lecture des textes…",
-        "stage_write": "Rédaction de la réponse…",
+        "stage_search": "On fait la queue au bon guichet…",
+        "stage_read": "On lit les petits caractères pour vous…",
+        "stage_write": "On le met en mots simples…",
+        "made_by": "Fait avec amour par Deepak Prajapati",
+        "made_year": "© 2026",
+        "community": "Fait pour que la prochaine personne qui arrive s'en sorte "
+                     "mieux que vous. Vous savez quelque chose que les pages "
+                     "officielles ne disent pas ? C'est exactement ce qu'il "
+                     "manque ici.",
         "grounded_one": "D'après 1 page officielle",
         "grounded_many": "D'après {n} pages officielles",
         "refused": "Les sources ne couvrent pas cette question",

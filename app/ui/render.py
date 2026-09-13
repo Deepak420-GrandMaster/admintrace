@@ -356,12 +356,28 @@ def glossary_html(search: str = "", lang: str = "en") -> str:
             if term.is_official else
             "<span class='rp-prov rp-prov-authored'>Written for Sésame</span>"
         )
+        aliases = [a for a in term.aliases_en
+                   if a.lower() not in {term.fr.lower(), term.en.lower()}]
+        also = (
+            "<div class='rp-gloss-aliases'>"
+            "<span class='rp-gloss-aliases-label'>"
+            + html.escape(t(lang, "also_called")) + "</span>"
+            + " ".join(f"<span class='rp-alias'>{html.escape(a)}</span>"
+                       for a in aliases[:6])
+            + "</div>"
+        ) if aliases else ""
         cards.append(
-            f"<div class='rp-gloss' style='--i:{index}'>"
-            f"<div class='rp-gloss-fr'>{html.escape(term.fr)}</div>"
+            f"<div class='rp-gloss' style='--i:{index}' data-expandable"
+            f" tabindex='0' role='button'>"
+            f"<div class='rp-gloss-fr'>{html.escape(term.fr)}"
+            f"<svg class='rp-gloss-chev' width='12' height='12' viewBox='0 0 12 12'"
+            f" fill='none' aria-hidden='true'><path d='M3 4.5 L6 7.5 L9 4.5'"
+            f" stroke='currentColor' stroke-width='1.7' stroke-linecap='round'"
+            f" stroke-linejoin='round'/></svg></div>"
             f"<div class='rp-gloss-en'>{html.escape(term.en)}</div>"
             f"<div class='rp-gloss-def'>{html.escape(term.explanation_en)}</div>"
+            f"<div class='rp-gloss-more'>"
             f"<div class='rp-gloss-def-fr'>{html.escape(term.explanation_fr)}</div>"
-            f"{provenance}</div>"
+            f"{also}{provenance}</div></div>"
         )
     return f"<div class='rp-gloss-grid'>{''.join(cards)}</div>"
