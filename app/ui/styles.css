@@ -1258,3 +1258,78 @@ body::after {
   margin: 10px 0 0; padding-top: 10px; border-top: 1px dashed var(--border-soft);
   font-size: 12.5px; color: var(--ink-muted);
 }
+
+
+/* ===================================================================
+   The landing composition
+   The question sits in the middle of the page and the field sits under
+   it, because that is where the reader's attention already is. A page
+   that opens with a statement about itself asks them to care about the
+   product before their own problem.
+   =================================================================== */
+.rp-wash {
+  position: absolute; left: 50%; top: -190px; transform: translateX(-50%);
+  width: min(1500px, 148vw); height: 620px; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(46% 58% at 50% 34%,
+      color-mix(in oklch, var(--accent) 20%, transparent) 0%, transparent 68%),
+    radial-gradient(64% 52% at 26% 20%,
+      color-mix(in oklch, var(--accent) 11%, transparent) 0%, transparent 72%),
+    radial-gradient(58% 50% at 76% 16%,
+      color-mix(in oklch, var(--warn) 9%, transparent) 0%, transparent 70%);
+  filter: blur(28px); opacity: .72;
+  animation: rp-drift 22s ease-in-out infinite alternate;
+}
+@keyframes rp-drift {
+  from { transform: translateX(-50%) translateY(0) scale(1); }
+  to   { transform: translateX(-50%) translateY(16px) scale(1.045); }
+}
+
+.rp-masthead { padding: 26px 0 4px !important; }
+
+.rp-hero { text-align: center; padding: 30px 0 26px; }
+.rp-hero .rp-headline {
+  margin: 0 auto; max-width: 17ch;
+  font-size: clamp(32px, 5.1vw, 54px); line-height: 1.06;
+  font-weight: 600; letter-spacing: -0.03em;
+}
+.rp-hero .rp-tagline {
+  margin: 15px auto 0; max-width: 56ch; text-align: center;
+  font-size: 15.5px; line-height: 1.62;
+}
+
+/* The field is the page's centre of gravity, so it is given the room. */
+.gradio-container .rp-ask textarea,
+.gradio-container .rp-ask .input-container textarea {
+  font-size: 17px !important; padding: 21px 24px !important;
+  border-radius: 20px !important; min-height: 96px !important;
+  box-shadow: 0 14px 42px rgba(22,24,29,.07), 0 2px 6px rgba(22,24,29,.04) !important;
+}
+.gradio-container .rp-ask textarea:focus {
+  box-shadow: 0 0 0 4px var(--accent-wash),
+              0 16px 46px rgba(22,24,29,.09) !important;
+}
+.rp-submit-row { justify-content: center !important; }
+.rp-submit-row > *:nth-child(2) { margin-left: 0 !important; }
+.rp-examples { justify-content: center !important; }
+.rp-hint { justify-content: center; }
+.rp-chip-label { width: 100%; text-align: center; }
+
+/* ===================================================================
+   The institution question, asked only when it matters
+   =================================================================== */
+.gradio-container .rp-study-ask {
+  background: var(--surface) !important;
+  border: 1px solid var(--accent-line) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: var(--shadow-sm) !important;
+  padding: 18px 20px !important; margin-top: 20px !important;
+  animation: rp-rise .45s cubic-bezier(.22,.61,.36,1) both;
+}
+.rp-study-prompt {
+  margin: 0 0 12px; font-size: 13.5px; line-height: 1.6; color: var(--ink-soft);
+  max-width: 68ch;
+}
+.gradio-container .rp-study { max-width: 100%; }
+
+@media (prefers-reduced-motion: reduce) { .rp-wash { animation: none; } }

@@ -1,7 +1,15 @@
 """The register of French higher-education institutions.
 
-Published by the Ministère de l'Enseignement supérieur as open data under the
-Licence Ouverte, the same terms as the rest of the corpus.
+Idéo-Structures d'enseignement supérieur, published by ONISEP as open data
+under the ODbL. Nearly nine thousand institutions: public universities and
+schools, and private ones too — sous contrat and hors contrat alike. A
+register of only the principal public establishments leaves out most of the
+places people actually study, and a private-school student is no less lost in
+the paperwork.
+
+Note the licence differs from the rest of the corpus: the ODbL asks for
+attribution and share-alike on a derived database, where the fiches are
+Licence Ouverte. ONISEP is credited in the interface and the README.
 
 Why this is worth having: a student rarely knows which préfecture handles
 their permit or which académie their CROUS belongs to, but they always know
@@ -27,17 +35,10 @@ from pathlib import Path
 
 from app.config import Settings, get_settings
 
-DATASET = "fr-esr-principaux-etablissements-enseignement-superieur"
-BASE = ("https://data.enseignementsup-recherche.gouv.fr/api/explore/v2.1"
-        f"/catalog/datasets/{DATASET}/records")
-PAGE = 100
-CACHE_NAME = "universities.json"
-
-FIELDS = (
-    "uai,uo_lib,uo_lib_officiel,uo_lib_en,sigle,type_d_etablissement,"
-    "secteur_d_etablissement,url,com_nom,code_postal_uai,dep_id,dep_nom,"
-    "aca_id,aca_nom,reg_nom,champ_recherche"
-)
+SOURCE_URL = "https://api.opendata.onisep.fr/downloads/5fa586da5c4b6/5fa586da5c4b6.json"
+SOURCE_NAME = "ONISEP — Idéo-Structures d'enseignement supérieur"
+SOURCE_LICENCE = "ODbL"
+CACHE_NAME = "institutions.json"
 
 
 class DirectoryError(RuntimeError):
@@ -58,11 +59,20 @@ class Institution:
     departement_id: str
     academie: str
     region: str
+    parent: str = ""
     aliases: tuple[str, ...] = ()
 
     @property
     def label(self) -> str:
         return f"{self.name} ({self.acronym})" if self.acronym else self.name
+
+    @property
+    def is_private(self) -> bool:
+        return "priv" in self.sector.lower()
+
+    @property
+    def sector_label(self) -> str:
+        return self.sector or "—"
 
     @property
     def where(self) -> str:
@@ -80,25 +90,18 @@ def _cache_path(settings: Settings) -> Path:
 
 
 def download(settings: Settings | None = None) -> list[dict]:
-    """Page through the register and return every record."""
+    """Fetch the whole register in one file."""
     settings = settings or get_settings()
-    records: list[dict] = []
-    offset = 0
-    while True:
-        url = f"{BASE}?limit={PAGE}&offset={offset}&select={FIELDS}"
-        request = urllib.request.Request(
-            url, headers={"User-Agent": "reperes/0.1 (local research tool)"})
-        try:
-            with urllib.request.urlopen(request, timeout=60) as response:
-                payload = json.load(response)
-        except (urllib.error.URLError, ValueError) as exc:
-            raise DirectoryError(f"Could not read the register: {exc}") from None
-        page = payload.get("results", [])
-        records.extend(page)
-        offset += len(page)
-        if len(page) < PAGE or offset >= payload.get("total_count", 0):
-            break
-    return records
+    request = urllib.request.Request(
+        SOURCE_URL, headers={"User-Agent": "sesame/0.1 (local research tool)"})
+    try:
+        with urllib.request.urlopen(request, timeout=300) as response:
+            payload = json.load(response)
+    except (urllib.error.URLError, ValueError) as exc:
+        raise DirectoryError(f"Could not read the register: {exc}") from None
+    if isinstance(payload, dict):
+        payload = payload.get("results") or payload.get("data") or []
+    return payload
 
 
 def refresh(settings: Settings | None = None) -> int:
@@ -128,30 +131,36 @@ def load() -> tuple[Institution, ...]:
 
     institutions = []
     for row in records:
-        name = row.get("uo_lib") or row.get("uo_lib_officiel") or ""
+        name = (row.get("nom") or "").strip()
         if not name:
             continue
-        aliases = {a.strip() for a in (row.get("champ_recherche") or "").split(";")
-                   if a.strip()}
-        for key in ("uo_lib_officiel", "uo_lib_en", "sigle"):
-            if row.get(key):
-                aliases.add(str(row[key]))
+        # "38 - Isère" carries both the number and the name.
+        dept_raw = (row.get("departement") or "").strip()
+        dept_id, _, dept_name = dept_raw.partition(" - ")
+        parent = (row.get("universite_de_rattachement_libelle_et_uai") or "").strip()
+        parent = parent.split(" (")[0] if parent else ""
+
+        aliases = {a for a in (row.get("sigle") or "").split(",") if a.strip()}
+        if parent:
+            aliases.add(parent)
         institutions.append(Institution(
-            uai=row.get("uai") or "",
+            uai=row.get("code_uai") or "",
             name=name,
-            acronym=row.get("sigle") or "",
-            kind=_first(row.get("type_d_etablissement")),
-            sector=row.get("secteur_d_etablissement") or "",
-            url=row.get("url") or "",
-            commune=row.get("com_nom") or "",
-            postcode=row.get("code_postal_uai") or "",
-            departement=row.get("dep_nom") or "",
-            departement_id=(row.get("dep_id") or "").lstrip("D"),
-            academie=row.get("aca_nom") or "",
-            region=row.get("reg_nom") or "",
-            aliases=tuple(sorted(aliases)),
+            acronym=(row.get("sigle") or "").strip(),
+            kind=(row.get("type_detablissement") or "").strip(),
+            sector=(row.get("statut") or "").strip(),
+            url=(row.get("url_et_id_onisep") or "").strip(),
+            commune=(row.get("commune") or "").strip(),
+            postcode=(row.get("cp") or "").strip(),
+            departement=dept_name.strip() or dept_raw,
+            departement_id=dept_id.strip(),
+            academie=(row.get("academie") or "").strip(),
+            region=(row.get("region") or "").strip(),
+            parent=parent,
+            aliases=tuple(sorted(a.strip() for a in aliases if a.strip())),
         ))
-    return tuple(sorted(institutions, key=lambda i: _fold(i.name)))
+    # Institutions share names across towns, so the town disambiguates.
+    return tuple(sorted(institutions, key=lambda i: (_fold(i.name), _fold(i.commune))))
 
 
 def search(query: str, limit: int = 8) -> list[Institution]:
@@ -167,12 +176,15 @@ def search(query: str, limit: int = 8) -> list[Institution]:
 
     starts, contains = [], []
     for institution in load():
-        haystacks = [institution.name, institution.acronym, *institution.aliases]
+        haystacks = [institution.name, institution.acronym,
+                     institution.commune, *institution.aliases]
         folded = [_fold(h) for h in haystacks if h]
         if any(h.startswith(needle) for h in folded):
             starts.append(institution)
         elif any(needle in h for h in folded):
             contains.append(institution)
+        if len(starts) >= limit:
+            break
     return (starts + contains)[:limit]
 
 
@@ -181,7 +193,8 @@ def by_uai(uai: str) -> Institution | None:
 
 
 def universities() -> tuple[Institution, ...]:
-    return tuple(i for i in load() if "universit" in _fold(i.kind))
+    return tuple(i for i in load()
+                 if "universit" in _fold(i.kind) or "universit" in _fold(i.name))
 
 
 if __name__ == "__main__":  # pragma: no cover - operational entry point

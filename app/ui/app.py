@@ -264,11 +264,8 @@ def brand_block(lang: str) -> str:
     """Wordmark, tagline, and the marker the palette keys off."""
     return f"""
 <span class="rp-theme rp-theme-{lang}"></span>
-<div class="rp-masthead rp-stage-in">
-  {brand.wordmark()}
-  <h1 class="rp-headline">{html.escape(t(lang, 'headline'))}</h1>
-  <p class="rp-tagline">{html.escape(t(lang, 'tagline'))}</p>
-</div>
+<div class="rp-wash"></div>
+<div class="rp-masthead">{brand.wordmark()}</div>
 """
 
 
@@ -338,6 +335,21 @@ def disclaimer_block(lang: str) -> str:
   {html.escape(t(lang, 'disclaimer_body'))}</div>
 </div>
 {credit_block(lang)}
+"""
+
+
+def hero_block(lang: str) -> str:
+    """The question, asked of the person, in the middle of the page.
+
+    A landing page that opens with a statement about itself asks the reader to
+    care about the product first. Opening with their question puts the cursor
+    where their attention already is.
+    """
+    return f"""
+<div class="rp-hero rp-stage-in">
+  <h1 class="rp-headline">{html.escape(t(lang, 'headline'))}</h1>
+  <p class="rp-tagline">{html.escape(t(lang, 'subhead'))}</p>
+</div>
 """
 
 
@@ -481,6 +493,41 @@ def institution_context(uai: str, lang: str = "en") -> str:
     )
 
 
+# Words that mean someone is asking as a student. Matched on the folded
+# tokens, so accents, case and elision do not matter.
+STUDY_SIGNALS = frozenset("""
+student students study studies studying university college campus school
+enrol enroll enrolment enrollment tuition scholarship grant diploma degree
+master bachelor phd doctorate internship erasmus
+etudiant etudiante etudiants etude etudes universite fac faculte ecole
+scolarite inscription bourse diplome licence doctorat stage
+crous cvec parcoursup
+""".split())
+
+
+def looks_like_study(question: str) -> bool:
+    """Is this person asking as a student?
+
+    Decided from their own words rather than guessed at, because the picker
+    only earns its place when the answer would actually change.
+    """
+    from app.retrieval.keyword import tokenize
+
+    return bool(STUDY_SIGNALS & set(tokenize(question)))
+
+
+def _context_of(result, question: str, uai: str) -> dict:
+    """What a bug report should carry: enough to reproduce, nothing about who."""
+    place = universities.by_uai(uai) if uai else None
+    return {
+        "question": question,
+        "answer_language": result.language,
+        "refused": result.refused,
+        "sources": [c.fiche_id for c in result.citations],
+        "institution": place.name if place else "",
+    }
+
+
 def ask(question: str, ui_lang: str, answer_lang: str, uai: str = "",
         _context: dict | None = None):
     """Stream the answer, its sources, and the retrieval trace."""
@@ -490,7 +537,7 @@ def ask(question: str, ui_lang: str, answer_lang: str, uai: str = "",
     question = (question or "").strip()
     if not question:
         # Say nothing rather than show three empty panels.
-        yield (hidden, hidden, hidden, gr.update(), hidden, {})
+        yield (hidden, hidden, hidden, gr.update(), hidden, {}, hidden)
         return
 
     reply_lang = answer_lang if answer_lang in ("en", "fr") else ui_lang
@@ -502,8 +549,10 @@ def ask(question: str, ui_lang: str, answer_lang: str, uai: str = "",
     if place is not None and place.departement:
         question = f"{question} ({place.departement})"
 
+    offer_study = gr.update(visible=looks_like_study(question) and not uai)
+
     yield (gr.update(value=render.skeleton(0, ui_lang), visible=True),
-           hidden, hidden, gr.update(), hidden, {})
+           hidden, hidden, gr.update(), hidden, {}, offer_study)
 
     final = None
     for result in answer_stream(question, language=None if answer_lang == "auto"
@@ -511,7 +560,7 @@ def ask(question: str, ui_lang: str, answer_lang: str, uai: str = "",
         final = result
         if not result.text:
             yield (gr.update(value=render.skeleton(1, ui_lang), visible=True),
-                   hidden, hidden, gr.update(), hidden, {})
+                   hidden, hidden, gr.update(), hidden, {}, offer_study)
             continue
         yield (
             gr.update(value=render.answer_html(result, streaming=True,
@@ -523,6 +572,7 @@ def ask(question: str, ui_lang: str, answer_lang: str, uai: str = "",
             render.debug_html(result, ui_lang),
             shown,
             _context_of(result, question, uai),
+            offer_study,
         )
     if final is not None:
         yield (
@@ -535,6 +585,7 @@ def ask(question: str, ui_lang: str, answer_lang: str, uai: str = "",
             render.debug_html(final, ui_lang),
             shown,
             _context_of(final, question, uai),
+            offer_study,
         )
 
 
@@ -555,6 +606,7 @@ def build() -> gr.Blocks:
 
         with gr.Tabs():
             with gr.Tab("01 · " + t(start, "tab_ask")) as tab_ask:
+                hero = gr.HTML(hero_block(start))
                 question = gr.Textbox(
                     placeholder=t(start, "placeholder"), lines=2,
                     elem_classes="rp-ask", show_label=False,
@@ -569,14 +621,6 @@ def build() -> gr.Blocks:
                         value="auto", show_label=False, container=False,
                         elem_classes="rp-switch",
                     )
-                with gr.Row(elem_classes="rp-study-row"):
-                    study = gr.Dropdown(
-                        choices=institution_choices(), value="",
-                        label=t(start, "study_label"), filterable=True,
-                        elem_classes="rp-study", scale=1,
-                    )
-                place_box = gr.HTML(visible=False)
-
                 gr.HTML("<div class='rp-hint'><span class='rp-kbd'>\u2318</span>"
                         "<span class='rp-kbd'>K</span> to jump to the question"
                         " \u00b7 <span class='rp-kbd'>Enter</span> to ask</div>")
@@ -585,6 +629,20 @@ def build() -> gr.Blocks:
                 with gr.Row(elem_classes="rp-examples"):
                     chips = [gr.Button(text, elem_classes="rp-chip", scale=0)
                              for text in EXAMPLES[start]]
+
+                # Offered when the question is about studying, and not
+                # before: an empty institution picker on the landing page asks
+                # everyone to answer a question most of them do not have.
+                with gr.Group(visible=False, elem_classes="rp-study-ask") as study_ask:
+                    study_why = gr.HTML(
+                        f"<p class='rp-study-prompt'>"
+                        f"{html.escape(t(start, 'study_prompt'))}</p>")
+                    study = gr.Dropdown(
+                        choices=institution_choices(), value="",
+                        label=t(start, "study_label"), filterable=True,
+                        elem_classes="rp-study",
+                    )
+                place_box = gr.HTML(visible=False)
 
                 answer_box = gr.HTML(visible=False)
                 services_box = gr.HTML(visible=False)
@@ -666,7 +724,7 @@ def build() -> gr.Blocks:
 
         last_context = gr.State({})
         outputs = [answer_box, services_box, sources_box, debug_box, debug_acc,
-                   last_context]
+                   last_context, study_ask]
         report_send.click(send_report, [report_text, site_lang, last_context],
                           [report_result, report_text])
         inputs = [question, site_lang, reply_lang, study]
@@ -687,6 +745,7 @@ def build() -> gr.Blocks:
             """Re-label the whole interface without losing what is on screen."""
             return [
                 brand_block(lang),
+                hero_block(lang),
                 disclaimer_block(lang),
                 lang_caption(lang, "answer_lang"),
                 gr.update(choices=[(t(lang, "lang_auto"), "auto"),
@@ -699,6 +758,9 @@ def build() -> gr.Blocks:
                 gr.update(label="01 · " + t(lang, "tab_ask")),
                 gr.update(label="02 · " + t(lang, "tab_glossary")),
                 gr.update(label="03 · " + t(lang, "tab_corpus")),
+                f"<p class='rp-study-prompt'>"
+                f"{html.escape(t(lang, 'study_prompt'))}</p>",
+                gr.update(label=t(lang, "study_label")),
                 gr.update(label=t(lang, "report_open")),
                 f"<p class='rp-report-intro'>{html.escape(t(lang, 'report_intro'))}</p>",
                 gr.update(placeholder=t(lang, "report_placeholder")),
@@ -717,8 +779,9 @@ def build() -> gr.Blocks:
         site_lang.change(
             switch_language,
             [site_lang, search],
-            [head, disclaimer, reply_caption, reply_lang, question, submit,
+            [head, hero, disclaimer, reply_caption, reply_lang, question, submit,
              try_label, *chips, debug_acc, tab_ask, tab_gloss, tab_corpus,
+             study_why, study,
              report_panel, report_intro, report_text, report_keeps, report_send,
              gloss_intro, search, gloss_box, corpus_intro, refresh, corpus_box],
         )

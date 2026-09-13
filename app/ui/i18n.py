@@ -14,7 +14,13 @@ from __future__ import annotations
 
 STRINGS: dict[str, dict[str, str]] = {
     "en": {
-        "headline": "The paperwork, in plain words.",
+        "headline": "What do you need to sort out?",
+        "subhead": "Ask in English or French. Every answer comes from an "
+                   "official government page — with the link, and the date it "
+                   "was last checked.",
+        "study_prompt": "Studying in France? Tell me where and I can be more "
+                        "precise — your institution decides which préfecture "
+                        "and which CROUS you deal with.",
         "tagline": "You've just arrived in France. Ask in English or French — "
                    "every answer comes from an official government page, with "
                    "the link and the date it was last checked.",
@@ -114,7 +120,13 @@ STRINGS: dict[str, dict[str, str]] = {
         "no_match": "No word matches “{q}”.",
     },
     "fr": {
-        "headline": "Les démarches, en mots simples.",
+        "headline": "Qu'est-ce qu'il faut régler ?",
+        "subhead": "Posez votre question en français ou en anglais. Chaque "
+                   "réponse vient d'une page officielle — avec le lien et la "
+                   "date de dernière vérification.",
+        "study_prompt": "Vous étudiez en France ? Dites-moi où et je serai plus "
+                        "précis : votre établissement détermine la préfecture "
+                        "et le CROUS dont vous dépendez.",
         "tagline": "Vous venez d'arriver en France. Posez vos questions en "
                    "français ou en anglais — chaque réponse vient d'une page "
                    "officielle, avec le lien et la date.",
