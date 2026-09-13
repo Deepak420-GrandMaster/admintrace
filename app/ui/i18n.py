@@ -53,8 +53,42 @@ STRINGS: dict[str, dict[str, str]] = {
                           "search runs on this computer; the wording of your "
                           "question is sent to {provider} to write the answer, "
                           "so don't type anything into it you wouldn't send a "
-                          "stranger.",
+                          "stranger. The one exception is a bug report — that "
+                          "is saved, because it has to be, and only when you "
+                          "send one.",
+        "limit_title": "Out of tokens for today",
+        "limit_body": "Nothing is broken and nothing you did caused this — the "
+                      "meter simply ran out. Go and drink a glass of water, "
+                      "slowly, sip by sip, and it will be back.",
+        "limit_wait": "Back in about {mins} minutes.",
+        "limit_wait_soon": "Back in under a minute.",
+        "limit_local": "In a hurry? Point it at a local model and there is no "
+                       "meter at all.",
+        "report_open": "Something wrong here?",
+        "report_title": "Tell us what went wrong",
+        "report_intro": "Write in any language — yours is fine. We'll translate "
+                        "it. If an answer was wrong, saying what you were "
+                        "actually told is the most useful thing you can give us.",
+        "report_placeholder": "What happened, and what did you expect instead?",
+        "report_send": "Send the report",
+        "report_keeps": "Sending this saves what you write, the question you "
+                        "asked, and which pages the answer used. Nothing else, "
+                        "and nothing about who you are.",
+        "report_thanks": "Thank you — that's saved.",
+        "report_saved_as": "Filed as",
+        "report_empty": "Write a line or two first, and I'll take it from there.",
+        "report_untriaged": "Saved in your own words. The translation step "
+                            "couldn't run just now, so a person will read the "
+                            "original.",
         "also_called": "Also written",
+        "study_label": "Studying somewhere? (optional)",
+        "study_placeholder": "Start typing your university or school…",
+        "study_none": "Not a student",
+        "study_why": "Your institution tells us your département, and that is "
+                     "what decides which préfecture handles your file.",
+        "study_dept": "Département",
+        "study_aca": "Académie",
+        "study_site": "Official site",
         "copy": "Copy",
         "copied": "Copied",
         "sources_head": "Where this came from",
@@ -122,8 +156,45 @@ STRINGS: dict[str, dict[str, str]] = {
                           "écrite sur le disque. La recherche se fait sur cet "
                           "ordinateur ; le texte de votre question est envoyé "
                           "à {provider} pour rédiger la réponse — n'y écrivez "
-                          "donc rien que vous ne confieriez pas à un inconnu.",
+                          "donc rien que vous ne confieriez pas à un inconnu. "
+                          "Seule exception : un signalement de bug, qui est "
+                          "enregistré, parce qu'il le faut, et seulement si "
+                          "vous en envoyez un.",
+        "limit_title": "Plus de jetons pour aujourd'hui",
+        "limit_body": "Rien n'est cassé et vous n'y êtes pour rien — le "
+                      "compteur est simplement arrivé au bout. Allez boire un "
+                      "verre d'eau, doucement, gorgée par gorgée, et ça "
+                      "revient.",
+        "limit_wait": "De retour dans environ {mins} minutes.",
+        "limit_wait_soon": "De retour dans moins d'une minute.",
+        "limit_local": "Pressé ? Branchez un modèle local et il n'y a plus de "
+                       "compteur du tout.",
+        "report_open": "Quelque chose ne va pas ?",
+        "report_title": "Dites-nous ce qui s'est passé",
+        "report_intro": "Écrivez dans la langue que vous voulez — la vôtre "
+                        "convient très bien, nous traduirons. Si une réponse "
+                        "était fausse, nous dire ce qu'on vous a réellement dit "
+                        "est ce qui nous aide le plus.",
+        "report_placeholder": "Que s'est-il passé, et à quoi vous attendiez-vous ?",
+        "report_send": "Envoyer",
+        "report_keeps": "L'envoi enregistre ce que vous écrivez, la question "
+                        "posée et les pages utilisées. Rien d'autre, et rien "
+                        "sur qui vous êtes.",
+        "report_thanks": "Merci — c'est enregistré.",
+        "report_saved_as": "Enregistré sous",
+        "report_empty": "Écrivez une ou deux lignes, et je m'occupe du reste.",
+        "report_untriaged": "Enregistré dans vos mots. La traduction n'a pas pu "
+                            "se faire à l'instant : une personne lira "
+                            "l'original.",
         "also_called": "Aussi écrit",
+        "study_label": "Vous étudiez quelque part ? (facultatif)",
+        "study_placeholder": "Tapez le nom de votre université ou école…",
+        "study_none": "Je ne suis pas étudiant",
+        "study_why": "Votre établissement indique votre département, et c'est "
+                     "lui qui détermine la préfecture qui traite votre dossier.",
+        "study_dept": "Département",
+        "study_aca": "Académie",
+        "study_site": "Site officiel",
         "copy": "Copier",
         "copied": "Copié",
         "sources_head": "D'où vient cette réponse",

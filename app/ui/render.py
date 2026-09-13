@@ -153,8 +153,41 @@ def skeleton(active: int = 0, lang: str = "en") -> str:
             f"{lines}</div>")
 
 
+def limit_html(result: AnswerResult, lang: str = "en") -> str:
+    """Running out of allowance is not a fault, and should not read like one.
+
+    The stock message is a wall of quota arithmetic and a link to a billing
+    page. Someone waiting on an answer about their visa needs to know three
+    things: nothing is broken, they did nothing wrong, and when it is back.
+    """
+    wait = ""
+    if result.retry_after:
+        minutes = round(result.retry_after / 60)
+        wait = (t(lang, "limit_wait", mins=minutes) if minutes >= 1
+                else t(lang, "limit_wait_soon"))
+    return (
+        "<div class='rp-limit'>"
+        "<div class='rp-limit-cup'>"
+        "<svg width='30' height='30' viewBox='0 0 32 32' fill='none'>"
+        "<path d='M8 11h14v10a6 6 0 0 1-6 6h-2a6 6 0 0 1-6-6V11Z' "
+        "stroke='currentColor' stroke-width='1.9' stroke-linejoin='round'/>"
+        "<path d='M22 14h3a3 3 0 0 1 0 6h-3' stroke='currentColor' "
+        "stroke-width='1.9' stroke-linejoin='round'/>"
+        "<path d='M12 4.5c-1 1.4-1 2.6 0 4M17 4c-1 1.4-1 2.6 0 4' "
+        "stroke='currentColor' stroke-width='1.7' stroke-linecap='round'/>"
+        "</svg></div>"
+        f"<div><div class='rp-limit-title'>{html.escape(t(lang, 'limit_title'))}</div>"
+        f"<p class='rp-limit-body'>{html.escape(t(lang, 'limit_body'))}</p>"
+        + (f"<p class='rp-limit-wait'>{html.escape(wait)}</p>" if wait else "")
+        + f"<p class='rp-limit-local'>{html.escape(t(lang, 'limit_local'))}</p>"
+        "</div></div>"
+    )
+
+
 def answer_html(result: AnswerResult, streaming: bool = False,
                 lang: str = "en") -> str:
+    if result.rate_limited and not result.text:
+        return limit_html(result, lang)
     if result.error and not result.text:
         return f"<div class='rp-error'>{html.escape(result.error)}</div>"
     if not result.text:

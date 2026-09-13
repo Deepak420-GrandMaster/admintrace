@@ -32,6 +32,8 @@ REASONING_MODELS = ("gpt-oss",)
 MAX_RATE_LIMIT_RETRIES = 2
 MAX_RATE_LIMIT_WAIT = 35.0
 _RETRY_AFTER = re.compile(r"try again in ([\d.]+)s", re.IGNORECASE)
+# The daily allowance says minutes, not seconds.
+_RETRY_AFTER_LONG = re.compile(r"try again in (\d+)m([\d.]+)s", re.IGNORECASE)
 
 
 class _RateLimited(Exception):
@@ -60,7 +62,9 @@ class GroqProvider:
                 if attempt == MAX_RATE_LIMIT_RETRIES:
                     raise ProviderError(
                         f"Groq rate limit reached and still limited after "
-                        f"{attempt + 1} attempts. {limited.detail}"
+                        f"{attempt + 1} attempts. {limited.detail}",
+                        rate_limited=True,
+                        retry_after=limited.retry_after,
                     ) from None
                 time.sleep(min(limited.retry_after, MAX_RATE_LIMIT_WAIT))
         raise ProviderError("Groq rate limit reached")  # unreachable
@@ -85,8 +89,12 @@ class GroqProvider:
             except Exception:
                 pass
             if exc.code == 429:
-                match = _RETRY_AFTER.search(detail)
-                wait = float(match.group(1)) if match else 10.0
+                long_wait = _RETRY_AFTER_LONG.search(detail)
+                if long_wait:
+                    wait = int(long_wait.group(1)) * 60 + float(long_wait.group(2))
+                else:
+                    match = _RETRY_AFTER.search(detail)
+                    wait = float(match.group(1)) if match else 10.0
                 raise _RateLimited(wait, detail) from None
             # The key must never reach a log line or a traceback.
             raise ProviderError(f"Groq refused the request ({exc.code}): {detail}") from None

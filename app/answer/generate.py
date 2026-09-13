@@ -36,6 +36,8 @@ class AnswerResult:
     prepared: PreparedQuery | None = None
     gate: GateDecision | None = None
     error: str | None = None
+    rate_limited: bool = False
+    retry_after: float | None = None
     elapsed: float = 0.0
 
     @property
@@ -134,7 +136,10 @@ def answer_stream(question: str, settings: Settings | None = None,
             question=question, language=prepared.language,
             text="".join(collected), refused=decision.should_refuse,
             citations=citations, services=services, prepared=prepared,
-            gate=decision, error=str(exc), elapsed=time.time() - started,
+            gate=decision, error=str(exc),
+            rate_limited=getattr(exc, "rate_limited", False),
+            retry_after=getattr(exc, "retry_after", None),
+            elapsed=time.time() - started,
         )
         return
 

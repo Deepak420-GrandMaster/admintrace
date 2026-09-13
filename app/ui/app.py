@@ -21,7 +21,10 @@ from app.config import get_settings
 from app.ingest.embed import fetch_all, get_collection
 from app.ingest.fetch import read_manifest
 from app.llm import get_chat_provider
+from app.query.detect import detect
 from app.ui import brand, render
+from app.directory import universities
+from app.feedback import submit as submit_report
 from app.ui.i18n import EXAMPLES, LANGUAGES, t
 
 STYLES = (Path(__file__).resolve().parent / "styles.css").read_text(encoding="utf-8")
@@ -433,7 +436,53 @@ def corpus_html(lang: str = "en") -> str:
             f"<span class='rp-prov {badge[0]}'>{badge[1]}</span>.</div>")
 
 
-def ask(question: str, ui_lang: str, answer_lang: str):
+def institution_choices() -> list[tuple[str, str]]:
+    """Every institution in the register, for the picker."""
+    return [(t("en", "study_none"), "")] + [
+        (f"{i.name}" + (f" · {i.commune}" if i.commune else ""), i.uai)
+        for i in universities.load()
+    ]
+
+
+def institution_context(uai: str, lang: str = "en") -> str:
+    """What the register actually says about where someone studies.
+
+    Only facts that are in the register. It does not say which bank to use:
+    no official source records that, it changes by campus and by year, and
+    newcomers are the most targeted group there is for financial offers.
+    """
+    if not uai:
+        return ""
+    place = universities.by_uai(uai)
+    if place is None:
+        return ""
+
+    rows = []
+    if place.departement:
+        rows.append((t(lang, "study_dept"),
+                     f"{place.departement} ({place.departement_id})"))
+    if place.academie:
+        rows.append((t(lang, "study_aca"), place.academie))
+    cells = "".join(
+        f"<span class='rp-place-cell'><span class='rp-place-key'>"
+        f"{html.escape(key)}</span>{html.escape(value)}</span>"
+        for key, value in rows
+    )
+    site = (f"<a class='rp-place-site' href='{html.escape(place.url)}' "
+            f"target='_blank' rel='noopener noreferrer'>"
+            f"{html.escape(t(lang, 'study_site'))} &#8599;</a>"
+            if place.url else "")
+    return (
+        f"<div class='rp-place'>"
+        f"<div class='rp-place-name'>{html.escape(place.label)}{site}</div>"
+        f"<div class='rp-place-grid'>{cells}</div>"
+        f"<div class='rp-place-why'>{html.escape(t(lang, 'study_why'))}</div>"
+        f"</div>"
+    )
+
+
+def ask(question: str, ui_lang: str, answer_lang: str, uai: str = "",
+        _context: dict | None = None):
     """Stream the answer, its sources, and the retrieval trace."""
     hidden = gr.update(visible=False)
     shown = gr.update(visible=get_settings().debug_panel)
@@ -441,12 +490,20 @@ def ask(question: str, ui_lang: str, answer_lang: str):
     question = (question or "").strip()
     if not question:
         # Say nothing rather than show three empty panels.
-        yield (hidden, hidden, hidden, gr.update(), hidden)
+        yield (hidden, hidden, hidden, gr.update(), hidden, {})
         return
 
     reply_lang = answer_lang if answer_lang in ("en", "fr") else ui_lang
+
+    # Where someone studies narrows the question in a way the corpus can use:
+    # a number of fiches branch per département, and without the département
+    # those branches are never reached.
+    place = universities.by_uai(uai) if uai else None
+    if place is not None and place.departement:
+        question = f"{question} ({place.departement})"
+
     yield (gr.update(value=render.skeleton(0, ui_lang), visible=True),
-           hidden, hidden, gr.update(), hidden)
+           hidden, hidden, gr.update(), hidden, {})
 
     final = None
     for result in answer_stream(question, language=None if answer_lang == "auto"
@@ -454,7 +511,7 @@ def ask(question: str, ui_lang: str, answer_lang: str):
         final = result
         if not result.text:
             yield (gr.update(value=render.skeleton(1, ui_lang), visible=True),
-                   hidden, hidden, gr.update(), hidden)
+                   hidden, hidden, gr.update(), hidden, {})
             continue
         yield (
             gr.update(value=render.answer_html(result, streaming=True,
@@ -465,6 +522,7 @@ def ask(question: str, ui_lang: str, answer_lang: str):
                       visible=bool(result.citations)),
             render.debug_html(result, ui_lang),
             shown,
+            _context_of(result, question, uai),
         )
     if final is not None:
         yield (
@@ -476,6 +534,7 @@ def ask(question: str, ui_lang: str, answer_lang: str):
                       visible=bool(final.citations)),
             render.debug_html(final, ui_lang),
             shown,
+            _context_of(final, question, uai),
         )
 
 
@@ -510,6 +569,14 @@ def build() -> gr.Blocks:
                         value="auto", show_label=False, container=False,
                         elem_classes="rp-switch",
                     )
+                with gr.Row(elem_classes="rp-study-row"):
+                    study = gr.Dropdown(
+                        choices=institution_choices(), value="",
+                        label=t(start, "study_label"), filterable=True,
+                        elem_classes="rp-study", scale=1,
+                    )
+                place_box = gr.HTML(visible=False)
+
                 gr.HTML("<div class='rp-hint'><span class='rp-kbd'>\u2318</span>"
                         "<span class='rp-kbd'>K</span> to jump to the question"
                         " \u00b7 <span class='rp-kbd'>Enter</span> to ask</div>")
@@ -545,19 +612,74 @@ def build() -> gr.Blocks:
                 refresh = gr.Button(t(start, "refresh"),
                                     elem_classes="rp-chip", scale=0)
 
+        with gr.Accordion(t(start, "report_open"), open=False,
+                          elem_classes="rp-report") as report_panel:
+            report_intro = gr.HTML(
+                f"<p class='rp-report-intro'>{html.escape(t(start, 'report_intro'))}</p>")
+            report_text = gr.Textbox(
+                placeholder=t(start, "report_placeholder"), lines=4,
+                show_label=False, elem_classes="rp-report-text")
+            report_keeps = gr.HTML(
+                f"<p class='rp-report-keeps'>{html.escape(t(start, 'report_keeps'))}</p>")
+            report_send = gr.Button(t(start, "report_send"),
+                                    elem_classes="rp-chip", scale=0)
+            report_result = gr.HTML(visible=False)
+
+        def send_report(text: str, lang: str, context: dict):
+            text = (text or "").strip()
+            if not text:
+                return (gr.update(
+                    value=f"<div class='rp-note'>{html.escape(t(lang, 'report_empty'))}</div>",
+                    visible=True), gr.update())
+            context = context or {}
+            report, path = submit_report(
+                text,
+                reporter_language=detect(text).language,
+                question=context.get("question", ""),
+                answer_language=context.get("answer_language", ""),
+                refused=context.get("refused"),
+                sources=context.get("sources") or [],
+                institution=context.get("institution", ""),
+            )
+            note = "" if report.is_triaged else (
+                f"<div class='rp-report-note'>"
+                f"{html.escape(t(lang, 'report_untriaged'))}</div>")
+            headline = (f"<div class='rp-report-headline'>"
+                        f"{html.escape(report.title)}</div>"
+                        if report.is_triaged else "")
+            body = (
+                f"<div class='rp-report-done'>"
+                f"<div class='rp-report-thanks'>"
+                f"{html.escape(t(lang, 'report_thanks'))}</div>"
+                f"{headline}{note}"
+                f"<div class='rp-report-path'>"
+                f"{html.escape(t(lang, 'report_saved_as'))} "
+                f"<code>{html.escape(path.name)}</code></div></div>"
+            )
+            return gr.update(value=body, visible=True), gr.update(value="")
+
         # The disclaimer closes the page rather than interrupting it. It sits
         # below every tab and is never dismissible, so it stays permanently
         # visible — it simply no longer stands between someone and the question
         # they came to ask.
         disclaimer = gr.HTML(disclaimer_block(start))
 
-        outputs = [answer_box, services_box, sources_box, debug_box, debug_acc]
-        inputs = [question, site_lang, reply_lang]
+        last_context = gr.State({})
+        outputs = [answer_box, services_box, sources_box, debug_box, debug_acc,
+                   last_context]
+        report_send.click(send_report, [report_text, site_lang, last_context],
+                          [report_result, report_text])
+        inputs = [question, site_lang, reply_lang, study]
         submit.click(ask, inputs, outputs)
         question.submit(ask, inputs, outputs)
         for chip, text in zip(chips, EXAMPLES[start]):
             chip.click(lambda t=text: t, None, question).then(ask, inputs, outputs)
 
+        def show_place(uai: str, lang: str):
+            body = institution_context(uai, lang)
+            return gr.update(value=body, visible=bool(body))
+
+        study.change(show_place, [study, site_lang], place_box)
         search.change(render.glossary_html, [search, site_lang], gloss_box)
         refresh.click(corpus_html, site_lang, corpus_box)
 
@@ -577,6 +699,11 @@ def build() -> gr.Blocks:
                 gr.update(label="01 · " + t(lang, "tab_ask")),
                 gr.update(label="02 · " + t(lang, "tab_glossary")),
                 gr.update(label="03 · " + t(lang, "tab_corpus")),
+                gr.update(label=t(lang, "report_open")),
+                f"<p class='rp-report-intro'>{html.escape(t(lang, 'report_intro'))}</p>",
+                gr.update(placeholder=t(lang, "report_placeholder")),
+                f"<p class='rp-report-keeps'>{html.escape(t(lang, 'report_keeps'))}</p>",
+                gr.update(value=t(lang, "report_send")),
                 f"<p class='rp-tagline' style='margin:2px 0 14px'>"
                 f"{html.escape(t(lang, 'glossary_intro'))}</p>",
                 gr.update(placeholder=t(lang, "glossary_search")),
@@ -592,6 +719,7 @@ def build() -> gr.Blocks:
             [site_lang, search],
             [head, disclaimer, reply_caption, reply_lang, question, submit,
              try_label, *chips, debug_acc, tab_ask, tab_gloss, tab_corpus,
+             report_panel, report_intro, report_text, report_keeps, report_send,
              gloss_intro, search, gloss_box, corpus_intro, refresh, corpus_box],
         )
 
