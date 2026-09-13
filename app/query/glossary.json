@@ -1,0 +1,851 @@
+{
+  "ANEF": {
+    "aliases_en": [
+      "anef",
+      "foreigners online portal",
+      "immigration portal"
+    ],
+    "definition_id": "R66672",
+    "en": "digital portal for foreign nationals",
+    "explanation_en": "The online platform where many residence-permit procedures are carried out.",
+    "explanation_fr": "Administration numérique des étrangers en France",
+    "source": "service-public.gouv.fr"
+  },
+  "ANTS": {
+    "aliases_en": [
+      "ants",
+      "national agency for secure documents"
+    ],
+    "en": "national agency for secure documents",
+    "explanation_en": "The agency handling official documents such as licences and identity papers.",
+    "explanation_fr": "Agence nationale des titres sécurisés.",
+    "source": "authored"
+  },
+  "APL": {
+    "aliases_en": [
+      "apl",
+      "housing allowance",
+      "housing benefit",
+      "rent assistance"
+    ],
+    "en": "housing benefit",
+    "explanation_en": "A housing benefit paid towards rent.",
+    "explanation_fr": "Aide personnalisée au logement, prestation contribuant au paiement du loyer.",
+    "source": "authored"
+  },
+  "CAF": {
+    "aliases_en": [
+      "benefits office",
+      "caf",
+      "family allowance office"
+    ],
+    "definition_id": "R59888",
+    "en": "family benefits office",
+    "explanation_en": "The body paying family and housing benefits.",
+    "explanation_fr": "Caisse d'allocations familiales",
+    "source": "service-public.gouv.fr"
+  },
+  "CDD": {
+    "aliases_en": [
+      "cdd",
+      "fixed term contract",
+      "temporary contract"
+    ],
+    "en": "fixed-term employment contract",
+    "explanation_en": "An employment contract with a defined end.",
+    "explanation_fr": "Contrat de travail à durée déterminée.",
+    "source": "authored"
+  },
+  "CDI": {
+    "aliases_en": [
+      "cdi",
+      "open ended contract",
+      "permanent contract"
+    ],
+    "en": "permanent employment contract",
+    "explanation_en": "An employment contract with no end date.",
+    "explanation_fr": "Contrat de travail à durée indéterminée.",
+    "source": "authored"
+  },
+  "CPAM": {
+    "aliases_en": [
+      "cpam",
+      "health insurance office",
+      "local health authority"
+    ],
+    "en": "local health insurance office",
+    "explanation_en": "The local office administering health insurance for residents of an area.",
+    "explanation_fr": "Caisse primaire d'assurance maladie, organisme local de l'assurance maladie.",
+    "source": "authored"
+  },
+  "CROUS": {
+    "aliases_en": [
+      "crous",
+      "student housing agency",
+      "student services"
+    ],
+    "en": "student services agency",
+    "explanation_en": "The regional body handling student housing and grants.",
+    "explanation_fr": "Centre régional des œuvres universitaires et scolaires.",
+    "source": "authored"
+  },
+  "DSE": {
+    "aliases_en": [
+      "dse",
+      "student aid application",
+      "student social file"
+    ],
+    "en": "student social file",
+    "explanation_en": "The single application used for student grants and housing.",
+    "explanation_fr": "Dossier social étudiant, demande unique de bourse et de logement.",
+    "source": "authored"
+  },
+  "FranceConnect": {
+    "aliases_en": [
+      "franceconnect",
+      "government login",
+      "single sign on"
+    ],
+    "en": "shared government login",
+    "explanation_en": "A single sign-in used across many public online services.",
+    "explanation_fr": "Dispositif permettant de se connecter à plusieurs services publics en ligne avec un même compte.",
+    "source": "authored"
+  },
+  "IBAN": {
+    "aliases_en": [
+      "iban",
+      "international account number"
+    ],
+    "definition_id": "R74040",
+    "en": "international bank account number",
+    "explanation_en": "The internationally formatted identifier of a bank account.",
+    "explanation_fr": "Identifiant international d’un compte bancaire auprès d’une institution financière dans un pays donné. Les premières lettres de l’IBAN indiquent le pays dans lequel est détenu le compte. Par exemple, le code pays est FR pour la France, DE pour l’Allemagne.",
+    "source": "service-public.gouv.fr"
+  },
+  "OFII": {
+    "aliases_en": [
+      "immigration office",
+      "office of immigration",
+      "ofii"
+    ],
+    "en": "French Office for Immigration and Integration",
+    "explanation_en": "The public body handling parts of the arrival process for foreign nationals.",
+    "explanation_fr": "Office français de l'immigration et de l'intégration.",
+    "source": "authored"
+  },
+  "PACS": {
+    "aliases_en": [
+      "civil partnership",
+      "civil union",
+      "pacs"
+    ],
+    "en": "civil partnership",
+    "explanation_en": "A registered partnership between two people.",
+    "explanation_fr": "Pacte civil de solidarité, contrat entre deux personnes majeures organisant leur vie commune.",
+    "source": "authored"
+  },
+  "RIB": {
+    "aliases_en": [
+      "account details",
+      "bank details",
+      "bank identity statement",
+      "rib"
+    ],
+    "en": "bank account details",
+    "explanation_en": "The slip giving your bank account identifiers for payments.",
+    "explanation_fr": "Relevé d'identité bancaire, document indiquant les identifiants d'un compte bancaire.",
+    "source": "authored"
+  },
+  "SIREN": {
+    "aliases_en": [
+      "business id",
+      "company number",
+      "siren"
+    ],
+    "definition_id": "R73398",
+    "en": "business identification number",
+    "explanation_en": "The number identifying a business as a legal unit.",
+    "explanation_fr": "Acronyme de Système d'identification du répertoire des entreprises. Le numéro de Siren est l’identifiant unique d'une entreprise, composé de 9 chiffres.",
+    "source": "service-public.gouv.fr"
+  },
+  "SIRET": {
+    "aliases_en": [
+      "business number",
+      "company registration number",
+      "siret"
+    ],
+    "definition_id": "R1041",
+    "en": "business establishment number",
+    "explanation_en": "The number identifying a specific business establishment.",
+    "explanation_fr": "Acronyme de Système d'identification du répertoire des établissements. Le numéro de Siret est un identifiant géographique d'un établissement ou d'une entreprise, composé de 14 chiffres.",
+    "source": "service-public.gouv.fr"
+  },
+  "TVA": {
+    "aliases_en": [
+      "sales tax",
+      "tva",
+      "value added tax",
+      "vat"
+    ],
+    "en": "value added tax",
+    "explanation_en": "The tax added to the price of goods and services.",
+    "explanation_fr": "Taxe sur la valeur ajoutée.",
+    "source": "authored"
+  },
+  "URSSAF": {
+    "aliases_en": [
+      "social contributions office",
+      "urssaf"
+    ],
+    "en": "social contributions collection body",
+    "explanation_en": "The body collecting social security contributions, including from the self-employed.",
+    "explanation_fr": "Organisme chargé du recouvrement des cotisations sociales.",
+    "source": "authored"
+  },
+  "VLS-TS": {
+    "aliases_en": [
+      "long stay visa",
+      "long-stay visa equivalent to residence permit",
+      "vls ts",
+      "vls-ts"
+    ],
+    "en": "long-stay visa acting as a residence permit",
+    "explanation_en": "A long-stay visa that serves as a residence permit once validated after arrival, instead of a separate card.",
+    "explanation_fr": "Visa de long séjour valant titre de séjour, qui tient lieu de titre de séjour après validation.",
+    "source": "authored"
+  },
+  "acte de naissance": {
+    "aliases_en": [
+      "acte de naissance",
+      "birth certificate",
+      "birth record"
+    ],
+    "en": "birth certificate",
+    "explanation_en": "The civil-status record of a birth.",
+    "explanation_fr": "Acte d'état civil constatant la naissance d'une personne.",
+    "source": "authored"
+  },
+  "ameli": {
+    "aliases_en": [
+      "ameli",
+      "health insurance account"
+    ],
+    "en": "health insurance online account",
+    "explanation_en": "The online account for health insurance matters.",
+    "explanation_fr": "Service en ligne de l'assurance maladie.",
+    "source": "authored"
+  },
+  "arrêt de travail": {
+    "aliases_en": [
+      "arrêt de travail",
+      "medical certificate",
+      "sick leave",
+      "work stoppage"
+    ],
+    "en": "medical leave certificate",
+    "explanation_en": "A doctor's certificate justifying absence from work.",
+    "explanation_fr": "Document médical justifiant une interruption de travail.",
+    "source": "authored"
+  },
+  "attestation Pôle emploi": {
+    "aliases_en": [
+      "attestation pôle emploi",
+      "employment certificate",
+      "unemployment certificate"
+    ],
+    "en": "employment certificate for benefits",
+    "explanation_en": "An employer document used when claiming unemployment benefits.",
+    "explanation_fr": "Document remis par l'employeur permettant de faire valoir ses droits au chômage.",
+    "source": "authored"
+  },
+  "attestation d'hébergement": {
+    "aliases_en": [
+      "accommodation letter",
+      "attestation d'hébergement",
+      "host certificate",
+      "proof of accommodation"
+    ],
+    "en": "proof of accommodation by a host",
+    "explanation_en": "A statement from someone confirming they house you at their address.",
+    "explanation_fr": "Attestation par laquelle une personne déclare héberger quelqu'un à son domicile.",
+    "source": "authored"
+  },
+  "attestation de droits": {
+    "aliases_en": [
+      "attestation de droits",
+      "certificate of health cover",
+      "insurance certificate",
+      "proof of entitlement"
+    ],
+    "en": "proof of health cover",
+    "explanation_en": "A document stating what health cover you are currently entitled to.",
+    "explanation_fr": "Document indiquant les droits à l'assurance maladie dont une personne bénéficie.",
+    "source": "authored"
+  },
+  "attestation de dépôt": {
+    "aliases_en": [
+      "attestation de dépôt",
+      "filing receipt",
+      "proof of filing",
+      "submission confirmation"
+    ],
+    "en": "filing confirmation",
+    "explanation_en": "Written confirmation that an application has been submitted.",
+    "explanation_fr": "Document confirmant le dépôt d'une demande auprès d'une administration.",
+    "source": "authored"
+  },
+  "attestation de loyer": {
+    "aliases_en": [
+      "attestation de loyer",
+      "landlord certificate",
+      "rent attestation",
+      "rent certificate"
+    ],
+    "en": "landlord rent certificate",
+    "explanation_en": "A form the landlord completes confirming the tenancy and the rent.",
+    "explanation_fr": "Document rempli par le bailleur attestant de la location et du montant du loyer.",
+    "source": "authored"
+  },
+  "auto-entrepreneur": {
+    "aliases_en": [
+      "auto-entrepreneur",
+      "freelancer status",
+      "micro entrepreneur",
+      "self employed status",
+      "sole trader"
+    ],
+    "en": "sole trader under the simplified regime",
+    "explanation_en": "A simplified self-employed status with lighter reporting.",
+    "explanation_fr": "Régime simplifié d'exercice d'une activité indépendante.",
+    "source": "authored"
+  },
+  "autorisation de travail": {
+    "aliases_en": [
+      "autorisation de travail",
+      "work authorisation",
+      "work permit"
+    ],
+    "en": "work authorisation",
+    "explanation_en": "Permission required for a foreign national to take up certain employment.",
+    "explanation_fr": "Autorisation requise pour exercer une activité salariée en France.",
+    "source": "authored"
+  },
+  "avis d'imposition": {
+    "aliases_en": [
+      "avis d'imposition",
+      "tax assessment",
+      "tax notice",
+      "tax statement"
+    ],
+    "en": "tax assessment notice",
+    "explanation_en": "The statement the tax authority issues after a return, often required as proof of income.",
+    "explanation_fr": "Document émis par l'administration fiscale après la déclaration de revenus.",
+    "source": "authored"
+  },
+  "bail": {
+    "aliases_en": [
+      "bail",
+      "lease",
+      "rental contract",
+      "tenancy agreement"
+    ],
+    "en": "lease",
+    "explanation_en": "The rental contract between landlord and tenant.",
+    "explanation_fr": "Contrat de location entre un bailleur et un locataire.",
+    "source": "authored"
+  },
+  "bourse sur critères sociaux": {
+    "aliases_en": [
+      "bourse sur critères sociaux",
+      "means tested grant",
+      "scholarship",
+      "student grant"
+    ],
+    "en": "means-tested student grant",
+    "explanation_en": "A student grant awarded on financial criteria.",
+    "explanation_fr": "Aide financière attribuée à un étudiant selon des critères sociaux.",
+    "source": "authored"
+  },
+  "bulletin de paie": {
+    "aliases_en": [
+      "bulletin de paie",
+      "fiche de paie",
+      "pay stub",
+      "payslip",
+      "salary slip"
+    ],
+    "en": "payslip",
+    "explanation_en": "The statement itemising pay and deductions.",
+    "explanation_fr": "Document remis au salarié détaillant la rémunération et les cotisations.",
+    "source": "authored"
+  },
+  "carte Vitale": {
+    "aliases_en": [
+      "carte vitale",
+      "health card",
+      "health insurance card",
+      "vitale card"
+    ],
+    "en": "health insurance card",
+    "explanation_en": "The card that lets healthcare providers bill the health insurance system directly.",
+    "explanation_fr": "Carte à puce permettant la prise en charge des soins par l'assurance maladie.",
+    "source": "authored"
+  },
+  "carte de résident": {
+    "aliases_en": [
+      "carte de résident",
+      "long term residence card",
+      "resident card"
+    ],
+    "en": "long-term resident card",
+    "explanation_en": "A longer-duration residence card for established residents.",
+    "explanation_fr": "Titre de séjour de longue durée délivré à certains étrangers.",
+    "source": "authored"
+  },
+  "carte de séjour": {
+    "aliases_en": [
+      "carte de séjour",
+      "residence card",
+      "residency permit card"
+    ],
+    "en": "residence card",
+    "explanation_en": "A residence permit issued as a card, valid for a set period and a stated purpose such as study or work.",
+    "explanation_fr": "Titre de séjour délivré sous forme de carte, pour une durée et un motif déterminés.",
+    "source": "authored"
+  },
+  "caution solidaire": {
+    "aliases_en": [
+      "caution solidaire",
+      "cosigner guarantee",
+      "joint guarantee",
+      "solidary guarantee"
+    ],
+    "definition_id": "R64165",
+    "en": "joint and several guarantee",
+    "explanation_en": "A guarantee allowing the landlord to claim from the guarantor directly.",
+    "explanation_fr": "Personne s’engageant envers un créancier à payer la dette du débiteur qui n'a pas satisfait à son obligation. La caution est dite solidaire lorsqu'elle perd les bénéfices de discussion et de division. Elle doit alors payer la dette dans sa totalité et peut être appelée par le créancier dès la première défaillance de paiement du débiteur.",
+    "source": "service-public.gouv.fr"
+  },
+  "changement de statut": {
+    "aliases_en": [
+      "change of status",
+      "changement de statut",
+      "status change",
+      "switch permit type"
+    ],
+    "en": "change of status",
+    "explanation_en": "Moving from one category of residence permit to another, for example from student to employee.",
+    "explanation_fr": "Passage d'une catégorie de titre de séjour à une autre.",
+    "source": "authored"
+  },
+  "charges locatives": {
+    "aliases_en": [
+      "charges locatives",
+      "rental charges",
+      "service charges",
+      "utilities charges"
+    ],
+    "en": "rental charges",
+    "explanation_en": "Costs billed alongside rent for shared services.",
+    "explanation_fr": "Sommes dues par le locataire en plus du loyer pour certains services.",
+    "source": "authored"
+  },
+  "colocation": {
+    "aliases_en": [
+      "colocation",
+      "flatshare",
+      "house share",
+      "roommates",
+      "shared flat"
+    ],
+    "definition_id": "R51039",
+    "en": "flatshare",
+    "explanation_en": "A tenancy shared by several tenants.",
+    "explanation_fr": "Logement loué par plusieurs colocataires, et constituant leur résidence principale commune. Peut reposer sur un bail unique signé par tous les colocataires et le bailleur, ou sur plusieurs contrats signés entre les colocataires et le bailleur. La location exclusive d'un logement à un couple marié ou pacsé n'est pas une colocation.",
+    "source": "service-public.gouv.fr"
+  },
+  "congés payés": {
+    "aliases_en": [
+      "annual leave",
+      "congés payés",
+      "paid holiday",
+      "paid leave",
+      "vacation days"
+    ],
+    "en": "paid leave",
+    "explanation_en": "Paid holiday earned through work.",
+    "explanation_fr": "Jours de congé rémunérés acquis au titre du travail effectué.",
+    "source": "authored"
+  },
+  "convention de stage": {
+    "aliases_en": [
+      "convention de stage",
+      "internship agreement",
+      "internship contract",
+      "traineeship agreement"
+    ],
+    "en": "internship agreement",
+    "explanation_en": "The tripartite agreement between student, school and host organisation.",
+    "explanation_fr": "Convention signée entre le stagiaire, l'établissement d'enseignement et l'organisme d'accueil.",
+    "source": "authored"
+  },
+  "dossier locataire": {
+    "aliases_en": [
+      "dossier locataire",
+      "rental application",
+      "rental file",
+      "tenant file"
+    ],
+    "en": "rental application file",
+    "explanation_en": "The set of documents a prospective tenant provides to a landlord.",
+    "explanation_fr": "Ensemble des documents fournis par un candidat à la location.",
+    "source": "authored"
+  },
+  "déclaration de revenus": {
+    "aliases_en": [
+      "déclaration de revenus",
+      "income declaration",
+      "tax filing",
+      "tax return"
+    ],
+    "en": "income tax return",
+    "explanation_en": "The annual declaration of income to the tax authority.",
+    "explanation_fr": "Déclaration annuelle des revenus à l'administration fiscale.",
+    "source": "authored"
+  },
+  "dépôt de garantie": {
+    "aliases_en": [
+      "deposit",
+      "dépôt de garantie",
+      "rental deposit",
+      "security deposit"
+    ],
+    "definition_id": "R52231",
+    "en": "rental deposit",
+    "explanation_en": "A sum held by the landlord during the tenancy and returned afterwards under conditions.",
+    "explanation_fr": "Somme d'argent versée au propriétaire par le locataire au moment de la signature du bail. Elle doit être rendue au locataire lorsqu'il quitte le logement, après qu'il a rendu les clés du logement au propriétaire. La somme reversée au locataire peut être diminuée du montant des impayés de loyers ou de charges, de frais liés à des dégradations...",
+    "source": "service-public.gouv.fr"
+  },
+  "feuille de soins": {
+    "aliases_en": [
+      "claim form",
+      "feuille de soins",
+      "reimbursement form",
+      "treatment form"
+    ],
+    "en": "paper treatment form",
+    "explanation_en": "A paper form used to claim reimbursement when the card was not used.",
+    "explanation_fr": "Formulaire papier permettant de demander le remboursement de soins.",
+    "source": "authored"
+  },
+  "garant": {
+    "aliases_en": [
+      "cosigner",
+      "garant",
+      "guarantor",
+      "surety"
+    ],
+    "en": "guarantor",
+    "explanation_en": "Someone who undertakes to pay the rent if the tenant does not.",
+    "explanation_fr": "Personne qui s'engage à payer à la place du locataire en cas de défaut.",
+    "source": "authored"
+  },
+  "justificatif de domicile": {
+    "aliases_en": [
+      "address proof",
+      "justificatif de domicile",
+      "proof of address",
+      "proof of residence"
+    ],
+    "en": "proof of address",
+    "explanation_en": "A document accepted as evidence of where you live.",
+    "explanation_fr": "Document servant à prouver l'adresse du domicile d'une personne.",
+    "source": "authored"
+  },
+  "mairie": {
+    "aliases_en": [
+      "city hall",
+      "mairie",
+      "municipality",
+      "town hall"
+    ],
+    "en": "town hall",
+    "explanation_en": "The municipal administration of a commune.",
+    "explanation_fr": "Administration de la commune.",
+    "source": "authored"
+  },
+  "mutuelle": {
+    "aliases_en": [
+      "complementary health insurance",
+      "mutuelle",
+      "supplemental insurance",
+      "top up insurance"
+    ],
+    "en": "supplementary health insurance",
+    "explanation_en": "Optional or employer-provided cover that pays part of what the public system does not.",
+    "explanation_fr": "Organisme de complémentaire santé prenant en charge une part des frais non remboursés.",
+    "source": "authored"
+  },
+  "médecin traitant": {
+    "aliases_en": [
+      "family doctor",
+      "gp",
+      "médecin traitant",
+      "primary care doctor",
+      "referring doctor"
+    ],
+    "en": "registered GP",
+    "explanation_en": "The doctor you register as your main point of contact for healthcare.",
+    "explanation_fr": "Médecin déclaré par un assuré comme son interlocuteur principal pour son suivi médical.",
+    "source": "authored"
+  },
+  "numéro de sécurité sociale": {
+    "aliases_en": [
+      "insurance number",
+      "numéro de sécurité sociale",
+      "social security number",
+      "ssn"
+    ],
+    "en": "social security number",
+    "explanation_en": "The personal number identifying you in the French health and social security system.",
+    "explanation_fr": "Numéro identifiant une personne dans le système de sécurité sociale française.",
+    "source": "authored"
+  },
+  "numéro fiscal": {
+    "aliases_en": [
+      "fiscal number",
+      "numéro fiscal",
+      "tax id",
+      "tax number"
+    ],
+    "en": "tax number",
+    "explanation_en": "The number identifying you to the tax authority.",
+    "explanation_fr": "Numéro identifiant un contribuable auprès de l'administration fiscale.",
+    "source": "authored"
+  },
+  "passeport talent": {
+    "aliases_en": [
+      "passeport talent",
+      "talent passport",
+      "talent permit"
+    ],
+    "en": "talent passport permit",
+    "explanation_en": "A residence permit category for certain qualified profiles.",
+    "explanation_fr": "Catégorie de titre de séjour destinée à certains profils qualifiés.",
+    "source": "authored"
+  },
+  "préavis": {
+    "aliases_en": [
+      "notice",
+      "notice period",
+      "préavis"
+    ],
+    "definition_id": "R65532",
+    "en": "notice period",
+    "explanation_en": "The notice one party must give before ending a contract or tenancy.",
+    "explanation_fr": "Délai qui s’écoule entre la notification de la rupture du contrat de travail (licenciement, démission, etc.) et la date de fin du contrat de travail",
+    "source": "service-public.gouv.fr"
+  },
+  "préfecture": {
+    "aliases_en": [
+      "local state office",
+      "prefecture",
+      "préfecture"
+    ],
+    "en": "prefecture",
+    "explanation_en": "The local branch of the State in a département, responsible for residence permits among other things.",
+    "explanation_fr": "Représentation de l'État dans le département.",
+    "source": "authored"
+  },
+  "prélèvement à la source": {
+    "aliases_en": [
+      "paye",
+      "prélèvement à la source",
+      "source deduction",
+      "tax at source",
+      "withholding tax"
+    ],
+    "en": "pay-as-you-earn withholding",
+    "explanation_en": "Income tax deducted directly from income as it is paid.",
+    "explanation_fr": "Mode de recouvrement de l'impôt consistant à le prélever au moment du versement des revenus.",
+    "source": "authored"
+  },
+  "période d'essai": {
+    "aliases_en": [
+      "probation",
+      "probationary period",
+      "période d'essai",
+      "trial period"
+    ],
+    "en": "probation period",
+    "explanation_en": "An initial period during which either party may end the contract more easily.",
+    "explanation_fr": "Période initiale d'un contrat de travail pendant laquelle il peut être rompu plus librement.",
+    "source": "authored"
+  },
+  "quittance de loyer": {
+    "aliases_en": [
+      "proof of rent payment",
+      "quittance de loyer",
+      "rent receipt"
+    ],
+    "definition_id": "R59747",
+    "en": "rent receipt",
+    "explanation_en": "A receipt confirming rent and charges were paid.",
+    "explanation_fr": "Document qui atteste du paiement intégral du loyer et des charges par le locataire. Le locataire doit en faire la demande au propriétaire. Le propriétaire doit alors lui remettre gratuitement.",
+    "source": "service-public.gouv.fr"
+  },
+  "regroupement familial": {
+    "aliases_en": [
+      "family reunification",
+      "family reunion",
+      "regroupement familial"
+    ],
+    "en": "family reunification",
+    "explanation_en": "The procedure for bringing close family to join a resident.",
+    "explanation_fr": "Procédure permettant de faire venir sa famille proche en France.",
+    "source": "authored"
+  },
+  "rupture conventionnelle": {
+    "aliases_en": [
+      "mutual termination",
+      "rupture conventionnelle",
+      "settlement agreement"
+    ],
+    "en": "mutually agreed termination",
+    "explanation_en": "An agreed end to a permanent employment contract.",
+    "explanation_fr": "Rupture d'un contrat à durée indéterminée d'un commun accord.",
+    "source": "authored"
+  },
+  "récépissé": {
+    "aliases_en": [
+      "proof of application",
+      "receipt",
+      "recepisse",
+      "récépissé",
+      "temporary permit"
+    ],
+    "en": "receipt of application",
+    "explanation_en": "A temporary document proving an application has been filed and is being processed.",
+    "explanation_fr": "Document remis lors du dépôt d'une demande, attestant que celle-ci est en cours d'instruction.",
+    "source": "authored"
+  },
+  "résident fiscal": {
+    "aliases_en": [
+      "fiscal residence",
+      "résident fiscal",
+      "tax residency",
+      "tax resident"
+    ],
+    "en": "tax resident",
+    "explanation_en": "Someone whose tax obligations attach to France.",
+    "explanation_fr": "Personne dont le domicile fiscal est situé en France.",
+    "source": "authored"
+  },
+  "solde de tout compte": {
+    "aliases_en": [
+      "final pay statement",
+      "final settlement",
+      "solde de tout compte"
+    ],
+    "en": "final settlement",
+    "explanation_en": "The statement of everything owed when employment ends.",
+    "explanation_fr": "Document récapitulant les sommes versées au salarié à la fin du contrat.",
+    "source": "authored"
+  },
+  "taxe d'habitation": {
+    "aliases_en": [
+      "council tax",
+      "housing tax",
+      "residence tax",
+      "taxe d'habitation"
+    ],
+    "en": "residence tax",
+    "explanation_en": "A local tax linked to occupying a dwelling.",
+    "explanation_fr": "Impôt local lié à l'occupation d'un logement.",
+    "source": "authored"
+  },
+  "tiers payant": {
+    "aliases_en": [
+      "direct billing",
+      "no upfront payment",
+      "tiers payant"
+    ],
+    "en": "direct billing",
+    "explanation_en": "An arrangement where you do not pay the insured part upfront.",
+    "explanation_fr": "Dispositif dispensant le patient d'avancer les frais pris en charge.",
+    "source": "authored"
+  },
+  "titre de séjour": {
+    "aliases_en": [
+      "residence card",
+      "residence permit",
+      "residency card",
+      "titre de séjour"
+    ],
+    "definition_id": "R62329",
+    "en": "residence permit",
+    "explanation_en": "The document proving you are legally resident in France as a foreign national.",
+    "explanation_fr": "Document sécurisé assurant la reconnaissance par l'autorité publique du droit à séjourner sur le territoire national pour un ressortissant étranger majeur",
+    "source": "service-public.gouv.fr"
+  },
+  "titre de séjour pluriannuel": {
+    "aliases_en": [
+      "multi year permit",
+      "multiannual permit",
+      "titre de séjour pluriannuel"
+    ],
+    "en": "multi-year residence permit",
+    "explanation_en": "A residence permit covering several years at once.",
+    "explanation_fr": "Titre de séjour délivré pour une durée de plusieurs années.",
+    "source": "authored"
+  },
+  "traducteur assermenté": {
+    "aliases_en": [
+      "certified translator",
+      "official translator",
+      "sworn translator",
+      "traducteur assermenté"
+    ],
+    "en": "sworn translator",
+    "explanation_en": "A translator authorised by a court, whose translations administrations accept.",
+    "explanation_fr": "Traducteur habilité par une cour d'appel, dont les traductions sont reconnues par l'administration.",
+    "source": "authored"
+  },
+  "visale": {
+    "aliases_en": [
+      "public guarantor",
+      "rent guarantee",
+      "visale"
+    ],
+    "en": "public rent guarantee",
+    "explanation_en": "A public scheme acting as guarantor for a tenant.",
+    "explanation_fr": "Dispositif public de garantie des loyers.",
+    "source": "authored"
+  },
+  "état civil": {
+    "aliases_en": [
+      "civil status",
+      "registry office",
+      "vital records",
+      "état civil"
+    ],
+    "en": "civil status",
+    "explanation_en": "The official record of births, marriages and deaths.",
+    "explanation_fr": "Ensemble des éléments relatifs à l'identité et à la situation familiale d'une personne.",
+    "source": "authored"
+  },
+  "état des lieux": {
+    "aliases_en": [
+      "check in report",
+      "condition report",
+      "inventory",
+      "walkthrough",
+      "état des lieux"
+    ],
+    "definition_id": "R71996",
+    "en": "property condition report",
+    "explanation_en": "A written record of a property's condition at move-in and move-out.",
+    "explanation_fr": "Document écrit décrivant avec précision l'état d'un bien immobilier et de chaque élément qui le compose (meuble, équipement...), en général à l'occasion de la signature d'un bail. Il est en principe rédigé directement sur les lieux qu'il décrit, en présence du propriétaire et du locataire.",
+    "source": "service-public.gouv.fr"
+  }
+}

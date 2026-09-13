@@ -80,6 +80,7 @@ class Settings:
     llm_provider: str
     groq_base_url: str
     groq_model: str
+    groq_reasoning_effort: str
     groq_api_key: str = field(repr=False)  # never shown in logs or tracebacks
 
     # Local chat, used when llm_provider == "ollama".
@@ -93,14 +94,20 @@ class Settings:
 
     # Retrieval
     retrieval_k: int
+    max_passages_per_document: int
     dense_weight: float
     keyword_weight: float
     relevance_threshold: float
+    answerability_check: bool
 
     # Chunking
     chunk_target_tokens: int
     chunk_max_tokens: int
     embed_max_tokens: int
+    embed_batch_size: int
+    embed_token_budget: int
+    embed_half_precision: bool
+    collection_name: str
 
     # Source feed
     feed_version: str
@@ -162,18 +169,25 @@ def get_settings() -> Settings:
         llm_provider=_raw("LLM_PROVIDER", "groq").lower(),
         groq_base_url=_raw("GROQ_BASE_URL", "https://api.groq.com/openai/v1"),
         groq_model=_raw("GROQ_MODEL", ""),
+        groq_reasoning_effort=_raw("GROQ_REASONING_EFFORT", "low").lower(),
         groq_api_key=_raw("GROQ_API_KEY", ""),
         ollama_base_url=_raw("OLLAMA_BASE_URL", "http://localhost:11434"),
         ollama_chat_model=_raw("OLLAMA_CHAT_MODEL", ""),
         embed_provider=_raw("EMBED_PROVIDER", "sentence-transformers").lower(),
         embed_model=_raw("EMBED_MODEL", "BAAI/bge-m3"),
         retrieval_k=_as_int("RETRIEVAL_K", "6"),
+        max_passages_per_document=_as_int("MAX_PASSAGES_PER_DOCUMENT", "2"),
         dense_weight=_as_float("DENSE_WEIGHT", "0.5"),
         keyword_weight=_as_float("KEYWORD_WEIGHT", "0.5"),
         relevance_threshold=_as_float("RELEVANCE_THRESHOLD", "0.35"),
+        answerability_check=_as_bool("ANSWERABILITY_CHECK", "true"),
         chunk_target_tokens=_as_int("CHUNK_TARGET_TOKENS", "600"),
         chunk_max_tokens=_as_int("CHUNK_MAX_TOKENS", "1200"),
         embed_max_tokens=_as_int("EMBED_MAX_TOKENS", "8192"),
+        embed_batch_size=_as_int("EMBED_BATCH_SIZE", "128"),
+        embed_token_budget=_as_int("EMBED_TOKEN_BUDGET", "24576"),
+        embed_half_precision=_as_bool("EMBED_HALF_PRECISION", "true"),
+        collection_name=_raw("COLLECTION_NAME", "reperes"),
         feed_version=_raw("FEED_VERSION", "3.5"),
         feed_url_template=_raw(
             "FEED_URL_TEMPLATE",
@@ -224,6 +238,10 @@ def _validate(s: Settings) -> None:
         # Groq's agentic models browse the web. That would let facts reach an
         # answer without passing through retrieval, which is the one thing this
         # system must never do.
+        if s.groq_reasoning_effort not in {"low", "medium", "high"}:
+            raise ConfigError(
+                "GROQ_REASONING_EFFORT must be one of: low, medium, high"
+            )
         if s.groq_model.startswith("groq/compound"):
             raise ConfigError(
                 f"GROQ_MODEL={s.groq_model!r} is an agentic model with built-in "

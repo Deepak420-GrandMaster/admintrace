@@ -1,0 +1,369 @@
+/* Repères — light, professional, quiet.
+   The subject matter is stressful and often consequential, so the interface
+   stays calm: generous space, one accent colour, motion that orients rather
+   than entertains. Every animation is suppressed under prefers-reduced-motion. */
+
+:root {
+  --ink:        #16181d;
+  --ink-soft:   #444c57;
+  --ink-muted:  #6b7481;
+  --ink-faint:  #98a1ad;
+
+  --bg:         #faf9f7;
+  --surface:    #ffffff;
+  --surface-2:  #f4f2ee;
+  --border:     #e6e2dc;
+  --border-soft:#efece7;
+
+  --accent:      #1f3fd8;
+  --accent-deep: #16309f;
+  --accent-wash: #eef1fe;
+  --accent-line: #c9d3fb;
+
+  --warn:      #9a5b06;
+  --warn-wash: #fdf5e7;
+  --good:      #0f7a58;
+  --good-wash: #ecf8f3;
+  --stop:      #a33434;
+  --stop-wash: #fdf0ef;
+
+  --radius:    14px;
+  --radius-sm: 9px;
+  --shadow-sm: 0 1px 2px rgba(22,24,29,.05), 0 1px 1px rgba(22,24,29,.03);
+  --shadow-md: 0 4px 16px rgba(22,24,29,.07), 0 1px 3px rgba(22,24,29,.04);
+  --shadow-lg: 0 18px 48px rgba(22,24,29,.10), 0 2px 8px rgba(22,24,29,.05);
+
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, "Segoe UI", Roboto, sans-serif;
+  --serif: "New York", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --ease: cubic-bezier(.22,.61,.36,1);
+}
+
+/* The page commits to a light palette rather than following the host theme:
+   the design is built around paper-like surfaces and would not survive an
+   automatic inversion. */
+.gradio-container, .gradio-container * { color-scheme: light; }
+.gradio-container {
+  background: var(--bg) !important;
+  font-family: var(--sans) !important;
+  color: var(--ink) !important;
+  max-width: 1080px !important;
+  margin: 0 auto !important;
+  padding: 0 20px 72px !important;
+}
+.gradio-container .prose :is(h1,h2,h3,h4) { font-family: var(--sans); }
+footer, .gradio-container > .main > .wrap > .contain > footer { display: none !important; }
+
+/* ---------------------------------------------------------------- masthead */
+.rp-masthead { padding: 38px 0 10px; }
+.rp-wordmark {
+  font-family: var(--serif);
+  font-size: 34px; font-weight: 600; letter-spacing: -.018em;
+  color: var(--ink); margin: 0; line-height: 1.1;
+}
+.rp-wordmark .rp-accent { color: var(--accent); }
+.rp-tagline {
+  margin: 9px 0 0; font-size: 15px; color: var(--ink-muted);
+  max-width: 62ch; line-height: 1.55;
+}
+
+/* Always visible, never dismissible. */
+.rp-disclaimer {
+  display: flex; gap: 10px; align-items: flex-start;
+  margin: 20px 0 6px; padding: 12px 15px;
+  background: var(--warn-wash);
+  border: 1px solid #f0e0c2; border-left: 3px solid var(--warn);
+  border-radius: var(--radius-sm);
+  font-size: 13.5px; color: #6d4204; line-height: 1.5;
+}
+.rp-disclaimer strong { color: var(--warn); font-weight: 650; }
+.rp-disclaimer svg { flex: 0 0 auto; margin-top: 1px; }
+
+/* ------------------------------------------------------------------- tabs */
+.gradio-container .tab-nav, .gradio-container div[role="tablist"] {
+  border-bottom: 1px solid var(--border) !important;
+  gap: 2px !important; margin-bottom: 22px !important;
+}
+.gradio-container button[role="tab"] {
+  background: transparent !important; border: 0 !important;
+  color: var(--ink-muted) !important;
+  font-family: var(--sans) !important; font-size: 14.5px !important;
+  font-weight: 550 !important; padding: 11px 16px !important;
+  border-radius: 0 !important;
+  border-bottom: 2px solid transparent !important;
+  transition: color .18s var(--ease), border-color .18s var(--ease);
+}
+.gradio-container button[role="tab"]:hover { color: var(--ink) !important; }
+.gradio-container button[role="tab"][aria-selected="true"] {
+  color: var(--accent) !important;
+  border-bottom-color: var(--accent) !important;
+}
+.tabitem { animation: rp-tab .34s var(--ease) both; }
+@keyframes rp-tab { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* ------------------------------------------------------------------- input */
+.rp-ask textarea, .gradio-container .rp-ask textarea,
+.gradio-container .rp-ask .input-container textarea {
+  font-family: var(--sans) !important; font-size: 16px !important;
+  line-height: 1.5 !important; color: var(--ink) !important;
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+  padding: 15px 17px !important;
+  box-shadow: var(--shadow-sm) !important;
+  transition: border-color .18s var(--ease), box-shadow .22s var(--ease);
+  resize: none !important;
+}
+.rp-ask textarea:focus, .gradio-container .rp-ask textarea:focus {
+  border-color: var(--accent-line) !important;
+  box-shadow: 0 0 0 4px var(--accent-wash), var(--shadow-sm) !important;
+  outline: none !important;
+}
+.rp-ask textarea::placeholder, .gradio-container .rp-ask textarea::placeholder { color: var(--ink-faint) !important; }
+/* Gradio 6 nests the textarea inside the <label>, so the label itself must
+   stay laid out; only its caption text is hidden. */
+.rp-ask label > span:not(.rp-fr), .rp-ask .head { display: none !important; }
+.gradio-container .rp-ask > .container,
+.gradio-container .rp-ask .input-container {
+  background: transparent !important; border: 0 !important;
+  box-shadow: none !important; padding: 0 !important;
+}
+.gradio-container .rp-ask { padding: 0 !important; border: 0 !important;
+  background: transparent !important; box-shadow: none !important; }
+.gradio-container .rp-submit-row { margin-top: 12px; }
+
+.rp-submit button, button.rp-submit, .gradio-container button.rp-submit {
+  background: var(--accent) !important; color: #fff !important;
+  border: 0 !important; border-radius: var(--radius-sm) !important;
+  font-family: var(--sans) !important; font-size: 14.5px !important;
+  font-weight: 600 !important; letter-spacing: .005em;
+  padding: 12px 22px !important;
+  box-shadow: 0 1px 2px rgba(31,63,216,.28) !important;
+  transition: transform .14s var(--ease), background .18s var(--ease), box-shadow .18s var(--ease);
+}
+.rp-submit button:hover, .gradio-container button.rp-submit:hover {
+  background: var(--accent-deep) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(31,63,216,.24) !important;
+}
+.rp-submit button:active, .gradio-container button.rp-submit:active { transform: translateY(0); }
+
+/* Example questions. */
+/* Gradio lays a Row out as equal-width columns; these must hug their text. */
+.rp-examples { display: flex !important; flex-wrap: wrap !important; gap: 7px;
+  margin: 13px 0 2px; align-items: center; }
+.rp-examples > * { flex: 0 0 auto !important; width: auto !important;
+  min-width: 0 !important; }
+.gradio-container button.rp-chip { white-space: nowrap !important; width: auto !important;
+  min-width: 0 !important; }
+.rp-chip-label { font-size: 12.5px; color: var(--ink-faint); align-self: center; margin-right: 3px; }
+.gradio-container .rp-chip button,
+.gradio-container button.rp-chip {
+  background: var(--surface) !important; color: var(--ink-soft) !important;
+  border: 1px solid var(--border) !important; border-radius: 999px !important;
+  font-size: 13px !important; font-weight: 500 !important;
+  padding: 7px 14px !important; box-shadow: none !important;
+  transition: all .16s var(--ease);
+}
+.gradio-container .rp-chip button:hover,
+.gradio-container button.rp-chip:hover {
+  border-color: var(--accent-line) !important; color: var(--accent) !important;
+  background: var(--accent-wash) !important; transform: translateY(-1px);
+}
+
+/* ------------------------------------------------------------------ answer */
+.rp-answer {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-md);
+  padding: 26px 30px 24px; margin-top: 6px;
+  animation: rp-rise .4s var(--ease) both;
+}
+@keyframes rp-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+.rp-answer h2 {
+  font-family: var(--sans); font-size: 12px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .085em;
+  color: var(--accent); margin: 26px 0 9px; padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.rp-answer h2:first-child { margin-top: 0; }
+.rp-answer p { font-size: 15.5px; line-height: 1.68; color: var(--ink-soft); margin: 0 0 12px; }
+.rp-answer li { font-size: 15.5px; line-height: 1.62; color: var(--ink-soft); margin: 0 0 7px; }
+.rp-answer ul, .rp-answer ol { margin: 0 0 14px; padding-left: 22px; }
+.rp-answer strong { color: var(--ink); font-weight: 620; }
+
+/* French vocabulary the reader will need at a counter. */
+.rp-fr {
+  font-weight: 600; color: var(--accent-deep);
+  background: var(--accent-wash);
+  border-radius: 4px; padding: 1px 5px;
+  box-decoration-break: clone; -webkit-box-decoration-break: clone;
+}
+
+/* The copyable French phrasing. */
+.rp-say {
+  background: var(--accent-wash); border: 1px solid var(--accent-line);
+  border-radius: var(--radius-sm); padding: 15px 18px; margin: 6px 0 4px;
+}
+.rp-say p { color: var(--accent-deep); font-size: 15.5px; margin-bottom: 0; }
+.rp-say-note { font-size: 12px; color: var(--ink-muted); margin-top: 9px !important; font-style: italic; }
+
+/* A refusal is a designed outcome, not an error state. */
+.rp-refusal { border-left: 3px solid var(--ink-faint); background: var(--surface-2); }
+.rp-refusal .rp-badge { background: var(--surface); color: var(--ink-muted); border-color: var(--border); }
+
+.rp-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11.5px; font-weight: 650; letter-spacing: .04em; text-transform: uppercase;
+  padding: 5px 10px; border-radius: 999px; margin-bottom: 16px;
+  background: var(--good-wash); color: var(--good); border: 1px solid #cceadd;
+}
+.rp-badge .rp-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+/* Caret while the answer streams in. */
+.rp-caret {
+  display: inline-block; width: 2px; height: 1.05em; vertical-align: -.16em;
+  background: var(--accent); margin-left: 2px; animation: rp-blink 1.05s steps(2, start) infinite;
+}
+@keyframes rp-blink { to { visibility: hidden; } }
+
+/* ----------------------------------------------------------------- sources */
+.rp-sources-head {
+  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .085em;
+  color: var(--ink-muted); margin: 30px 0 12px;
+}
+.rp-source {
+  display: block; text-align: left; background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 15px 17px; margin-bottom: 9px;
+  text-decoration: none !important; color: inherit !important;
+  box-shadow: var(--shadow-sm);
+  animation-name: rp-rise; animation-duration: .42s;
+  animation-timing-function: cubic-bezier(.22,.61,.36,1);
+  animation-fill-mode: both;
+  animation-delay: calc(var(--i, 0) * 65ms);
+  transition: border-color .18s var(--ease), box-shadow .22s var(--ease), transform .18s var(--ease);
+}
+.rp-source:hover {
+  border-color: var(--accent-line); box-shadow: var(--shadow-md); transform: translateY(-2px);
+}
+.rp-source-title {
+  font-size: 15px; font-weight: 620; color: var(--ink); line-height: 1.4; margin-bottom: 5px;
+}
+.rp-source:hover .rp-source-title { color: var(--accent); }
+.rp-source-meta {
+  display: flex; flex-wrap: wrap; gap: 5px 12px; align-items: center;
+  font-size: 12.5px; color: var(--ink-muted);
+}
+.rp-source-id { font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint); }
+.rp-scope {
+  background: var(--surface-2); border: 1px solid var(--border-soft);
+  border-radius: 4px; padding: 1px 7px; font-size: 11.5px; color: var(--ink-soft);
+}
+.rp-date-suspect { color: var(--warn); }
+
+/* Retrieval score, drawn rather than printed. */
+.rp-score { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.rp-score-track { width: 64px; height: 4px; border-radius: 2px; background: var(--surface-2); overflow: hidden; }
+.rp-score-fill {
+  display: block; height: 100%; border-radius: 2px; background: var(--accent);
+  width: var(--w, 0%);
+  animation-name: rp-fill;
+  animation-duration: .85s;
+  animation-timing-function: cubic-bezier(.22,.61,.36,1);
+  animation-fill-mode: both;
+  animation-delay: calc(var(--i, 0) * 65ms + 160ms);
+}
+@keyframes rp-fill { from { width: 0; } to { width: var(--w, 0%); } }
+.rp-score-value { font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint); min-width: 30px; }
+
+/* ------------------------------------------------------------------- debug */
+.rp-debug { font-size: 13px; }
+.rp-debug-grid {
+  display: grid; grid-template-columns: 165px 1fr; gap: 7px 16px;
+  padding: 4px 0 14px; border-bottom: 1px solid var(--border-soft); margin-bottom: 14px;
+}
+.rp-debug-key { color: var(--ink-muted); font-size: 12.5px; }
+.rp-debug-val { color: var(--ink); font-size: 12.5px; word-break: break-word; }
+.rp-debug-val code { font-family: var(--mono); font-size: 11.5px; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+.rp-gate-pass { color: var(--good); font-weight: 620; }
+.rp-gate-fail { color: var(--stop); font-weight: 620; }
+.rp-chunk {
+  border: 1px solid var(--border-soft); border-radius: var(--radius-sm);
+  padding: 10px 12px; margin-bottom: 7px; background: var(--surface);
+}
+.rp-chunk.rp-dropped { background: var(--stop-wash); border-color: #f2dbd9; }
+.rp-chunk-head { display: flex; align-items: center; gap: 9px; font-size: 12px; margin-bottom: 5px; flex-wrap: wrap; }
+.rp-chunk-id { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); }
+.rp-tag {
+  font-size: 10.5px; font-weight: 650; text-transform: uppercase; letter-spacing: .04em;
+  padding: 2px 6px; border-radius: 4px; background: var(--accent-wash); color: var(--accent);
+}
+.rp-tag.rp-tag-kw { background: #f3f0e7; color: #7a6420; }
+.rp-chunk-text { font-size: 12px; color: var(--ink-muted); line-height: 1.5; }
+
+/* Skeleton shown while retrieval runs. */
+.rp-skeleton { padding: 26px 30px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); }
+.rp-sk-line { height: 11px; border-radius: 5px; margin-bottom: 11px;
+  background: linear-gradient(90deg, var(--surface-2) 25%, #ece8e2 37%, var(--surface-2) 63%);
+  background-size: 400% 100%; animation: rp-shimmer 1.3s ease-in-out infinite; }
+@keyframes rp-shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+.rp-sk-status { font-size: 13px; color: var(--ink-muted); margin-bottom: 15px; display: flex; align-items: center; gap: 9px; }
+.rp-spinner {
+  width: 13px; height: 13px; border: 2px solid var(--accent-line);
+  border-top-color: var(--accent); border-radius: 50%; animation: rp-spin .7s linear infinite;
+}
+@keyframes rp-spin { to { transform: rotate(360deg); } }
+
+/* ---------------------------------------------------------------- glossary */
+.rp-gloss-search input, .gradio-container .rp-gloss-search input {
+  font-family: var(--sans) !important; font-size: 14.5px !important;
+  border: 1px solid var(--border) !important; border-radius: var(--radius-sm) !important;
+  background: var(--surface) !important; padding: 11px 14px !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+.rp-gloss-search input:focus { border-color: var(--accent-line) !important; box-shadow: 0 0 0 4px var(--accent-wash) !important; outline: none !important; }
+.rp-gloss-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 11px; }
+.rp-gloss {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 15px 17px;
+  box-shadow: var(--shadow-sm);
+  animation-name: rp-rise; animation-duration: .4s;
+  animation-timing-function: cubic-bezier(.22,.61,.36,1);
+  animation-fill-mode: both; animation-delay: calc(var(--i, 0) * 22ms);
+  transition: border-color .18s var(--ease), box-shadow .2s var(--ease), transform .18s var(--ease);
+}
+.rp-gloss:hover { border-color: var(--accent-line); box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.rp-gloss-fr { font-size: 15.5px; font-weight: 640; color: var(--ink); }
+.rp-gloss-en { font-size: 13.5px; color: var(--accent); margin: 2px 0 9px; font-weight: 520; }
+.rp-gloss-def { font-size: 13.5px; line-height: 1.55; color: var(--ink-soft); margin-bottom: 7px; }
+.rp-gloss-def-fr { font-size: 13px; line-height: 1.55; color: var(--ink-muted); padding-top: 9px; border-top: 1px dashed var(--border); }
+.rp-prov { display: inline-block; font-size: 10.5px; font-weight: 620; letter-spacing: .03em; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; margin-top: 9px; }
+.rp-prov-official { background: var(--good-wash); color: var(--good); }
+.rp-prov-authored { background: var(--surface-2); color: var(--ink-muted); }
+
+/* ------------------------------------------------------------------ corpus */
+.rp-stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 11px; margin-bottom: 22px; }
+.rp-stat {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 17px 19px; box-shadow: var(--shadow-sm);
+  animation-name: rp-rise; animation-duration: .4s;
+  animation-timing-function: cubic-bezier(.22,.61,.36,1);
+  animation-fill-mode: both; animation-delay: calc(var(--i, 0) * 55ms);
+}
+.rp-stat-value { font-family: var(--serif); font-size: 27px; font-weight: 600; color: var(--ink); line-height: 1.1; letter-spacing: -.01em; }
+.rp-stat-label { font-size: 12.5px; color: var(--ink-muted); margin-top: 5px; }
+.rp-note { font-size: 13px; color: var(--ink-muted); line-height: 1.6; background: var(--surface-2); border-radius: var(--radius-sm); padding: 14px 16px; margin-top: 6px; }
+.rp-note a { color: var(--accent); }
+
+.rp-error { background: var(--stop-wash); border: 1px solid #f2dbd9; border-left: 3px solid var(--stop);
+  border-radius: var(--radius-sm); padding: 14px 16px; font-size: 13.5px; color: #7d2b2b; line-height: 1.55; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important; animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+  .rp-score-fill { width: var(--w, 0%) !important; animation: none !important; }
+}

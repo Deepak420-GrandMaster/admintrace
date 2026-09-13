@@ -1,0 +1,382 @@
+meta:
+  version: 1
+  language_pair: [en, fr]
+  note: >
+    Seed set collected from Campus France, ameli forums, CAF guides, expat and
+    relocation sites, tenant guides and impots.gouv.fr. expected_fiche_id is
+    filled in after the first ingestion run, never guessed.
+
+questions:
+
+  # ---------------- STUDENTS ----------------
+
+  - id: stu-001
+    segment: student
+    topic: visa_validation
+    en: "I just arrived in France on a student visa. How do I validate my VLS-TS and by when?"
+    fr: "Je viens d'arriver en France avec un visa étudiant. Comment valider mon VLS-TS et dans quel délai ?"
+    expected_fiche_id:
+
+  - id: stu-002
+    segment: student
+    topic: visa_validation
+    en: "What happens if I missed the three-month deadline to validate my visa?"
+    fr: "Que se passe-t-il si j'ai dépassé le délai de trois mois pour valider mon visa ?"
+    expected_fiche_id:
+
+  - id: stu-003
+    segment: student
+    topic: health_registration
+    en: "How do I register for French social security as an international student?"
+    fr: "Comment s'inscrire à la sécurité sociale française quand on est étudiant étranger ?"
+    expected_fiche_id:
+
+  - id: stu-004
+    segment: student
+    topic: health_registration
+    en: "My social security number starts with 7. Is that a real number and when does it become permanent?"
+    fr: "Mon numéro de sécurité sociale commence par 7. Est-ce un vrai numéro et quand devient-il définitif ?"
+    expected_fiche_id:
+
+  - id: stu-005
+    segment: student
+    topic: health_card
+    en: "How do I get my carte Vitale and what do I do while I'm waiting for it?"
+    fr: "Comment obtenir ma carte Vitale et que faire en attendant de la recevoir ?"
+    expected_fiche_id:
+
+  - id: stu-006
+    segment: student
+    topic: health_reimbursement
+    en: "Can I see a doctor and get reimbursed before my carte Vitale arrives?"
+    fr: "Puis-je consulter un médecin et être remboursé avant de recevoir ma carte Vitale ?"
+    expected_fiche_id:
+
+  - id: stu-007
+    segment: student
+    topic: housing_aid
+    en: "How do I apply for CAF housing aid as a student?"
+    fr: "Comment demander l'aide au logement de la CAF quand on est étudiant ?"
+    expected_fiche_id:
+
+  - id: stu-008
+    segment: student
+    topic: housing_aid
+    en: "Why does CAF want a translated birth certificate and who is allowed to translate it?"
+    fr: "Pourquoi la CAF demande un acte de naissance traduit et qui peut le traduire ?"
+    expected_fiche_id:
+
+  - id: stu-009
+    segment: student
+    topic: housing_aid
+    en: "How long does the first CAF payment take and is it backdated?"
+    fr: "Combien de temps avant le premier versement de la CAF et est-il rétroactif ?"
+    expected_fiche_id:
+
+  - id: stu-010
+    segment: student
+    topic: housing_aid
+    en: "Can I claim CAF if I live in a shared flat or in a CROUS residence?"
+    fr: "Puis-je percevoir la CAF en colocation ou en résidence CROUS ?"
+    expected_fiche_id:
+
+  - id: stu-011
+    segment: student
+    topic: work_rights
+    en: "How many hours per year can I work on a student residence permit?"
+    fr: "Combien d'heures par an puis-je travailler avec un titre de séjour étudiant ?"
+    expected_fiche_id:
+
+  - id: stu-012
+    segment: student
+    topic: internship
+    en: "Do I need a work permit to do a paid internship?"
+    fr: "Ai-je besoin d'une autorisation de travail pour effectuer un stage rémunéré ?"
+    expected_fiche_id:
+
+  - id: stu-013
+    segment: student
+    topic: internship
+    en: "What is a convention de stage and who has to sign it?"
+    fr: "Qu'est-ce qu'une convention de stage et qui doit la signer ?"
+    expected_fiche_id:
+
+  - id: stu-014
+    segment: student
+    topic: permit_renewal
+    en: "How and when do I renew my student residence permit?"
+    fr: "Comment et quand renouveler mon titre de séjour étudiant ?"
+    expected_fiche_id:
+
+  - id: stu-015
+    segment: student
+    topic: permit_renewal
+    en: "What is a récépissé and can I travel outside France with it?"
+    fr: "Qu'est-ce qu'un récépissé et puis-je voyager hors de France avec ?"
+    expected_fiche_id:
+
+  - id: stu-016
+    segment: student
+    topic: post_study
+    en: "How do I apply for the job-search permit after I graduate?"
+    fr: "Comment demander le titre de séjour recherche d'emploi après l'obtention de mon diplôme ?"
+    expected_fiche_id:
+
+  - id: stu-017
+    segment: student
+    topic: status_change
+    en: "How do I change my status from student to salarié?"
+    fr: "Comment effectuer un changement de statut d'étudiant à salarié ?"
+    expected_fiche_id:
+
+  - id: stu-018
+    segment: student
+    topic: banking
+    en: "Can I open a French bank account before my residence permit arrives?"
+    fr: "Puis-je ouvrir un compte bancaire français avant de recevoir mon titre de séjour ?"
+    expected_fiche_id:
+
+  # ---------------- WORKERS ----------------
+
+  - id: wrk-001
+    segment: worker
+    topic: onboarding
+    en: "What documents does my employer need before my first day of work?"
+    fr: "Quels documents mon employeur doit-il recevoir avant mon premier jour de travail ?"
+    expected_fiche_id:
+
+  - id: wrk-002
+    segment: worker
+    topic: payslip
+    en: "How do I read a French payslip and what are all these deductions?"
+    fr: "Comment lire une fiche de paie française et à quoi correspondent toutes les cotisations ?"
+    expected_fiche_id:
+
+  - id: wrk-003
+    segment: worker
+    topic: contract
+    en: "What is the difference between a CDI and a CDD, and what is a période d'essai?"
+    fr: "Quelle est la différence entre un CDI et un CDD, et qu'est-ce que la période d'essai ?"
+    expected_fiche_id:
+
+  - id: wrk-004
+    segment: worker
+    topic: health_insurance
+    en: "Is the company mutuelle mandatory and can I refuse it?"
+    fr: "La mutuelle d'entreprise est-elle obligatoire et puis-je la refuser ?"
+    expected_fiche_id:
+
+  - id: wrk-005
+    segment: worker
+    topic: health_registration
+    en: "I was a student and now I have a job. How do I update my CPAM registration?"
+    fr: "J'étais étudiant et je viens de commencer à travailler. Comment mettre à jour mon dossier CPAM ?"
+    expected_fiche_id:
+
+  - id: wrk-006
+    segment: worker
+    topic: tax_residency
+    en: "At what point do I become a French tax resident?"
+    fr: "À partir de quand suis-je considéré comme résident fiscal français ?"
+    expected_fiche_id:
+
+  - id: wrk-007
+    segment: worker
+    topic: tax_filing
+    en: "How do I file my first French tax return and get a numéro fiscal?"
+    fr: "Comment faire ma première déclaration d'impôts en France et obtenir un numéro fiscal ?"
+    expected_fiche_id:
+
+  - id: wrk-008
+    segment: worker
+    topic: tax_filing
+    en: "Do I have to declare my foreign bank accounts and income earned abroad?"
+    fr: "Dois-je déclarer mes comptes bancaires à l'étranger et mes revenus étrangers ?"
+    expected_fiche_id:
+
+  - id: wrk-009
+    segment: worker
+    topic: tax_withholding
+    en: "What is prélèvement à la source and why is my rate wrong?"
+    fr: "Qu'est-ce que le prélèvement à la source et pourquoi mon taux est-il incorrect ?"
+    expected_fiche_id:
+
+  - id: wrk-010
+    segment: worker
+    topic: leave
+    en: "How many paid holidays am I entitled to in my first year?"
+    fr: "À combien de jours de congés payés ai-je droit la première année ?"
+    expected_fiche_id:
+
+  - id: wrk-011
+    segment: worker
+    topic: permit_risk
+    en: "What happens to my residence permit if I resign or lose my job?"
+    fr: "Que devient mon titre de séjour si je démissionne ou perds mon emploi ?"
+    expected_fiche_id:
+
+  - id: wrk-012
+    segment: worker
+    topic: permit_renewal
+    en: "How do I renew a salarié permit or move to a multi-year card?"
+    fr: "Comment renouveler un titre de séjour salarié ou obtenir une carte pluriannuelle ?"
+    expected_fiche_id:
+
+  - id: wrk-013
+    segment: worker
+    topic: permit_type
+    en: "What is the passeport talent and do I qualify for it?"
+    fr: "Qu'est-ce que le passeport talent et est-ce que j'y suis éligible ?"
+    expected_fiche_id:
+
+  # ---------------- FREELANCE ----------------
+
+  - id: frl-001
+    segment: freelance
+    topic: registration
+    en: "Can I register as an auto-entrepreneur on my current residence permit?"
+    fr: "Puis-je m'inscrire comme auto-entrepreneur avec mon titre de séjour actuel ?"
+    expected_fiche_id:
+
+  - id: frl-002
+    segment: freelance
+    topic: contributions
+    en: "How do I register with URSSAF and what will I actually pay in contributions?"
+    fr: "Comment s'inscrire à l'URSSAF et quelles cotisations vais-je réellement payer ?"
+    expected_fiche_id:
+
+  - id: frl-003
+    segment: freelance
+    topic: vat
+    en: "Do I need to charge TVA and from what turnover?"
+    fr: "Dois-je facturer la TVA et à partir de quel chiffre d'affaires ?"
+    expected_fiche_id:
+
+  - id: frl-004
+    segment: freelance
+    topic: dual_activity
+    en: "Can I freelance on the side while working full-time as an employee?"
+    fr: "Puis-je exercer une activité indépendante en parallèle d'un emploi salarié à temps plein ?"
+    expected_fiche_id:
+
+  - id: frl-005
+    segment: freelance
+    topic: permit_risk
+    en: "How does freelance income affect my residence permit renewal?"
+    fr: "Comment mes revenus d'indépendant affectent-ils le renouvellement de mon titre de séjour ?"
+    expected_fiche_id:
+
+  # ---------------- FAMILY ----------------
+
+  - id: fam-001
+    segment: family
+    topic: spouse_work
+    en: "Can my spouse work in France on their accompanying visa?"
+    fr: "Mon conjoint peut-il travailler en France avec son visa accompagnant ?"
+    expected_fiche_id:
+
+  - id: fam-002
+    segment: family
+    topic: family_reunification
+    en: "How does regroupement familial work and how long does it take?"
+    fr: "Comment fonctionne le regroupement familial et combien de temps cela prend-il ?"
+    expected_fiche_id:
+
+  - id: fam-003
+    segment: family
+    topic: schooling
+    en: "How do I enrol my child in a French school after arriving mid-year?"
+    fr: "Comment inscrire mon enfant à l'école en France en cours d'année ?"
+    expected_fiche_id:
+
+  - id: fam-004
+    segment: family
+    topic: pacs
+    en: "What is a PACS and does it help with my residence status?"
+    fr: "Qu'est-ce qu'un PACS et cela aide-t-il pour mon titre de séjour ?"
+    expected_fiche_id:
+
+  - id: fam-005
+    segment: family
+    topic: birth
+    en: "My baby was born in France. What do I need to declare and where?"
+    fr: "Mon enfant est né en France. Quelles démarches dois-je faire et auprès de qui ?"
+    expected_fiche_id:
+
+  # ---------------- GENERAL ----------------
+
+  - id: gen-001
+    segment: general
+    topic: banking
+    en: "How do I open a French bank account and get a RIB?"
+    fr: "Comment ouvrir un compte bancaire en France et obtenir un RIB ?"
+    expected_fiche_id:
+
+  - id: gen-002
+    segment: general
+    topic: proof_of_address
+    en: "What counts as a justificatif de domicile when I've only just arrived?"
+    fr: "Qu'est-ce qui est accepté comme justificatif de domicile quand on vient d'arriver ?"
+    expected_fiche_id:
+
+  - id: gen-003
+    segment: general
+    topic: proof_of_address
+    en: "What is an attestation d'hébergement and who has to write it?"
+    fr: "Qu'est-ce qu'une attestation d'hébergement et qui doit la rédiger ?"
+    expected_fiche_id:
+
+  - id: gen-004
+    segment: general
+    topic: renting
+    en: "What documents go into a dossier locataire?"
+    fr: "Quels documents faut-il pour constituer un dossier locataire ?"
+    expected_fiche_id:
+
+  - id: gen-005
+    segment: general
+    topic: renting
+    en: "I have no French guarantor. What are my options?"
+    fr: "Je n'ai pas de garant en France. Quelles sont mes options ?"
+    expected_fiche_id:
+
+  - id: gen-006
+    segment: general
+    topic: renting
+    en: "How much deposit can a landlord legally ask for and when do I get it back?"
+    fr: "Quel montant de dépôt de garantie le propriétaire peut-il demander et quand est-il restitué ?"
+    expected_fiche_id:
+
+  - id: gen-007
+    segment: general
+    topic: utilities
+    en: "How do I set up electricity, internet and a phone plan?"
+    fr: "Comment souscrire à l'électricité, à internet et à un forfait mobile ?"
+    expected_fiche_id:
+
+  - id: gen-008
+    segment: general
+    topic: driving
+    en: "Do I need to exchange my foreign driving licence and what is the deadline?"
+    fr: "Dois-je échanger mon permis de conduire étranger et quelle est la date limite ?"
+    expected_fiche_id:
+
+  - id: gen-009
+    segment: general
+    topic: digital_identity
+    en: "What is FranceConnect and which accounts do I need to create first?"
+    fr: "Qu'est-ce que FranceConnect et quels comptes dois-je créer en premier ?"
+    expected_fiche_id:
+
+  - id: gen-010
+    segment: general
+    topic: prefecture_access
+    expect_refusal: true
+    en: "There are no appointment slots at my préfecture. What can I do?"
+    fr: "Il n'y a aucun créneau de rendez-vous à ma préfecture. Que puis-je faire ?"
+    expected_fiche_id:
+    note: >
+      REFUSAL TEST. Probably the most-asked question of all, and no official
+      corpus answers it, because practice varies by département. The system
+      must refuse and point to a human channel. If it produces a confident
+      answer here, the relevance gate is broken.
