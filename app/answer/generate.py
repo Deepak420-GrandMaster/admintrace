@@ -14,7 +14,7 @@ from dataclasses import dataclass, field, replace
 from typing import Iterator
 
 from app.answer import cite, prompts
-from app.answer.cite import Citation
+from app.answer.cite import Citation, ServiceLink
 from app.config import Settings, get_settings
 from app.llm import ChatMessage, ProviderError, get_chat_provider
 from app.query.normalize import PreparedQuery, prepare
@@ -32,6 +32,7 @@ class AnswerResult:
     text: str
     refused: bool
     citations: list[Citation] = field(default_factory=list)
+    services: list[ServiceLink] = field(default_factory=list)
     prepared: PreparedQuery | None = None
     gate: GateDecision | None = None
     error: str | None = None
@@ -106,10 +107,11 @@ def answer_stream(question: str, settings: Settings | None = None,
         prepared = replace(prepared, language=wanted)
 
     citations = [] if decision.should_refuse else cite.build(decision.passed)
+    services = [] if decision.should_refuse else cite.service_links(decision.passed)
 
     partial = AnswerResult(
         question=question, language=prepared.language, text="",
-        refused=decision.should_refuse, citations=citations,
+        refused=decision.should_refuse, citations=citations, services=services,
         prepared=prepared, gate=decision,
     )
     yield partial
@@ -123,22 +125,22 @@ def answer_stream(question: str, settings: Settings | None = None,
             partial = AnswerResult(
                 question=question, language=prepared.language,
                 text="".join(collected), refused=decision.should_refuse,
-                citations=citations, prepared=prepared, gate=decision,
-                elapsed=time.time() - started,
+                citations=citations, services=services, prepared=prepared,
+                gate=decision, elapsed=time.time() - started,
             )
             yield partial
     except ProviderError as exc:
         yield AnswerResult(
             question=question, language=prepared.language,
             text="".join(collected), refused=decision.should_refuse,
-            citations=citations, prepared=prepared, gate=decision,
-            error=str(exc), elapsed=time.time() - started,
+            citations=citations, services=services, prepared=prepared,
+            gate=decision, error=str(exc), elapsed=time.time() - started,
         )
         return
 
     yield AnswerResult(
         question=question, language=prepared.language, text="".join(collected).strip(),
-        refused=decision.should_refuse, citations=citations,
+        refused=decision.should_refuse, citations=citations, services=services,
         prepared=prepared, gate=decision, elapsed=time.time() - started,
     )
 

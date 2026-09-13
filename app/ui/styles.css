@@ -1,4 +1,4 @@
-/* Repères — light, professional, quiet.
+/* Sésame — light, professional, quiet.
    The subject matter is stressful and often consequential, so the interface
    stays calm: generous space, one accent colour, motion that orients rather
    than entertains. Every animation is suppressed under prefers-reduced-motion. */
@@ -38,7 +38,38 @@
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
   --ease: cubic-bezier(.22,.61,.36,1);
+
+  /* The whole surface animates when the palette swaps, so changing language
+     reads as the page turning over rather than as text being replaced. */
+  --swap: 620ms cubic-bezier(.22,.61,.36,1);
 }
+
+/* ------------------------------------------------------------ palettes
+   Each language gets its own light. English sits on cool paper under an
+   indigo accent; French on warm ivory under a deeper blue, with the red of
+   the tricolore kept for small emphasis. The marker element is rendered by
+   the masthead, so the palette follows the language with no scripting. */
+.gradio-container:has(.rp-theme-fr) {
+  --accent:      #123a8c;
+  --accent-deep: #0c2860;
+  --accent-wash: #eef2fb;
+  --accent-line: #c2d0ec;
+  --bg:          #fbf9f5;
+  --surface-2:   #f4f0e8;
+  --border:      #e7e0d4;
+  --border-soft: #efe9de;
+  --ink:         #171922;
+  --stop:        #a5262b;
+}
+.gradio-container:has(.rp-theme-fr) .rp-wordmark .rp-accent { color: #c8102e; }
+
+.gradio-container, .gradio-container .rp-answer, .gradio-container .rp-source,
+.gradio-container .rp-gloss, .gradio-container .rp-stat,
+.gradio-container .rp-note, .gradio-container .rp-say {
+  transition: background-color var(--swap), border-color var(--swap),
+              color var(--swap);
+}
+.rp-theme { display: none; }
 
 /* The page commits to a light palette rather than following the host theme:
    the design is built around paper-like surfaces and would not survive an
@@ -56,7 +87,25 @@
 footer, .gradio-container > .main > .wrap > .contain > footer { display: none !important; }
 
 /* ---------------------------------------------------------------- masthead */
-.rp-masthead { padding: 34px 0 8px; }
+.rp-masthead { padding: 34px 0 8px; position: relative; }
+
+/* --------------------------------------------------- top bar + switcher */
+.rp-topbar {
+  display: flex !important; align-items: flex-start !important;
+  justify-content: space-between !important; gap: 18px;
+  flex-wrap: nowrap !important; margin: 0 !important;
+}
+.rp-topbar > *:first-child { flex: 1 1 auto !important; min-width: 0 !important; }
+.rp-topbar > *:last-child {
+  flex: 0 0 auto !important; width: auto !important; min-width: 0 !important;
+  display: flex !important; justify-content: flex-end !important;
+  padding-top: 30px !important;
+}
+.rp-flag { border-radius: 50%; flex: 0 0 auto; display: inline-block;
+  vertical-align: -3px; margin-right: 7px;
+  transition: transform .3s var(--ease); }
+.gradio-container .rp-switch label:has(input:checked) .rp-flag,
+.gradio-container .rp-switch label.selected .rp-flag { transform: scale(1.08); }
 
 /* ------------------------------------------------------------ brand mark */
 .rp-brand { display: flex; align-items: center; gap: 14px; }
@@ -66,14 +115,14 @@ footer, .gradio-container > .main > .wrap > .contain > footer { display: none !i
   animation: rp-draw 1.15s cubic-bezier(.22,.61,.36,1) .15s both;
 }
 @keyframes rp-draw { to { stroke-dashoffset: 0; } }
-.rp-mark-needle { transform-origin: 24px 24px; }
-.rp-brand:hover .rp-mark-needle {
-  animation: rp-bearing 1.4s cubic-bezier(.34,.9,.3,1) both;
+.rp-mark-key { transform-origin: 19.5px 19.5px; }
+.rp-brand:hover .rp-mark-key {
+  animation: rp-turn 1.25s cubic-bezier(.34,.9,.3,1) both;
 }
-@keyframes rp-bearing {
+@keyframes rp-turn {
   0% { transform: rotate(0deg); }
-  38% { transform: rotate(-13deg); }
-  70% { transform: rotate(7deg); }
+  42% { transform: rotate(-26deg); }
+  74% { transform: rotate(6deg); }
   100% { transform: rotate(0deg); }
 }
 .rp-wordmark {
@@ -126,7 +175,7 @@ footer, .gradio-container > .main > .wrap > .contain > footer { display: none !i
 }
 .gradio-container .rp-switch label {
   display: inline-flex !important; align-items: center !important;
-  margin: 0 !important; padding: 6px 15px !important;
+  gap: 0 !important; margin: 0 !important; padding: 6px 14px !important;
   border: 0 !important; border-radius: 999px !important;
   background: transparent !important; box-shadow: none !important;
   font-size: 13px !important; font-weight: 560 !important;
@@ -210,7 +259,14 @@ footer, .gradio-container > .main > .wrap > .contain > footer { display: none !i
 }
 .gradio-container .rp-ask { padding: 0 !important; border: 0 !important;
   background: transparent !important; box-shadow: none !important; }
-.gradio-container .rp-submit-row { margin-top: 12px; }
+.gradio-container .rp-submit-row {
+  margin-top: 12px !important; display: flex !important; align-items: center !important;
+  gap: 10px 16px !important; flex-wrap: wrap !important;
+}
+.rp-submit-row > * { flex: 0 0 auto !important; width: auto !important;
+  min-width: 0 !important; margin: 0 !important; }
+/* The answer-language control sits away from the primary action. */
+.rp-submit-row > *:nth-child(2) { margin-left: auto !important; }
 
 .rp-submit button, button.rp-submit, .gradio-container button.rp-submit {
   background: var(--accent) !important; color: #fff !important;
@@ -533,3 +589,185 @@ footer, .gradio-container > .main > .wrap > .contain > footer { display: none !i
   .rp-mark-arc, .rp-mark-needle, .rp-answer h2 { animation: none !important; }
   .rp-say .rp-copy { opacity: 1; transform: none; }
 }
+
+
+/* ---------------------------------------------------- flags on the switcher
+   Gradio escapes HTML inside a radio label, so the flag is painted by CSS.
+   Option order is fixed by the choices list, which is what nth-child keys on. */
+.gradio-container .rp-switch-site label::before {
+  content: ""; width: 17px; height: 17px; margin-right: 8px;
+  flex: 0 0 auto; border-radius: 50%;
+  background-size: cover; background-position: center;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.14) inset;
+  transition: transform .32s var(--ease), box-shadow .2s var(--ease);
+}
+.gradio-container .rp-switch-site label:nth-child(1)::before {
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cdefs%3E%3CclipPath%20id%3D%27c%27%3E%3Ccircle%20cx%3D%2712%27%20cy%3D%2712%27%20r%3D%2711.5%27%2F%3E%3C%2FclipPath%3E%3C%2Fdefs%3E%3Cg%20clip-path%3D%27url%28%23c%29%27%3E%3Crect%20width%3D%2724%27%20height%3D%2724%27%20fill%3D%27%230b2d6b%27%2F%3E%3Cpath%20d%3D%27M0%200%20L24%2024%20M24%200%20L0%2024%27%20stroke%3D%27%23fff%27%20stroke-width%3D%275.2%27%2F%3E%3Cpath%20d%3D%27M0%200%20L24%2024%20M24%200%20L0%2024%27%20stroke%3D%27%23c8102e%27%20stroke-width%3D%272.6%27%2F%3E%3Cpath%20d%3D%27M12%200%20V24%20M0%2012%20H24%27%20stroke%3D%27%23fff%27%20stroke-width%3D%277.6%27%2F%3E%3Cpath%20d%3D%27M12%200%20V24%20M0%2012%20H24%27%20stroke%3D%27%23c8102e%27%20stroke-width%3D%274.4%27%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
+}
+.gradio-container .rp-switch-site label:nth-child(2)::before {
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cdefs%3E%3CclipPath%20id%3D%27c%27%3E%3Ccircle%20cx%3D%2712%27%20cy%3D%2712%27%20r%3D%2711.5%27%2F%3E%3C%2FclipPath%3E%3C%2Fdefs%3E%3Cg%20clip-path%3D%27url%28%23c%29%27%3E%3Crect%20width%3D%278%27%20height%3D%2724%27%20fill%3D%27%230b2d6b%27%2F%3E%3Crect%20x%3D%278%27%20width%3D%278%27%20height%3D%2724%27%20fill%3D%27%23fff%27%2F%3E%3Crect%20x%3D%2716%27%20width%3D%278%27%20height%3D%2724%27%20fill%3D%27%23c8102e%27%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
+}
+.gradio-container .rp-switch-site label:hover::before { transform: scale(1.1); }
+.gradio-container .rp-switch-site label:has(input:checked)::before,
+.gradio-container .rp-switch-site label.selected::before {
+  transform: scale(1.14);
+  box-shadow: 0 0 0 1px rgba(0,0,0,.14) inset, 0 0 0 2px var(--accent-line);
+}
+
+
+/* ===================================================================
+   Inline definitions
+   Knowing the French word is half of it; the reader also needs to know
+   what it means, and sending them to another tab mid-procedure is how
+   you lose them. The definition travels with the word.
+   =================================================================== */
+.rp-fr { position: relative; cursor: help; outline: none; }
+.rp-fr::after {
+  content: attr(data-en) " · " attr(data-gloss);
+  position: absolute; left: 50%; bottom: calc(100% + 11px);
+  transform: translateX(-50%) translateY(5px) scale(.97);
+  transform-origin: bottom center;
+  width: max-content; max-width: 300px;
+  padding: 11px 13px; border-radius: 10px;
+  background: var(--ink); color: #fff;
+  font: 400 12.5px/1.5 var(--sans); letter-spacing: .002em;
+  box-shadow: var(--shadow-lg);
+  opacity: 0; pointer-events: none; z-index: 40;
+  transition: opacity .18s var(--ease), transform .22s var(--ease);
+  white-space: normal; text-align: left;
+}
+.rp-fr::before {
+  content: ""; position: absolute; left: 50%; bottom: calc(100% + 5px);
+  transform: translateX(-50%) translateY(5px);
+  border: 6px solid transparent; border-top-color: var(--ink);
+  opacity: 0; pointer-events: none; z-index: 40;
+  transition: opacity .18s var(--ease), transform .22s var(--ease);
+}
+.rp-fr:hover::after, .rp-fr:focus::after,
+.rp-fr:hover::before, .rp-fr:focus::before {
+  opacity: 1; transform: translateX(-50%) translateY(0) scale(1);
+}
+.rp-fr:focus { box-shadow: 0 0 0 3px var(--accent-line); }
+
+/* ===================================================================
+   Source cards open in place
+   =================================================================== */
+.rp-source { cursor: pointer; }
+.rp-source-link {
+  position: absolute; top: 12px; right: 13px; z-index: 3;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 7px;
+  color: var(--ink-faint); text-decoration: none !important;
+  font-size: 15px; line-height: 1;
+  opacity: 0; transform: translateY(-2px);
+  transition: all .2s var(--ease);
+}
+.rp-source:hover .rp-source-link { opacity: 1; transform: none; }
+.rp-source-link:hover {
+  background: var(--accent-wash); color: var(--accent) !important;
+}
+.rp-excerpt {
+  max-height: 0; opacity: 0; overflow: hidden;
+  font-size: 13px; line-height: 1.6; color: var(--ink-muted);
+  border-top: 1px dashed transparent; margin-top: 0; padding-top: 0;
+  transition: max-height .42s var(--ease), opacity .3s var(--ease),
+              margin-top .3s var(--ease), padding-top .3s var(--ease),
+              border-color .3s var(--ease);
+}
+.rp-source.rp-open .rp-excerpt {
+  max-height: 320px; opacity: 1; margin-top: 12px; padding-top: 12px;
+  border-top-color: var(--border-soft);
+}
+.rp-source.rp-open { border-color: var(--accent-line); box-shadow: var(--shadow-md); }
+
+/* ===================================================================
+   Press feedback
+   =================================================================== */
+.rp-ripple {
+  position: absolute; border-radius: 50%; pointer-events: none;
+  background: currentColor; opacity: .28; transform: scale(0);
+  animation: rp-ripple .62s cubic-bezier(.22,.61,.36,1) forwards;
+}
+@keyframes rp-ripple { to { transform: scale(2.6); opacity: 0; } }
+.gradio-container button.rp-submit, .gradio-container button.rp-chip {
+  position: relative; overflow: hidden;
+}
+
+/* A hint that the keyboard works, shown only where a keyboard exists. */
+.rp-kbd {
+  display: inline-flex; align-items: center; gap: 3px;
+  font: 600 10.5px/1 var(--mono); color: var(--ink-faint);
+  border: 1px solid var(--border); border-radius: 5px;
+  padding: 4px 6px; background: var(--surface);
+}
+.rp-hint {
+  display: flex; align-items: center; gap: 7px; margin-top: 9px;
+  font-size: 12.5px; color: var(--ink-faint);
+}
+@media (hover: none) { .rp-hint { display: none; } }
+
+/* Sources arrive as they enter the viewport rather than all at once. */
+.rp-reveal { opacity: 0; transform: translateY(14px); }
+.rp-reveal.rp-in {
+  opacity: 1; transform: none;
+  transition: opacity .5s var(--ease), transform .5s var(--ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rp-ripple { display: none; }
+  .rp-reveal { opacity: 1; transform: none; }
+}
+
+
+/* ===================================================================
+   Do it here
+   Telling somebody a service exists and leaving them to find it is most
+   of what makes this hard. The working address goes directly under the
+   answer, and only ever one read out of the official corpus.
+   =================================================================== */
+.rp-services { margin-top: 26px; }
+.rp-service {
+  display: flex; align-items: center; gap: 13px;
+  padding: 15px 17px; margin-bottom: 8px;
+  background: linear-gradient(180deg, var(--accent-wash), var(--surface) 85%);
+  border: 1px solid var(--accent-line); border-radius: var(--radius-sm);
+  text-decoration: none !important; color: inherit !important;
+  animation-name: rp-rise; animation-duration: .44s;
+  animation-timing-function: cubic-bezier(.22,.61,.36,1);
+  animation-fill-mode: both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+  transition: transform .2s var(--ease), box-shadow .24s var(--ease),
+              border-color .2s var(--ease);
+}
+.rp-service:hover {
+  transform: translateY(-2px); box-shadow: var(--shadow-md);
+  border-color: var(--accent);
+}
+.rp-service-icon {
+  flex: 0 0 auto; width: 32px; height: 32px; border-radius: 9px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--accent); color: #fff; font-size: 16px; line-height: 1;
+  transition: transform .24s var(--ease);
+}
+.rp-service:hover .rp-service-icon { transform: translate(2px, -2px); }
+.rp-service-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rp-service-title {
+  font-size: 14.5px; font-weight: 600; color: var(--ink); line-height: 1.35;
+}
+.rp-service:hover .rp-service-title { color: var(--accent-deep); }
+.rp-service-host {
+  font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rp-service-note { font-size: 12px; color: var(--ink-faint); margin-top: 8px; }
+
+/* The disclaimer now closes the page instead of interrupting it. */
+.rp-footer {
+  margin: 44px 0 0 !important;
+  border-top: 1px solid var(--border) !important;
+  border-left: 0 !important; border-right: 0 !important; border-bottom: 0 !important;
+  border-radius: 0 !important; background: transparent !important;
+  padding: 18px 2px 0 !important; color: var(--ink-muted) !important;
+  font-size: 12.5px !important;
+}
+.rp-footer strong { color: var(--warn); }

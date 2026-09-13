@@ -11,7 +11,7 @@ from __future__ import annotations
 import html
 import re
 
-from app.answer.cite import Citation
+from app.answer.cite import Citation, ServiceLink
 from app.answer.generate import AnswerResult
 from app.query import glossary
 from app.retrieval.types import Retrieved
@@ -29,27 +29,43 @@ _NUMBER = re.compile(r"^(\d+)[.)]\s+(.*)$")
 _SAY_HEADINGS = ("say it in french", "le dire en français", "dites-le en français")
 
 
-def _french_terms() -> list[str]:
-    terms = sorted((t.fr for t in glossary.load()), key=len, reverse=True)
-    return [t for t in terms if len(t) > 2]
+def _french_terms():
+    terms = sorted(glossary.load(), key=lambda t: len(t.fr), reverse=True)
+    return [t for t in terms if len(t.fr) > 2]
 
 
-def _mark_french(text: str) -> str:
-    """Mark French administrative vocabulary so it stands out in the answer."""
+def _mark_french(text: str, lang: str = "en") -> str:
+    """Mark French vocabulary, and carry its definition for a tooltip.
+
+    Knowing the word is only half of it: the reader also needs to know what it
+    means, and sending them to another tab to find out is how you lose them
+    mid-procedure. The definition travels with the word.
+    """
     for term in _french_terms():
-        pattern = re.compile(rf"(?<![\w>]){re.escape(html.escape(term))}(?![\w<])", re.I)
-        if pattern.search(text):
-            text = pattern.sub(
-                lambda m: f'<span class="rp-fr">{m.group(0)}</span>', text, count=1
-            )
+        pattern = re.compile(
+            rf"(?<![\w>]){re.escape(html.escape(term.fr))}(?![\w<])", re.I
+        )
+        if not pattern.search(text):
+            continue
+        gloss = term.explanation_fr if lang == "fr" else term.explanation_en
+        source = ("service-public.gouv.fr" if term.is_official
+                  else ("écrit pour Sésame" if lang == "fr"
+                        else "written for Sésame"))
+        attrs = (f'class="rp-fr" tabindex="0" '
+                 f'data-en="{html.escape(term.en, quote=True)}" '
+                 f'data-gloss="{html.escape(gloss, quote=True)}" '
+                 f'data-src="{html.escape(source, quote=True)}"')
+        text = pattern.sub(
+            lambda m: f'<span {attrs}>{m.group(0)}</span>', text, count=1
+        )
     return text
 
 
-def inline(text: str) -> str:
+def inline(text: str, lang: str = "en") -> str:
     escaped = html.escape(text.strip())
     escaped = _BOLD.sub(r"<strong>\1</strong>", escaped)
     escaped = _ITALIC.sub(r"<em>\1</em>", escaped)
-    return _mark_french(escaped)
+    return _mark_french(escaped, lang)
 
 
 def markdown(text: str, lang: str = "en") -> str:
@@ -98,7 +114,7 @@ def markdown(text: str, lang: str = "en") -> str:
             if list_tag != "ul":
                 flush_list()
                 list_tag = "ul"
-            list_items.append(f"<li>{inline(bullet.group(1))}</li>")
+            list_items.append(f"<li>{inline(bullet.group(1), lang)}</li>")
             continue
 
         numbered = _NUMBER.match(line)
@@ -106,11 +122,11 @@ def markdown(text: str, lang: str = "en") -> str:
             if list_tag != "ol":
                 flush_list()
                 list_tag = "ol"
-            list_items.append(f"<li>{inline(numbered.group(2))}</li>")
+            list_items.append(f"<li>{inline(numbered.group(2), lang)}</li>")
             continue
 
         flush_list()
-        blocks.append(f"<p>{inline(line)}</p>")
+        blocks.append(f"<p>{inline(line, lang)}</p>")
 
     flush_list()
     close_say()
@@ -166,6 +182,33 @@ def answer_html(result: AnswerResult, streaming: bool = False,
     return f"<div class='{shell}'>{badge}{body}{error}</div>"
 
 
+def services_html(services: list[ServiceLink], lang: str = "en") -> str:
+    """The pages where the procedure is actually carried out.
+
+    Placed directly under the answer, because telling somebody a service
+    exists and making them hunt for it is most of what makes this hard.
+    """
+    if not services:
+        return ""
+    rows = []
+    for index, service in enumerate(services):
+        host = service.url.split("/")[2] if "://" in service.url else service.url
+        rows.append(
+            f"<a class='rp-service' style='--i:{index}' "
+            f"href='{html.escape(service.url)}' target='_blank' "
+            f"rel='noopener noreferrer'>"
+            f"<span class='rp-service-icon'>&#8599;</span>"
+            f"<span class='rp-service-body'>"
+            f"<span class='rp-service-title'>{html.escape(service.title)}</span>"
+            f"<span class='rp-service-host'>{html.escape(host)}</span></span></a>"
+        )
+    return (f"<div class='rp-services'>"
+            f"<div class='rp-sources-head'>{html.escape(t(lang, 'services_head'))}</div>"
+            f"{''.join(rows)}"
+            f"<div class='rp-service-note'>{html.escape(t(lang, 'services_note'))}</div>"
+            f"</div>")
+
+
 # ----------------------------------------------------------------- sources --
 
 def sources_html(citations: list[Citation], lang: str = "en") -> str:
@@ -180,10 +223,11 @@ def sources_html(citations: list[Citation], lang: str = "en") -> str:
         date_class = "" if citation.last_updated_is_plausible else " class='rp-date-suspect'"
         percent = max(4, min(100, round(citation.score * 100)))
         cards.append(
-            f"<a class='rp-source' style='--i:{index}' href='{html.escape(citation.url)}'"
-            f" target='_blank' rel='noopener noreferrer'>"
-            f"<div class='rp-source-title'>{html.escape(citation.title_fr)}"
-            f"<span class='rp-source-open'>&#8599;</span></div>"
+            f"<div class='rp-source' style='--i:{index}' data-expandable>"
+            f"<a class='rp-source-link' href='{html.escape(citation.url)}'"
+            f" target='_blank' rel='noopener noreferrer' "
+            f"title='{html.escape(citation.url)}'>&#8599;</a>"
+            f"<div class='rp-source-title'>{html.escape(citation.title_fr)}</div>"
             f"<div class='rp-source-meta'>"
             f"<span class='rp-source-id'>{html.escape(citation.fiche_id)}</span>"
             f"{scope}"
@@ -191,7 +235,10 @@ def sources_html(citations: list[Citation], lang: str = "en") -> str:
             f"<span class='rp-score'>"
             f"<span class='rp-score-track'><span class='rp-score-fill' style='--w:{percent}%;--i:{index}'></span></span>"
             f"<span class='rp-score-value'>{citation.score:.2f}</span>"
-            f"</span></div></a>"
+            f"</span></div>"
+            + (f"<div class='rp-excerpt'>{html.escape(citation.excerpt)}</div>"
+               if citation.excerpt else "")
+            + "</div>"
         )
     head = f"{t(lang, 'sources_head')} · service-public.gouv.fr"
     return f"<div class='rp-sources-head'>{html.escape(head)}</div>" + "".join(cards)
@@ -290,7 +337,7 @@ def glossary_html(search: str = "", lang: str = "en") -> str:
             f"<span class='rp-prov rp-prov-official'>Official definition · "
             f"{html.escape(term.definition_id or '')}</span>"
             if term.is_official else
-            "<span class='rp-prov rp-prov-authored'>Written for Repères</span>"
+            "<span class='rp-prov rp-prov-authored'>Written for Sésame</span>"
         )
         cards.append(
             f"<div class='rp-gloss' style='--i:{index}'>"

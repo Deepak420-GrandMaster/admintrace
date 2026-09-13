@@ -1,4 +1,4 @@
-"""Repères — the local interface.
+"""Sésame — the local interface.
 
     uv run python -m app.ui.app     →  http://localhost:7860
 
@@ -31,39 +31,113 @@ STYLES = (Path(__file__).resolve().parent / "styles.css").read_text(encoding="ut
 HEAD = f"""
 <link rel="icon" href="{brand.FAVICON}">
 <script>
-document.addEventListener('click', async (event) => {{
-  const button = event.target.closest('[data-copy]');
-  if (!button) return;
-  const block = button.closest('.rp-say');
-  if (!block) return;
-  const parts = [...block.querySelectorAll('p')]
-      .filter(p => !p.classList.contains('rp-say-note'))
-      .map(p => p.innerText.trim());
-  try {{
-    await navigator.clipboard.writeText(parts.join('\\n'));
-  }} catch (error) {{
-    const area = document.createElement('textarea');
-    area.value = parts.join('\\n');
-    document.body.appendChild(area); area.select();
-    document.execCommand('copy'); area.remove();
-  }}
-  const original = button.textContent;
-  button.textContent = button.dataset.done || 'Copied';
-  button.classList.add('rp-done');
-  setTimeout(() => {{
-    button.textContent = original;
-    button.classList.remove('rp-done');
-  }}, 1600);
-}});
+(() => {{
+  // Everything here is delegated from the document, because Gradio replaces
+  // chunks of the page on every interaction and anything bound to an element
+  // directly would be lost the first time an answer arrives.
+
+  const copyLabelFallback = "Copied";
+
+  document.addEventListener("click", async (event) => {{
+    // --- copy the suggested French phrasing -------------------------------
+    const copy = event.target.closest("[data-copy]");
+    if (copy) {{
+      const block = copy.closest(".rp-say");
+      if (block) {{
+        const text = [...block.querySelectorAll("p")]
+          .filter((p) => !p.classList.contains("rp-say-note"))
+          .map((p) => p.innerText.trim())
+          .join("\\n");
+        try {{
+          await navigator.clipboard.writeText(text);
+        }} catch (error) {{
+          const area = document.createElement("textarea");
+          area.value = text;
+          document.body.appendChild(area);
+          area.select();
+          document.execCommand("copy");
+          area.remove();
+        }}
+        const original = copy.textContent;
+        copy.textContent = copy.dataset.done || copyLabelFallback;
+        copy.classList.add("rp-done");
+        setTimeout(() => {{
+          copy.textContent = original;
+          copy.classList.remove("rp-done");
+        }}, 1600);
+      }}
+      return;
+    }}
+
+    // --- open a source card in place --------------------------------------
+    // The arrow opens the official page; anywhere else shows the passage the
+    // answer actually drew on, so the reader can check it without leaving.
+    if (event.target.closest(".rp-source-link")) return;
+    const card = event.target.closest("[data-expandable]");
+    if (card) card.classList.toggle("rp-open");
+  }});
+
+  // --- press feedback on the primary actions ------------------------------
+  document.addEventListener("pointerdown", (event) => {{
+    const button = event.target.closest("button.rp-submit, button.rp-chip");
+    if (!button) return;
+    const box = button.getBoundingClientRect();
+    const size = Math.max(box.width, box.height);
+    const ripple = document.createElement("span");
+    ripple.className = "rp-ripple";
+    ripple.style.width = ripple.style.height = size + "px";
+    ripple.style.left = event.clientX - box.left - size / 2 + "px";
+    ripple.style.top = event.clientY - box.top - size / 2 + "px";
+    button.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 640);
+  }});
+
+  // --- keyboard ------------------------------------------------------------
+  document.addEventListener("keydown", (event) => {{
+    const field = document.querySelector(".rp-ask textarea");
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {{
+      event.preventDefault();
+      if (field) {{ field.focus(); field.select(); }}
+    }}
+    if (event.key === "Escape" && document.activeElement === field) field.blur();
+  }});
+
+  // --- reveal sources as they come into view -------------------------------
+  const watcher = new IntersectionObserver((entries) => {{
+    entries.forEach((entry) => {{
+      if (entry.isIntersecting) {{
+        entry.target.classList.add("rp-in");
+        watcher.unobserve(entry.target);
+      }}
+    }});
+  }}, {{ rootMargin: "0px 0px -40px 0px", threshold: 0.05 }});
+
+  const watch = () => document
+    .querySelectorAll(".rp-source:not(.rp-reveal), .rp-gloss:not(.rp-reveal)")
+    .forEach((node) => {{ node.classList.add("rp-reveal"); watcher.observe(node); }});
+
+  new MutationObserver(watch).observe(document.documentElement,
+    {{ childList: true, subtree: true }});
+  watch();
+}})();
 </script>
 """
 
 
-def masthead(lang: str) -> str:
+def brand_block(lang: str) -> str:
+    """Wordmark, tagline, and the marker the palette keys off."""
     return f"""
-{brand.wordmark()}
-<p class="rp-tagline">{html.escape(t(lang, 'tagline'))}</p>
-<div class="rp-disclaimer">
+<span class="rp-theme rp-theme-{lang}"></span>
+<div class="rp-masthead">
+  {brand.wordmark()}
+  <p class="rp-tagline">{html.escape(t(lang, 'tagline'))}</p>
+</div>
+"""
+
+
+def disclaimer_block(lang: str) -> str:
+    return f"""
+<div class="rp-disclaimer rp-footer">
   <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
     <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
     <path d="M8 4.6v4.2M8 11.2h.01" stroke="currentColor" stroke-width="1.6"
@@ -172,32 +246,47 @@ def corpus_html(lang: str = "en") -> str:
 
 def ask(question: str, ui_lang: str, answer_lang: str):
     """Stream the answer, its sources, and the retrieval trace."""
+    hidden = gr.update(visible=False)
+    shown = gr.update(visible=True)
+
     question = (question or "").strip()
     if not question:
-        yield (f"<div class='rp-note'>{html.escape(t(ui_lang, 'empty'))}</div>",
-               "", f"<div class='rp-note'>{html.escape(t(ui_lang, 'debug_empty'))}</div>")
+        # Say nothing rather than show three empty panels.
+        yield (hidden, hidden, hidden, gr.update(), hidden)
         return
 
     reply_lang = answer_lang if answer_lang in ("en", "fr") else ui_lang
-    yield (render.skeleton(0, ui_lang), "", "")
+    yield (gr.update(value=render.skeleton(0, ui_lang), visible=True),
+           hidden, hidden, gr.update(), hidden)
 
     final = None
     for result in answer_stream(question, language=None if answer_lang == "auto"
                                 else answer_lang):
         final = result
         if not result.text:
-            yield (render.skeleton(1, ui_lang), "", "")
+            yield (gr.update(value=render.skeleton(1, ui_lang), visible=True),
+                   hidden, hidden, gr.update(), hidden)
             continue
         yield (
-            render.answer_html(result, streaming=True, lang=reply_lang),
-            render.sources_html(result.citations, ui_lang),
+            gr.update(value=render.answer_html(result, streaming=True,
+                                               lang=reply_lang), visible=True),
+            gr.update(value=render.services_html(result.services, ui_lang),
+                      visible=bool(result.services)),
+            gr.update(value=render.sources_html(result.citations, ui_lang),
+                      visible=bool(result.citations)),
             render.debug_html(result, ui_lang),
+            shown,
         )
     if final is not None:
         yield (
-            render.answer_html(final, streaming=False, lang=reply_lang),
-            render.sources_html(final.citations, ui_lang),
+            gr.update(value=render.answer_html(final, streaming=False,
+                                               lang=reply_lang), visible=True),
+            gr.update(value=render.services_html(final.services, ui_lang),
+                      visible=bool(final.services)),
+            gr.update(value=render.sources_html(final.citations, ui_lang),
+                      visible=bool(final.citations)),
             render.debug_html(final, ui_lang),
+            shown,
         )
 
 
@@ -205,23 +294,15 @@ def build() -> gr.Blocks:
     settings = get_settings()
     start = "en"
 
-    with gr.Blocks(title="Repères", analytics_enabled=False) as demo:
-        head = gr.HTML(masthead(start))
-
-        with gr.Row(elem_classes="rp-lang-bar"):
-            site_caption = gr.HTML(lang_caption(start, "site_lang"))
+    with gr.Blocks(title="Sésame", analytics_enabled=False) as demo:
+        with gr.Row(elem_classes="rp-topbar"):
+            head = gr.HTML(brand_block(start))
             site_lang = gr.Radio(
                 choices=[(name, code) for code, name in LANGUAGES],
                 value=start, show_label=False, container=False,
-                elem_classes="rp-switch",
+                elem_classes="rp-switch rp-switch-site",
             )
-            reply_caption = gr.HTML(lang_caption(start, "answer_lang"))
-            reply_lang = gr.Radio(
-                choices=[(t(start, "lang_auto"), "auto"),
-                         ("English", "en"), ("Français", "fr")],
-                value="auto", show_label=False, container=False,
-                elem_classes="rp-switch",
-            )
+
 
         with gr.Tabs():
             with gr.Tab(t(start, "tab_ask")) as tab_ask:
@@ -232,19 +313,28 @@ def build() -> gr.Blocks:
                 with gr.Row(elem_classes="rp-submit-row"):
                     submit = gr.Button(t(start, "submit"), variant="primary",
                                        elem_classes="rp-submit", scale=0)
+                    reply_caption = gr.HTML(lang_caption(start, "answer_lang"))
+                    reply_lang = gr.Radio(
+                        choices=[(t(start, "lang_auto"), "auto"),
+                                 ("English", "en"), ("Français", "fr")],
+                        value="auto", show_label=False, container=False,
+                        elem_classes="rp-switch",
+                    )
+                gr.HTML("<div class='rp-hint'><span class='rp-kbd'>\u2318</span>"
+                        "<span class='rp-kbd'>K</span> to jump to the question"
+                        " \u00b7 <span class='rp-kbd'>Enter</span> to ask</div>")
                 try_label = gr.HTML(
                     f"<div class='rp-chip-label'>{html.escape(t(start, 'try'))}</div>")
                 with gr.Row(elem_classes="rp-examples"):
                     chips = [gr.Button(text, elem_classes="rp-chip", scale=0)
                              for text in EXAMPLES[start]]
 
-                answer_box = gr.HTML(
-                    f"<div class='rp-note'>{html.escape(t(start, 'empty'))}</div>")
-                sources_box = gr.HTML()
-                with gr.Accordion(t(start, "debug_title"), open=False) as debug_acc:
-                    debug_box = gr.HTML(
-                        f"<div class='rp-note'>"
-                        f"{html.escape(t(start, 'debug_empty'))}</div>")
+                answer_box = gr.HTML(visible=False)
+                services_box = gr.HTML(visible=False)
+                sources_box = gr.HTML(visible=False)
+                with gr.Accordion(t(start, "debug_title"), open=False,
+                                  visible=False) as debug_acc:
+                    debug_box = gr.HTML()
 
             with gr.Tab(t(start, "tab_glossary")) as tab_gloss:
                 gloss_intro = gr.HTML(
@@ -262,7 +352,13 @@ def build() -> gr.Blocks:
                 refresh = gr.Button(t(start, "refresh"),
                                     elem_classes="rp-chip", scale=0)
 
-        outputs = [answer_box, sources_box, debug_box]
+        # The disclaimer closes the page rather than interrupting it. It sits
+        # below every tab and is never dismissible, so it stays permanently
+        # visible — it simply no longer stands between someone and the question
+        # they came to ask.
+        disclaimer = gr.HTML(disclaimer_block(start))
+
+        outputs = [answer_box, services_box, sources_box, debug_box, debug_acc]
         inputs = [question, site_lang, reply_lang]
         submit.click(ask, inputs, outputs)
         question.submit(ask, inputs, outputs)
@@ -275,8 +371,8 @@ def build() -> gr.Blocks:
         def switch_language(lang: str, current_search: str):
             """Re-label the whole interface without losing what is on screen."""
             return [
-                masthead(lang),
-                lang_caption(lang, "site_lang"),
+                brand_block(lang),
+                disclaimer_block(lang),
                 lang_caption(lang, "answer_lang"),
                 gr.update(choices=[(t(lang, "lang_auto"), "auto"),
                                    ("English", "en"), ("Français", "fr")]),
@@ -296,17 +392,14 @@ def build() -> gr.Blocks:
                 f"{html.escape(t(lang, 'corpus_intro'))}</p>",
                 gr.update(value=t(lang, "refresh")),
                 corpus_html(lang),
-                f"<div class='rp-note'>{html.escape(t(lang, 'empty'))}</div>",
-                f"<div class='rp-note'>{html.escape(t(lang, 'debug_empty'))}</div>",
             ]
 
         site_lang.change(
             switch_language,
             [site_lang, search],
-            [head, site_caption, reply_caption, reply_lang, question, submit,
+            [head, disclaimer, reply_caption, reply_lang, question, submit,
              try_label, *chips, debug_acc, tab_ask, tab_gloss, tab_corpus,
-             gloss_intro, search, gloss_box, corpus_intro, refresh, corpus_box,
-             answer_box, debug_box],
+             gloss_intro, search, gloss_box, corpus_intro, refresh, corpus_box],
         )
 
         if not settings.debug_panel:

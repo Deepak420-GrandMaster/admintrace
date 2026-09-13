@@ -18,7 +18,7 @@ STRINGS: dict[str, dict[str, str]] = {
                    "paperwork, in English or French — every answer comes "
                    "straight from official government sources, with a link.",
         "disclaimer_lead": "This isn't legal advice.",
-        "disclaimer_body": "Repères tells you what the official pages say, and "
+        "disclaimer_body": "Sésame tells you what the official pages say, and "
                            "shows you which ones. It can't advise you on a "
                            "refusal, an appeal, or your own particular case — "
                            "for that you need the administration itself.",
@@ -37,7 +37,7 @@ STRINGS: dict[str, dict[str, str]] = {
                           "letter. The ones marked official are defined by the "
                           "government itself; the rest we wrote plainly.",
         "glossary_search": "Search a word…",
-        "corpus_intro": "Everything Repères has read, and where it came from.",
+        "corpus_intro": "Everything Sésame has read, and where it came from.",
         "refresh": "Refresh",
         "empty": "Ask a question and the answer will appear here.",
         "debug_empty": "Ask something, and this panel will show exactly how the "
@@ -46,6 +46,8 @@ STRINGS: dict[str, dict[str, str]] = {
         "copy": "Copy",
         "copied": "Copied",
         "sources_head": "Where this came from",
+        "services_head": "Do it here",
+        "services_note": "Official government service — opens in a new tab.",
         "stage_search": "Looking through the official pages…",
         "stage_read": "Reading what they say…",
         "stage_write": "Putting it together…",
@@ -60,7 +62,7 @@ STRINGS: dict[str, dict[str, str]] = {
                    "démarches, en français ou en anglais — chaque réponse vient "
                    "directement des sources officielles, avec le lien.",
         "disclaimer_lead": "Ceci n'est pas un conseil juridique.",
-        "disclaimer_body": "Repères vous dit ce que disent les pages "
+        "disclaimer_body": "Sésame vous dit ce que disent les pages "
                            "officielles, et vous montre lesquelles. Il ne peut "
                            "pas vous conseiller sur un refus, un recours ou "
                            "votre situation personnelle — pour cela, adressez-"
@@ -81,7 +83,7 @@ STRINGS: dict[str, dict[str, str]] = {
                           "par l'administration ; les autres, nous les avons "
                           "écrits simplement.",
         "glossary_search": "Chercher un mot…",
-        "corpus_intro": "Tout ce que Repères a lu, et d'où cela vient.",
+        "corpus_intro": "Tout ce que Sésame a lu, et d'où cela vient.",
         "refresh": "Actualiser",
         "empty": "Posez une question, la réponse apparaîtra ici.",
         "debug_empty": "Posez une question et ce panneau montrera exactement "
@@ -90,6 +92,8 @@ STRINGS: dict[str, dict[str, str]] = {
         "copy": "Copier",
         "copied": "Copié",
         "sources_head": "D'où vient cette réponse",
+        "services_head": "C'est ici que ça se passe",
+        "services_note": "Service officiel de l'administration — s'ouvre dans un nouvel onglet.",
         "stage_search": "Recherche dans les pages officielles…",
         "stage_read": "Lecture des textes…",
         "stage_write": "Rédaction de la réponse…",

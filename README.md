@@ -1,4 +1,4 @@
-# Repères
+# Sésame
 
 Grounded question answering for people who have recently arrived in France, or
 are about to.
@@ -6,14 +6,14 @@ are about to.
 Ask in English or French. Answers come only from official French government
 sources, keep the French administrative vocabulary you will actually need at a
 counter, and cite each source by its French title with the date it was last
-updated. When the sources do not answer the question, Repères says so instead
+updated. When the sources do not answer the question, Sésame says so instead
 of guessing.
 
 Everything that touches the corpus runs locally.
 
 ## Not legal advice
 
-Repères reports what official sources say and cites them. It cannot tell you
+Sésame reports what official sources say and cites them. It cannot tell you
 what to do about a refusal, an appeal, or your individual case. For that,
 contact the administration concerned. The interface says so on every screen.
 
@@ -31,7 +31,7 @@ data.gouv.fr under the **Licence Ouverte / Open Licence**.
 | Indexed | 7,768 documents → 43,794 passages |
 
 The Licence Ouverte requires stating the source and the date the information
-was last updated. Repères does that on every citation. It is also how a reader
+was last updated. Sésame does that on every citation. It is also how a reader
 decides whether to trust what they just read, so it is never stripped.
 
 Only the French source text is ingested. French is the legal source of truth,
@@ -231,5 +231,5 @@ tools/             glossary builder
 
 Source data © DILA, published under the
 [Licence Ouverte / Open Licence](https://www.etalab.gouv.fr/licence-ouverte-open-licence).
-Repères is not affiliated with, endorsed by, or operated by the French
+Sésame is not affiliated with, endorsed by, or operated by the French
 government.

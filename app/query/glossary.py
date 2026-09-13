@@ -39,7 +39,7 @@ class Term:
     def provenance(self) -> str:
         if self.is_official:
             return f"Definition published by service-public.gouv.fr ({self.definition_id})"
-        return "Plain-language description written for Repères"
+        return "Plain-language description written for Sésame"
 
 
 def _fold(text: str) -> str:
