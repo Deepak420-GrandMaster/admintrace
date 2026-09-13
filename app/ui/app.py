@@ -11,6 +11,7 @@ reply in French to forward to a landlord, or the reverse.
 from __future__ import annotations
 
 import html
+import time
 from functools import lru_cache
 from pathlib import Path
 
@@ -374,6 +375,19 @@ def _corpus_dates(_fingerprint: int) -> tuple[str, str, int, str]:
             len(documents), ingested)
 
 
+@lru_cache(maxsize=8)
+def _provider_status(_bucket: int) -> tuple[bool, str]:
+    """Provider reachability, asked at most once every few minutes.
+
+    Rendering a panel should not cost a network round trip, and it certainly
+    should not cost one per language switch.
+    """
+    try:
+        return get_chat_provider().health()
+    except Exception as exc:  # a status panel must never take the page down
+        return False, str(exc)
+
+
 def corpus_html(lang: str = "en") -> str:
     settings = get_settings()
     manifest = read_manifest(settings)
@@ -408,7 +422,7 @@ def corpus_html(lang: str = "en") -> str:
     )
 
     provider = get_chat_provider(settings)
-    ok, _ = provider.health()
+    ok, _ = _provider_status(int(time.time()) // 300)
     badge = ("rp-prov-official", "reachable") if ok else ("rp-prov-authored", "unavailable")
 
     source_note = {
@@ -621,9 +635,6 @@ def build() -> gr.Blocks:
                         value="auto", show_label=False, container=False,
                         elem_classes="rp-switch",
                     )
-                gr.HTML("<div class='rp-hint'><span class='rp-kbd'>\u2318</span>"
-                        "<span class='rp-kbd'>K</span> to jump to the question"
-                        " \u00b7 <span class='rp-kbd'>Enter</span> to ask</div>")
                 try_label = gr.HTML(
                     f"<div class='rp-chip-label'>{html.escape(t(start, 'try'))}</div>")
                 with gr.Row(elem_classes="rp-examples"):
@@ -666,7 +677,7 @@ def build() -> gr.Blocks:
                 corpus_intro = gr.HTML(
                     f"<p class='rp-tagline' style='margin:2px 0 14px'>"
                     f"{html.escape(t(start, 'corpus_intro'))}</p>")
-                corpus_box = gr.HTML(lambda: corpus_html(start))
+                corpus_box = gr.HTML()
                 refresh = gr.Button(t(start, "refresh"),
                                     elem_classes="rp-chip", scale=0)
 
@@ -738,6 +749,9 @@ def build() -> gr.Blocks:
             return gr.update(value=body, visible=bool(body))
 
         study.change(show_place, [study, site_lang], place_box)
+        # Built when the tab is opened. It reads every chunk's metadata, so
+        # rebuilding it on each language change froze the whole page.
+        tab_corpus.select(corpus_html, site_lang, corpus_box)
         search.change(render.glossary_html, [search, site_lang], gloss_box)
         refresh.click(corpus_html, site_lang, corpus_box)
 
@@ -773,7 +787,6 @@ def build() -> gr.Blocks:
                 f"<p class='rp-tagline' style='margin:2px 0 14px'>"
                 f"{html.escape(t(lang, 'corpus_intro'))}</p>",
                 gr.update(value=t(lang, "refresh")),
-                corpus_html(lang),
             ]
 
         site_lang.change(
@@ -783,7 +796,7 @@ def build() -> gr.Blocks:
              try_label, *chips, debug_acc, tab_ask, tab_gloss, tab_corpus,
              study_why, study,
              report_panel, report_intro, report_text, report_keeps, report_send,
-             gloss_intro, search, gloss_box, corpus_intro, refresh, corpus_box],
+             gloss_intro, search, gloss_box, corpus_intro, refresh],
         )
 
     return demo

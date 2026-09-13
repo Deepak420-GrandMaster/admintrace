@@ -154,10 +154,19 @@ class GroqProvider:
                     yield piece
 
     def health(self) -> tuple[bool, str]:
+        """Probe once, and never wait.
+
+        The retrying path exists so a real request survives a rate limit. A
+        health check must not use it: sleeping out the interval to report a
+        status turned a language switch into a minute of dead page.
+        """
+        payload = self._payload(
+            [ChatMessage("user", "Répondre uniquement: OK")], 0.0, 5, stream=False)
         try:
-            self.complete(
-                [ChatMessage("user", "Répondre uniquement: OK")], max_tokens=5
-            )
+            with self._request_once(payload, stream=False) as response:
+                json.load(response)
             return True, f"groq · {self.model}"
+        except _RateLimited as limited:
+            return False, f"rate limited · {limited.detail[:120]}"
         except ProviderError as exc:
             return False, str(exc)

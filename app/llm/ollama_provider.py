@@ -76,3 +76,5 @@ class OllamaProvider:
             return True, f"ollama · {self.model}"
         except ProviderError as exc:
             return False, str(exc)
+
+    # Health is cheap to ask and expensive to ask often; see app.ui.app.

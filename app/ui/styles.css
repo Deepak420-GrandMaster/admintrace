@@ -217,9 +217,16 @@ footer, .gradio-container > .main > .wrap > .contain > footer { display: none !i
   padding: 0 !important; box-shadow: none !important; min-width: 0 !important; }
 .gradio-container .rp-switch > label:first-child,
 .gradio-container .rp-switch .head { display: none !important; }
-.gradio-container .rp-switch .wrap,
-.gradio-container .rp-switch fieldset,
-.gradio-container .rp-switch > div {
+/* Gradio uses the class "wrap" twice inside a radio: once for the group that
+   holds the options, and once for a status overlay that sits above it. Styling
+   both drew the control twice, one ghosted above the other — the fieldset's
+   label padding kept them from coinciding, so the ghost was visible. Only the
+   group is a control. */
+.gradio-container .rp-switch > .wrap.default { display: none !important; }
+.gradio-container .rp-switch { padding: 0 !important; }
+
+.gradio-container .rp-switch .wrap:not(.default),
+.gradio-container .rp-switch fieldset > div:not(.default) {
   display: inline-flex !important; flex-direction: row !important;
   flex-wrap: nowrap !important;
   gap: 3px !important; padding: 3px !important;
