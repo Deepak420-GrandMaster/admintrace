@@ -1,0 +1,16 @@
+# Raw feeds, extracted XML, Chroma database, caches. Never committed.
+data/
+
+# Local configuration. .env.example is the committed template.
+.env
+
+# Evaluation output is timestamped and regenerated.
+eval/results/*
+!eval/results/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+*.egg-info/
