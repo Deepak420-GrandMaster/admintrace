@@ -100,6 +100,7 @@ class Settings:
     # Chunking
     chunk_target_tokens: int
     chunk_max_tokens: int
+    embed_max_tokens: int
 
     # Source feed
     feed_version: str
@@ -172,6 +173,7 @@ def get_settings() -> Settings:
         relevance_threshold=_as_float("RELEVANCE_THRESHOLD", "0.35"),
         chunk_target_tokens=_as_int("CHUNK_TARGET_TOKENS", "600"),
         chunk_max_tokens=_as_int("CHUNK_MAX_TOKENS", "1200"),
+        embed_max_tokens=_as_int("EMBED_MAX_TOKENS", "8192"),
         feed_version=_raw("FEED_VERSION", "3.5"),
         feed_url_template=_raw(
             "FEED_URL_TEMPLATE",
@@ -200,6 +202,11 @@ def _validate(s: Settings) -> None:
         raise ConfigError("DENSE_WEIGHT and KEYWORD_WEIGHT cannot both be zero")
     if s.chunk_max_tokens < s.chunk_target_tokens:
         raise ConfigError("CHUNK_MAX_TOKENS must be at least CHUNK_TARGET_TOKENS")
+    if s.embed_max_tokens < s.chunk_max_tokens:
+        raise ConfigError(
+            "EMBED_MAX_TOKENS must be at least CHUNK_MAX_TOKENS, otherwise "
+            "chunks would be silently truncated when embedded"
+        )
     if s.answer_language not in {"auto", "en", "fr"}:
         raise ConfigError("ANSWER_LANGUAGE must be one of: auto, en, fr")
     if not s.feed_segments:

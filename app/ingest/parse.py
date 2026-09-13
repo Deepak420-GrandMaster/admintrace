@@ -24,7 +24,7 @@ import collections
 import re
 from datetime import date
 import xml.etree.ElementTree as ET
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 DC = "{http://purl.org/dc/elements/1.1/}"
@@ -77,20 +77,24 @@ class Block:
     url: str | None = None
 
     def render(self) -> str:
+        lines: list[str] = []
+
+        if self.kind == "note" and self.label:
+            lines.append(f"{self.label} : {self.text}".strip())
+        elif self.text:
+            lines.append(self.text)
+
         if self.kind in {"list", "checklist"}:
-            body = "\n".join(f"- {item}" for item in self.items)
+            lines.extend(f"- {item}" for item in self.items)
         elif self.kind == "ordered_list":
-            body = "\n".join(f"{i}. {item}" for i, item in enumerate(self.items, 1))
-        elif self.kind == "cases":
-            body = "\n".join(self.items)
-        elif self.kind == "table":
-            body = "\n".join(self.items)
-        else:
-            body = self.text
-        head = f"{self.label}: " if self.label and self.kind == "note" else ""
-        tail = f"\n{self.url}" if self.url else ""
-        prefix = f"{self.text}\n" if self.text and self.kind != "paragraph" else ""
-        return (head + prefix + body + tail).strip()
+            lines.extend(f"{i}. {item}" for i, item in enumerate(self.items, 1))
+        elif self.kind in {"cases", "table"}:
+            lines.extend(self.items)
+
+        if self.url:
+            lines.append(self.url)
+
+        return "\n".join(line for line in lines if line).strip()
 
 
 @dataclass(frozen=True)
@@ -126,6 +130,13 @@ class Document:
     sections: tuple[Section, ...]
     definitions: tuple[tuple[str, str, str], ...] = ()
     source_file: str = ""
+    # Feeds this document was published in. A few hundred documents appear in
+    # both; recorded here so that is not lost when the duplicate is dropped.
+    segments: tuple[str, ...] = ()
+
+    @property
+    def body_text(self) -> str:
+        return "\n".join(section.render() for section in self.sections)
 
     @property
     def situations(self) -> tuple[str, ...]:
@@ -203,7 +214,7 @@ def _block(element: ET.Element, report: ParseReport) -> Block | None:
             body = " ".join(p.replace("\n", " ") for p in body_parts).strip()
             items.append(f"[{title}] {body}".strip() if title else body)
         items = tuple(i for i in items if i)
-        return Block("cases", "If your situation is:", items) if items else None
+        return Block("cases", "", items) if items else None
 
     if name in NOTE_TAGS:
         label = _text(element.find("Titre")) or name
@@ -405,3 +416,39 @@ def parse_directory(directory: Path, segment: str,
         if document is not None:
             report.documents.append(document)
     return report
+
+
+def deduplicate(documents: list[Document]) -> tuple[list[Document], list[str]]:
+    """Drop documents republished verbatim under a second audience.
+
+    A few hundred fiches appear in both feeds with byte-identical bodies,
+    because they concern individuals and businesses alike. Keeping both copies
+    would mean the same passage competing with itself for a place in the
+    retrieved set, and a user reading the same answer twice. The first copy is
+    kept and the second audience is recorded on it.
+
+    A document sharing an identifier but *differing* in body is not a
+    duplicate and is kept, so that a real divergence is never silently lost.
+    """
+    kept: dict[str, Document] = {}
+    order: list[str] = []
+    dropped: list[str] = []
+
+    for document in documents:
+        existing = kept.get(document.doc_id)
+        if existing is None:
+            kept[document.doc_id] = document
+            order.append(document.doc_id)
+            continue
+        if existing.body_text == document.body_text:
+            merged = sorted(set(existing.segments or (existing.segment,))
+                            | {document.segment})
+            kept[document.doc_id] = replace(existing, segments=tuple(merged))
+            dropped.append(document.doc_id)
+        else:
+            # Same identifier, different content: keep both under distinct ids.
+            alternate = f"{document.doc_id}@{document.segment}"
+            kept[alternate] = replace(document, doc_id=alternate)
+            order.append(alternate)
+
+    return [kept[key] for key in order], dropped
