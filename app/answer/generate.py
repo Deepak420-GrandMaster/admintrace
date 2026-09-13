@@ -10,7 +10,7 @@ to the reader, from a correct one.
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Iterator
 
 from app.answer import cite, prompts
@@ -64,7 +64,7 @@ def _messages(prepared: PreparedQuery, decision: GateDecision) -> list[ChatMessa
         ]
 
     return [
-        ChatMessage("system", prompts.ANSWER_SYSTEM.format(language_name=language)),
+        ChatMessage("system", prompts.answer_system(prepared.language)),
         ChatMessage("user", prompts.ANSWER_USER.format(
             language_name=language,
             question=prepared.original,
@@ -80,9 +80,16 @@ def _retrieve(question: str, settings: Settings) -> tuple[PreparedQuery, GateDec
     return prepared, verify_answerable(question, decision, settings)
 
 
-def answer_stream(question: str,
-                  settings: Settings | None = None) -> Iterator[AnswerResult]:
-    """Yield the answer as it is written, then a final complete result."""
+def answer_stream(question: str, settings: Settings | None = None,
+                  language: str | None = None) -> Iterator[AnswerResult]:
+    """Yield the answer as it is written, then a final complete result.
+
+    ``language`` forces the language the answer is written in. Retrieval still
+    uses the language the question was actually asked in, because that is what
+    decides whether the query needs translating before it meets a French
+    corpus. Someone can reasonably ask in English and want to read the reply in
+    French, or the reverse.
+    """
     settings = settings or get_settings()
     started = time.time()
 
@@ -93,6 +100,11 @@ def answer_stream(question: str,
         return
 
     prepared, decision = _retrieve(question, settings)
+
+    wanted = language or settings.answer_language
+    if wanted in {"en", "fr"} and wanted != prepared.language:
+        prepared = replace(prepared, language=wanted)
+
     citations = [] if decision.should_refuse else cite.build(decision.passed)
 
     partial = AnswerResult(
@@ -131,8 +143,9 @@ def answer_stream(question: str,
     )
 
 
-def answer(question: str, settings: Settings | None = None) -> AnswerResult:
+def answer(question: str, settings: Settings | None = None,
+           language: str | None = None) -> AnswerResult:
     result = AnswerResult(question, "en", "", refused=False)
-    for result in answer_stream(question, settings):
+    for result in answer_stream(question, settings, language):
         pass
     return result

@@ -15,6 +15,7 @@ from app.answer.cite import Citation
 from app.answer.generate import AnswerResult
 from app.query import glossary
 from app.retrieval.types import Retrieved
+from app.ui.i18n import t
 
 _BOLD = re.compile(r"\*\*(.+?)\*\*")
 _ITALIC = re.compile(r"(?<!\*)\*([^*\n]+?)\*(?!\*)")
@@ -51,7 +52,7 @@ def inline(text: str) -> str:
     return _mark_french(escaped)
 
 
-def markdown(text: str) -> str:
+def markdown(text: str, lang: str = "en") -> str:
     """Render the answer's markdown subset."""
     blocks: list[str] = []
     list_items: list[str] = []
@@ -67,7 +68,12 @@ def markdown(text: str) -> str:
     def close_say() -> None:
         nonlocal in_say
         if in_say:
-            blocks.append("<p class='rp-say-note'>Suggested wording, not an official text.</p></div>")
+            blocks.append(
+                f"<p class='rp-say-note'>{html.escape(t(lang, 'say_note'))}</p>"
+                f"<button class='rp-copy' type='button' data-copy "
+                f"data-done=\"{html.escape(t(lang, 'copied'))}\">"
+                f"{html.escape(t(lang, 'copy'))}</button></div>"
+            )
             in_say = False
 
     for raw in text.splitlines():
@@ -113,34 +119,43 @@ def markdown(text: str) -> str:
 
 # ------------------------------------------------------------------ answer --
 
-def skeleton(status: str) -> str:
-    return (
-        "<div class='rp-skeleton'>"
-        f"<div class='rp-sk-status'><span class='rp-spinner'></span>{html.escape(status)}</div>"
-        "<div class='rp-sk-line' style='width:92%'></div>"
-        "<div class='rp-sk-line' style='width:99%'></div>"
-        "<div class='rp-sk-line' style='width:78%'></div>"
-        "<div class='rp-sk-line' style='width:88%'></div>"
-        "</div>"
-    )
+STAGES = ("stage_search", "stage_read", "stage_write")
 
 
-def answer_html(result: AnswerResult, streaming: bool = False) -> str:
+def skeleton(active: int = 0, lang: str = "en") -> str:
+    rows = []
+    for index, key in enumerate(STAGES):
+        state = ("rp-done-stage" if index < active
+                 else "rp-on" if index == active else "")
+        rows.append(
+            f"<div class='rp-stage {state}'><span class='rp-stage-dot'></span>"
+            f"{html.escape(t(lang, key))}</div>"
+        )
+    widths = ("92%", "99%", "78%", "88%")
+    lines = "".join(f"<div class='rp-sk-line' style='width:{w}'></div>" for w in widths)
+    return (f"<div class='rp-skeleton'><div class='rp-stages'>{''.join(rows)}</div>"
+            f"{lines}</div>")
+
+
+def answer_html(result: AnswerResult, streaming: bool = False,
+                lang: str = "en") -> str:
     if result.error and not result.text:
         return f"<div class='rp-error'>{html.escape(result.error)}</div>"
     if not result.text:
-        return skeleton("Reading the sources…")
+        return skeleton(2, lang)
 
     if result.refused:
-        badge = "<span class='rp-badge'><span class='rp-dot'></span>Not covered by the sources</span>"
+        label = t(lang, "refused")
         shell = "rp-answer rp-refusal"
     else:
         count = len(result.citations)
-        label = f"Grounded in {count} official source{'s' if count != 1 else ''}"
-        badge = f"<span class='rp-badge'><span class='rp-dot'></span>{label}</span>"
+        label = (t(lang, "grounded_one") if count == 1
+                 else t(lang, "grounded_many", n=count))
         shell = "rp-answer"
+    badge = (f"<span class='rp-badge'><span class='rp-dot'></span>"
+             f"{html.escape(label)}</span>")
 
-    body = markdown(result.text)
+    body = markdown(result.text, lang)
     if streaming:
         body += "<span class='rp-caret'></span>"
 
@@ -153,7 +168,7 @@ def answer_html(result: AnswerResult, streaming: bool = False) -> str:
 
 # ----------------------------------------------------------------- sources --
 
-def sources_html(citations: list[Citation]) -> str:
+def sources_html(citations: list[Citation], lang: str = "en") -> str:
     if not citations:
         return ""
     cards = []
@@ -167,7 +182,8 @@ def sources_html(citations: list[Citation]) -> str:
         cards.append(
             f"<a class='rp-source' style='--i:{index}' href='{html.escape(citation.url)}'"
             f" target='_blank' rel='noopener noreferrer'>"
-            f"<div class='rp-source-title'>{html.escape(citation.title_fr)}</div>"
+            f"<div class='rp-source-title'>{html.escape(citation.title_fr)}"
+            f"<span class='rp-source-open'>&#8599;</span></div>"
             f"<div class='rp-source-meta'>"
             f"<span class='rp-source-id'>{html.escape(citation.fiche_id)}</span>"
             f"{scope}"
@@ -177,10 +193,8 @@ def sources_html(citations: list[Citation]) -> str:
             f"<span class='rp-score-value'>{citation.score:.2f}</span>"
             f"</span></div></a>"
         )
-    return (
-        "<div class='rp-sources-head'>Sources · service-public.gouv.fr</div>"
-        + "".join(cards)
-    )
+    head = f"{t(lang, 'sources_head')} · service-public.gouv.fr"
+    return f"<div class='rp-sources-head'>{html.escape(head)}</div>" + "".join(cards)
 
 
 # ------------------------------------------------------------------- debug --
@@ -207,9 +221,9 @@ def _chunk_row(hit: Retrieved, passed: bool) -> str:
     )
 
 
-def debug_html(result: AnswerResult) -> str:
+def debug_html(result: AnswerResult, lang: str = "en") -> str:
     if result.prepared is None or result.gate is None:
-        return "<div class='rp-note'>Ask a question to see how it was answered.</div>"
+        return f"<div class='rp-note'>{html.escape(t(lang, 'debug_empty'))}</div>"
 
     prepared, gate = result.prepared, result.gate
     rows = [
@@ -257,7 +271,7 @@ def debug_html(result: AnswerResult) -> str:
 
 # ---------------------------------------------------------------- glossary --
 
-def glossary_html(search: str = "") -> str:
+def glossary_html(search: str = "", lang: str = "en") -> str:
     needle = glossary._fold(search.strip())
     terms = [
         t for t in glossary.load()
@@ -267,7 +281,8 @@ def glossary_html(search: str = "") -> str:
         or any(needle in glossary._fold(a) for a in t.aliases_en)
     ]
     if not terms:
-        return f"<div class='rp-note'>No glossary term matches “{html.escape(search)}”.</div>"
+        return (f"<div class='rp-note'>"
+                f"{html.escape(t(lang, 'no_match', q=search))}</div>")
 
     cards = []
     for index, term in enumerate(terms):
