@@ -57,6 +57,20 @@ HEAD = f"""
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=JetBrains+Mono:wght@400;600&display=swap">
 <script>
 (() => {{
+  // --- metadata ------------------------------------------------------------
+  // Gradio writes its own og:title of "Gradio" into the document. Ours is
+  // served too, but two of the same tag is ambiguous to a link preview, so
+  // the placeholder is removed once the page is up.
+  ["og:title", "og:description"].forEach((property) => {{
+    const tags = [...document.querySelectorAll(`meta[property="${{property}}"]`)];
+    // Drop Gradio's placeholder, then any repeat of what is left: two of the
+    // same tag is ambiguous to a link preview, whatever they say.
+    const real = tags.filter((tag) =>
+      (tag.getAttribute("content") || "").trim() !== "Gradio");
+    tags.forEach((tag) => {{ if (!real.includes(tag)) tag.remove(); }});
+    real.slice(1).forEach((tag) => tag.remove());
+  }});
+
   // --- document language -------------------------------------------------
   // Screen readers pronounce from the document's lang; leaving it as the
   // page's default makes a French interface read in an English voice.

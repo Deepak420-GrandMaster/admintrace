@@ -14,12 +14,12 @@ from __future__ import annotations
 
 STRINGS: dict[str, dict[str, str]] = {
     "en": {
-        "headline": "What do you need to sort out?",
+        "headline": "What do you need help with?",
         "promise": "French administration, made clear.",
-        "subhead": "Understand what to do, what you need, and where to go. "
-                   "Ask in English or French — every answer comes from an "
-                   "official government page, with the link and the date it "
-                   "was last checked.",
+        "subhead": "Ask a question and get a clear answer, backed by official "
+                   "sources. English or French — every answer links the "
+                   "government page it came from, and the date that page was "
+                   "last updated.",
         "study_prompt": "Studying in France? Tell me where and I can be more "
                         "precise — your institution decides which préfecture "
                         "and which CROUS you deal with.",
@@ -79,10 +79,11 @@ STRINGS: dict[str, dict[str, str]] = {
                         "actually told is the most useful thing you can give us.",
         "report_placeholder": "What happened, and what did you expect instead?",
         "report_send": "Send the report",
-        "report_keeps": "Sending this saves what you write, the question you "
-                        "asked, and which pages the answer used. Nothing else, "
-                        "and nothing about who you are.",
-        "report_thanks": "Thank you — that's saved.",
+        "report_keeps": "This is written to a file on this computer — there is "
+                        "no server to send it to. It keeps what you write, the "
+                        "question you asked and which pages the answer used. "
+                        "Nothing else, and nothing about who you are.",
+        "report_thanks": "Thank you — saved on this computer.",
         "report_saved_as": "Filed as",
         "report_empty": "Write a line or two first, and I'll take it from there.",
         "report_untriaged": "Saved in your own words. The translation step "
@@ -148,12 +149,12 @@ STRINGS: dict[str, dict[str, str]] = {
         "no_match": "No word matches “{q}”.",
     },
     "fr": {
-        "headline": "Qu'est-ce qu'il faut régler ?",
+        "headline": "De quoi avez-vous besoin ?",
         "promise": "L'administration française, en clair.",
-        "subhead": "Comprendre quoi faire, ce qu'il faut fournir et où aller. "
-                   "Posez votre question en français ou en anglais — chaque "
-                   "réponse vient d'une page officielle, avec le lien et la "
-                   "date de dernière vérification.",
+        "subhead": "Posez votre question, obtenez une réponse claire, appuyée "
+                   "sur des sources officielles. En français ou en anglais — "
+                   "chaque réponse renvoie à la page officielle dont elle vient, "
+                   "avec la date de sa dernière mise à jour.",
         "study_prompt": "Vous étudiez en France ? Dites-moi où et je serai plus "
                         "précis : votre établissement détermine la préfecture "
                         "et le CROUS dont vous dépendez.",
@@ -219,10 +220,11 @@ STRINGS: dict[str, dict[str, str]] = {
                         "est ce qui nous aide le plus.",
         "report_placeholder": "Que s'est-il passé, et à quoi vous attendiez-vous ?",
         "report_send": "Envoyer",
-        "report_keeps": "L'envoi enregistre ce que vous écrivez, la question "
-                        "posée et les pages utilisées. Rien d'autre, et rien "
-                        "sur qui vous êtes.",
-        "report_thanks": "Merci — c'est enregistré.",
+        "report_keeps": "Ceci est écrit dans un fichier sur cet ordinateur — "
+                        "il n'y a pas de serveur où l'envoyer. Sont conservés : "
+                        "ce que vous écrivez, la question posée et les pages "
+                        "utilisées. Rien d'autre, et rien sur qui vous êtes.",
+        "report_thanks": "Merci — enregistré sur cet ordinateur.",
         "report_saved_as": "Enregistré sous",
         "report_empty": "Écrivez une ou deux lignes, et je m'occupe du reste.",
         "report_untriaged": "Enregistré dans vos mots. La traduction n'a pas pu "

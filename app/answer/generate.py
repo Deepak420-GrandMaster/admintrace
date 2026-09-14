@@ -77,30 +77,74 @@ def _messages(prepared: PreparedQuery, decision: GateDecision) -> list[ChatMessa
     ]
 
 
-# Openers that mean the question leans on the one before it.
+# Openers that only make sense as a continuation of the last question.
 _ELLIPTICAL = (
-    "and ", "what about", "how about", "ok and", "also", "then ", "so ",
-    "et ", "et pour", "et si", "aussi", "alors", "donc ", "puis ",
+    "and ", "and,", "what about", "how about", "ok and", "also", "then ",
+    "so ", "but ", "what if", "and what", "in that case",
+    "et ", "et pour", "et si", "et quoi", "aussi", "alors", "donc ", "puis ",
+    "mais ", "et dans ce cas", "dans ce cas",
 )
+
+# Words that carry no subject of their own. A question built only from these
+# is asking about whatever was already being discussed.
+_GENERIC = frozenset("""
+document documents paper papers papier papiers piece pieces justificatif
+justificatifs form forms formulaire formulaires
+cost costs price prices fee fees cout couts coute coutent combien ca cela
+prix tarif tarifs montant
+time deadline delay delays delai delais duree long much many far often
+souvent longtemps
+where who when how what which why
+quel quels quelle quelles quoi qui ou comment pourquoi quand
+need needs needed require required faut besoin fournir apporter
+do does did is are was were can could should must go
+dois doit devons devez doivent aller suis est sont etre avoir ai
+i me my mine we our you your it its they them the a an
+je me mon ma mes nous notre vous votre il elle ce cette les des du de la le
+next apres ensuite suite step steps etape etapes procedure demarche demarches
+then also too encore aussi
+""".split())
+
+
+def classify_followup(question: str, previous: str | None) -> str:
+    """CONTINUATION or NEW_TOPIC.
+
+    A conversation on screen promises the assistant remembers. Retrieval does
+    not, so a question that leans on the last one has to carry it — otherwise
+    "what documents do I need?" is searched against nothing and answered about
+    nothing.
+
+    The test is whether the question names a subject of its own. "What
+    documents do I need?" names none, so it belongs to whatever came before.
+    "What is the weather in Paris?" names one, so it does not, and dragging a
+    residence permit into it would produce a worse answer than admitting the
+    corpus has nothing to say.
+    """
+    asked = (question or "").strip()
+    if not previous or not asked:
+        return "NEW_TOPIC"
+
+    lowered = asked.lower()
+    if lowered.startswith(_ELLIPTICAL):
+        return "CONTINUATION"
+
+    from app.retrieval.keyword import tokenize
+
+    content = [word for word in tokenize(asked) if word not in _GENERIC]
+    if not content:
+        return "CONTINUATION"
+    # A subject of its own, however short, stands alone.
+    return "NEW_TOPIC"
 
 
 def resolve_followup(question: str, previous: str | None) -> tuple[str, bool]:
     """Expand a question that only makes sense after the last one.
 
-    A conversation on screen promises the assistant remembers. Retrieval does
-    not, so "and for my spouse?" would be searched on its own and answered
-    about nothing. Rather than let the interface imply a memory that is not
-    there, the short elliptical follow-ups that actually depend on the last
-    question carry it with them. A question that stands on its own is left
-    alone — dragging the previous topic into every search would distort far
-    more answers than it rescued.
+    Only the previous question is carried, never the answer: an answer is long,
+    and folding it into a search query buries the thing actually being asked.
     """
     asked = (question or "").strip()
-    if not previous or not asked:
-        return asked, False
-    lowered = asked.lower()
-    leans_back = lowered.startswith(_ELLIPTICAL) or len(asked.split()) <= 4
-    if not leans_back:
+    if classify_followup(asked, previous) == "NEW_TOPIC":
         return asked, False
     return f"{previous.strip()} — {asked}", True
 
@@ -182,8 +226,10 @@ def answer_stream(question: str, settings: Settings | None = None,
 
 
 def answer(question: str, settings: Settings | None = None,
-           language: str | None = None) -> AnswerResult:
+           language: str | None = None,
+           previous_question: str | None = None) -> AnswerResult:
+    """Answer without streaming. Same behaviour, collected."""
     result = AnswerResult(question, "en", "", refused=False)
-    for result in answer_stream(question, settings, language):
+    for result in answer_stream(question, settings, language, previous_question):
         pass
     return result
