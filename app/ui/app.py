@@ -1,4 +1,4 @@
-"""En Clair — the local interface.
+"""Claré — the local interface.
 
     uv run python -m app.ui.app     →  http://localhost:7860
 
@@ -17,7 +17,7 @@ from pathlib import Path
 
 import gradio as gr
 
-from app.answer.generate import AnswerResult, answer_stream
+from app.answer.generate import answer_stream
 from app.config import get_settings
 from app.ingest.embed import fetch_all, get_collection
 from app.ingest.fetch import read_manifest
@@ -26,14 +26,29 @@ from app.query.detect import detect
 from app.ui import brand, render
 from app.directory import universities
 from app.feedback import submit as submit_report
-from app.ui.i18n import EXAMPLES, LANGUAGES, t
+from app.ui.i18n import LANGUAGES, t
 
 STYLES = (Path(__file__).resolve().parent / "styles.css").read_text(encoding="utf-8")
 
 # Runs once in the page. Only two jobs: copy the French phrasing to the
 # clipboard, and give the page its icon.
+# Gradio writes the title client-side, so a crawler or a link preview that
+# does not run JavaScript sees nothing. These are served with the document.
 HEAD = f"""
-<link rel="icon" href="{brand.FAVICON}">
+<title>Claré — French administration, made clear</title>
+<meta name="description" content="Understand French administrative
+ procedures in plain English or French. Every answer comes from an official
+ government page, with the link and the date it was last checked.">
+<meta name="robots" content="index, follow">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Claré — French administration, made clear">
+<meta property="og:description" content="Understand what to do, what you need,
+ and where to go. Answers from official French government sources only.">
+<meta property="og:locale" content="en_GB">
+<meta property="og:locale:alternate" content="fr_FR">
+<meta name="twitter:card" content="summary">
+<meta name="theme-color" content="#fafaf8">
+<link rel="icon" type="image/svg+xml" href="{brand.FAVICON}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- Public Sans is drawn for government use and stays legible at small sizes
@@ -42,6 +57,30 @@ HEAD = f"""
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=JetBrains+Mono:wght@400;600&display=swap">
 <script>
 (() => {{
+  // --- document language -------------------------------------------------
+  // Screen readers pronounce from the document's lang; leaving it as the
+  // page's default makes a French interface read in an English voice.
+  const syncLang = () => {{
+    const french = !!document.querySelector(".rp-theme-fr");
+    document.documentElement.lang = french ? "fr" : "en";
+  }};
+
+  // --- skip link -----------------------------------------------------------
+  const addSkip = () => {{
+    if (document.querySelector(".rp-skip")) return;
+    const field = document.querySelector("#rp-question textarea");
+    if (!field) return;
+    const link = document.createElement("a");
+    link.className = "rp-skip";
+    link.href = "#rp-question";
+    link.textContent = document.documentElement.lang === "fr"
+      ? "Aller à la question" : "Skip to the question";
+    link.addEventListener("click", (event) => {{
+      event.preventDefault(); field.focus();
+    }});
+    document.body.prepend(link);
+  }};
+
   // Everything here is delegated from the document, because Gradio replaces
   // chunks of the page on every interaction and anything bound to an element
   // directly would be lost the first time an answer arrives.
@@ -111,6 +150,65 @@ HEAD = f"""
     }}
     if (event.key === "Escape" && document.activeElement === field) field.blur();
   }});
+
+  // --- a category is a question ------------------------------------------
+  // Svelte binds the field, so setting .value alone is invisible to it; the
+  // input event is what makes the change real.
+  const askField = () => document.querySelector("#rp-question textarea");
+  const askButton = () => document.querySelector("button.rp-submit");
+
+  document.addEventListener("click", (event) => {{
+    const cat = event.target.closest("[data-question]");
+    if (!cat) return;
+    const field = askField();
+    if (!field) return;
+    field.value = cat.dataset.question;
+    field.dispatchEvent(new Event("input", {{ bubbles: true }}));
+    requestAnimationFrame(() => askButton() && askButton().click());
+  }});
+
+  // --- answer controls -----------------------------------------------------
+  document.addEventListener("click", async (event) => {{
+    const copy = event.target.closest("[data-copy-answer]");
+    if (copy) {{
+      const answer = copy.closest(".rp-reply").querySelector(".rp-answer");
+      if (answer) {{
+        const text = answer.innerText.trim();
+        try {{ await navigator.clipboard.writeText(text); }}
+        catch (error) {{
+          const area = document.createElement("textarea");
+          area.value = text; document.body.appendChild(area);
+          area.select(); document.execCommand("copy"); area.remove();
+        }}
+        const label = copy.querySelector("span");
+        const original = label.textContent;
+        label.textContent = copy.dataset.done || "Copied";
+        copy.classList.add("rp-done");
+        setTimeout(() => {{
+          label.textContent = original; copy.classList.remove("rp-done");
+        }}, 1600);
+      }}
+      return;
+    }}
+    const vote = event.target.closest("[data-vote]");
+    if (vote) {{
+      const row = vote.closest(".rp-actions");
+      row.querySelectorAll("[data-vote]").forEach((b) => {{
+        b.classList.remove("rp-done"); b.disabled = true;
+      }});
+      vote.classList.add("rp-done");
+      const thanks = row.querySelector(".rp-action-thanks");
+      if (thanks) thanks.hidden = false;
+    }}
+  }});
+
+  // Once there is a conversation, offer the way back to a blank page.
+  const answeredWatcher = new MutationObserver(() => {{
+    document.body.classList.toggle("rp-answered",
+      !!document.querySelector(".rp-thread .rp-turn"));
+  }});
+  answeredWatcher.observe(document.documentElement,
+    {{ childList: true, subtree: true }});
 
   // --- the light follows the hand -----------------------------------------
   // The reference swings a clock hand toward the cursor; the same idea, far
@@ -189,12 +287,12 @@ HEAD = f"""
         const excerpt = source.querySelector(".rp-excerpt");
         const title = source.querySelector(".rp-source-title");
         if (!excerpt || !excerpt.textContent.trim()) return;
-        showPop(source, source.dataset.popLabel || "What this page says",
+        showPop(source, source.dataset.popLabel || "",
                 excerpt.textContent.trim().slice(0, 300),
                 title ? title.textContent.trim() : "");
       }} else {{
         const host = service.querySelector(".rp-service-host");
-        showPop(service, service.dataset.popLabel || "Opens the official service",
+        showPop(service, service.dataset.popLabel || "",
                 service.querySelector(".rp-service-title").textContent.trim(),
                 host ? host.textContent.trim() : "");
       }}
@@ -255,7 +353,7 @@ HEAD = f"""
     }});
   }}, {{ rootMargin: "0px 0px -40px 0px", threshold: 0.05 }});
 
-  const watch = () => (softenNotices(), document
+  const watch = () => (syncLang(), addSkip(), softenNotices(), document
     .querySelectorAll(".rp-source:not(.rp-reveal), .rp-gloss:not(.rp-reveal)")
     .forEach((node) => {{ node.classList.add("rp-reveal"); watcher.observe(node); }}));
 
@@ -272,7 +370,10 @@ def brand_block(lang: str) -> str:
     return f"""
 <span class="rp-theme rp-theme-{lang}"></span>
 <div class="rp-wash"></div>
-<div class="rp-masthead">{brand.wordmark()}</div>
+<div class="rp-masthead">
+  {brand.wordmark()}
+  <p class="rp-promise">{html.escape(t(lang, 'promise'))}</p>
+</div>
 """
 
 
@@ -549,75 +650,74 @@ def _context_of(result, question: str, uai: str) -> dict:
 
 
 def ask(question: str, ui_lang: str, answer_lang: str, uai: str = "",
-        _context: dict | None = None):
-    """Stream the answer, its sources, and the retrieval trace."""
+        turns: list | None = None):
+    """Answer a question inside the conversation, streaming as it is written.
+
+    Yields, in order: the thread with the question showing and a thinking
+    state, then the same thread with the answer filling in, then the finished
+    turn with its sources and controls.
+    """
     hidden = gr.update(visible=False)
-    shown = gr.update(visible=get_settings().debug_panel)
-
+    turns = list(turns or [])
     question = (question or "").strip()
-    if not question:
-        # Say nothing rather than show three empty panels.
-        yield (hidden, hidden, hidden, gr.update(), hidden, {}, hidden)
-        return
-
     reply_lang = answer_lang if answer_lang in ("en", "fr") else ui_lang
 
+    if not question:
+        yield (gr.update(), gr.update(), gr.update(), gr.update(),
+               hidden, turns, {}, gr.update())
+        return
+
+    previous = turns[-1]["question"] if turns else None
+
     # Where someone studies narrows the question in a way the corpus can use:
-    # a number of fiches branch per département, and without the département
-    # those branches are never reached.
+    # a number of fiches branch per departement.
     place = universities.by_uai(uai) if uai else None
-    if place is not None and place.departement:
-        question = f"{question} ({place.departement})"
+    asked = f"{question} ({place.departement})" if place and place.departement else question
+
+    turns.append({"question": question, "state": "thinking",
+                  "result": None, "streaming": False})
+
+    def thread():
+        return gr.update(value=render.thread_html(turns, ui_lang, reply_lang),
+                         visible=True)
 
     offer_study = gr.update(visible=looks_like_study(question) and not uai)
-
-    yield (gr.update(value=render.skeleton(0, ui_lang), visible=True),
-           hidden, hidden, gr.update(), hidden, {}, offer_study)
+    # The landing copy steps aside once there is a conversation to read.
+    yield (thread(), hidden, hidden, gr.update(), offer_study, turns, {},
+           gr.update(value=""))
 
     final = None
-    for result in answer_stream(question, language=None if answer_lang == "auto"
-                                else answer_lang):
+    for result in answer_stream(asked, language=None if answer_lang == "auto"
+                                else answer_lang, previous_question=previous):
         final = result
-        if not result.text:
-            yield (gr.update(value=render.skeleton(1, ui_lang), visible=True),
-                   hidden, hidden, gr.update(), hidden, {}, offer_study)
-            continue
-        yield (
-            gr.update(value=render.answer_html(result, streaming=True,
-                                               lang=reply_lang), visible=True),
-            gr.update(
-                value=(render.near_misses_html(result, ui_lang) if result.refused
-                       else render.services_html(result.services, ui_lang)),
-                visible=bool(result.services or result.refused)),
-            gr.update(value=render.sources_html(result.citations, ui_lang),
-                      visible=bool(result.citations)),
-            render.debug_html(result, ui_lang),
-            shown,
-            _context_of(result, question, uai),
-            offer_study,
-        )
+        turns[-1] = {"question": question,
+                     "state": "answering" if result.text else "thinking",
+                     "result": result if result.text else None,
+                     "streaming": True}
+        yield (thread(), hidden, hidden, render.debug_html(result, ui_lang),
+               offer_study, turns, _context_of(result, question, uai),
+               gr.update())
+
     if final is not None:
-        yield (
-            gr.update(value=render.answer_html(final, streaming=False,
-                                               lang=reply_lang), visible=True),
-            gr.update(
-                value=(render.near_misses_html(final, ui_lang) if final.refused
-                       else render.services_html(final.services, ui_lang)),
-                visible=bool(final.services or final.refused)),
-            gr.update(value=render.sources_html(final.citations, ui_lang),
-                      visible=bool(final.citations)),
-            render.debug_html(final, ui_lang),
-            shown,
-            _context_of(final, question, uai),
-            offer_study,
-        )
+        turns[-1] = {"question": question, "state": "done",
+                     "result": final, "streaming": False}
+        yield (thread(), hidden, hidden, render.debug_html(final, ui_lang),
+               gr.update(visible=get_settings().debug_panel), turns,
+               _context_of(final, question, uai), gr.update())
+
+
+def reset_thread(ui_lang: str):
+    """Back to the landing state, with nothing left over."""
+    return (gr.update(value="", visible=False), gr.update(visible=True),
+            gr.update(visible=True), [], gr.update(visible=False),
+            gr.update(value=""))
 
 
 def build() -> gr.Blocks:
     settings = get_settings()
     start = "en"
 
-    with gr.Blocks(title="En Clair — French paperwork, put plainly",
+    with gr.Blocks(title="Claré — French administration, made clear",
                    analytics_enabled=False) as demo:
         with gr.Row(elem_classes="rp-topbar"):
             head = gr.HTML(brand_block(start))
@@ -634,10 +734,13 @@ def build() -> gr.Blocks:
                 question = gr.Textbox(
                     placeholder=t(start, "placeholder"), lines=2, max_lines=6,
                     elem_classes="rp-ask", show_label=False,
+                    elem_id="rp-question",
                 )
                 with gr.Row(elem_classes="rp-submit-row"):
                     submit = gr.Button(t(start, "submit"), variant="primary",
                                        elem_classes="rp-submit", scale=0)
+                    restart = gr.Button(t(start, "new_question"),
+                                        elem_classes="rp-chip rp-restart", scale=0)
                 with gr.Row(elem_classes="rp-reply-row"):
                     reply_caption = gr.HTML(lang_caption(start, "answer_lang"))
                     reply_lang = gr.Radio(
@@ -646,15 +749,10 @@ def build() -> gr.Blocks:
                         value="auto", show_label=False, container=False,
                         elem_classes="rp-switch",
                     )
-                try_label = gr.HTML(
-                    f"<div class='rp-chip-label'>{html.escape(t(start, 'try'))}</div>")
-                with gr.Row(elem_classes="rp-examples"):
-                    chips = [gr.Button(text, elem_classes="rp-chip", scale=0)
-                             for text in EXAMPLES[start]]
 
-                # Offered when the question is about studying, and not
-                # before: an empty institution picker on the landing page asks
-                # everyone to answer a question most of them do not have.
+                cats = gr.HTML(render.categories_html(start))
+
+                # Offered when the question is about studying, and not before.
                 with gr.Column(visible=False, elem_classes="rp-study-ask") as study_ask:
                     study_why = gr.HTML(
                         f"<p class='rp-study-prompt'>"
@@ -667,12 +765,9 @@ def build() -> gr.Blocks:
                         container=False, elem_classes="rp-study-hits")
                 place_box = gr.HTML(visible=False)
 
-                answer_box = gr.HTML(visible=False)
-                services_box = gr.HTML(visible=False)
-                sources_box = gr.HTML(visible=False)
-                # Off unless DEBUG_PANEL is switched on. It is a developer's
-                # view of retrieval, not something a person with a deadline
-                # and a form to fill in needs to see.
+                thread_box = gr.HTML(visible=False)
+
+                # A developer's view of retrieval, off unless switched on.
                 with gr.Accordion(t(start, "debug_title"), open=False,
                                   visible=False) as debug_acc:
                     debug_box = gr.HTML()
@@ -746,15 +841,16 @@ def build() -> gr.Blocks:
         disclaimer = gr.HTML(disclaimer_block(start))
 
         last_context = gr.State({})
-        outputs = [answer_box, services_box, sources_box, debug_box, debug_acc,
-                   last_context, study_ask]
+        turns_state = gr.State([])
+        outputs = [thread_box, hero, cats, debug_box, debug_acc,
+                   turns_state, last_context, question]
         report_send.click(send_report, [report_text, site_lang, last_context],
                           [report_result, report_text])
-        inputs = [question, site_lang, reply_lang, study]
+        inputs = [question, site_lang, reply_lang, study, turns_state]
         submit.click(ask, inputs, outputs)
         question.submit(ask, inputs, outputs)
-        for chip, text in zip(chips, EXAMPLES[start]):
-            chip.click(lambda t=text: t, None, question).then(ask, inputs, outputs)
+        restart.click(reset_thread, site_lang,
+                      [thread_box, hero, cats, turns_state, debug_acc, question])
 
         def suggest(query: str):
             """Live matches, previewed in place.
@@ -785,7 +881,11 @@ def build() -> gr.Blocks:
         refresh.click(corpus_html, site_lang, corpus_box)
 
         def switch_language(lang: str, current_search: str):
-            """Re-label the whole interface without losing what is on screen."""
+            """Re-label the whole interface without losing what is on screen.
+
+            Every user-facing string is re-read from the translation table, so
+            nothing can be left behind in the other language.
+            """
             return [
                 brand_block(lang),
                 hero_block(lang),
@@ -795,8 +895,8 @@ def build() -> gr.Blocks:
                                    ("English", "en"), ("Français", "fr")]),
                 gr.update(placeholder=t(lang, "placeholder")),
                 gr.update(value=t(lang, "submit")),
-                f"<div class='rp-chip-label'>{html.escape(t(lang, 'try'))}</div>",
-                *[gr.update(value=text) for text in EXAMPLES[lang]],
+                gr.update(value=t(lang, "new_question")),
+                render.categories_html(lang),
                 gr.update(label=t(lang, "debug_title")),
                 gr.update(label="01 · " + t(lang, "tab_ask")),
                 gr.update(label="02 · " + t(lang, "tab_glossary")),
@@ -821,11 +921,11 @@ def build() -> gr.Blocks:
         site_lang.change(
             switch_language,
             [site_lang, search],
-            [head, hero, disclaimer, reply_caption, reply_lang, question, submit,
-             try_label, *chips, debug_acc, tab_ask, tab_gloss, tab_corpus,
-             study_why, study_search,
-             report_panel, report_intro, report_text, report_keeps, report_send,
-             gloss_intro, search, gloss_box, corpus_intro, refresh],
+            [head, hero, disclaimer, reply_caption, reply_lang, question,
+             submit, restart, cats, debug_acc, tab_ask, tab_gloss, tab_corpus,
+             study_why, study_search, report_panel, report_intro, report_text,
+             report_keeps, report_send, gloss_intro, search, gloss_box,
+             corpus_intro, refresh],
         )
 
     return demo

@@ -40,7 +40,7 @@ INLINE_TAGS = frozenset({
 # Headings and machinery that must not become content blocks.
 SKIP_TAGS = frozenset({
     "Titre", "TitreAlternatif", "TitreFlottant", "TitreRiche", "Condition",
-    "Definition", "FilDEn Clair", "Theme", "SousThemePere", "DossierPere",
+    "Definition", "FilDClaré", "Theme", "SousThemePere", "DossierPere",
     "SurTitre", "Audience", "Canal", "PivotLocal", "Video", "ContenuIllustre",
 })
 

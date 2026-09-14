@@ -1,4 +1,4 @@
-/* En Clair — the thread through the labyrinth.
+/* Claré — the thread through the labyrinth.
    =====================================================================
 
    The design problem: someone anxious, often reading their second or third
@@ -1152,3 +1152,231 @@ body::after { background: radial-gradient(130% 94% at 50% 6%,
 }
 .rp-near-search:hover { filter: brightness(1.07); transform: translateY(-2px);
   box-shadow: 0 6px 16px color-mix(in oklch, var(--accent) 30%, transparent); }
+
+
+/* ==================================================================== */
+/*  The conversation                                                     */
+/*  A question and its answer belong together. Asking does not take you  */
+/*  anywhere: the landing copy steps aside and the thread takes its      */
+/*  place on the same surface.                                           */
+/* ==================================================================== */
+.rp-thread { margin-top: 26px; display: flex; flex-direction: column; gap: 34px; }
+.rp-turn { animation: rp-arrive .5s var(--ease-out) both; }
+
+.rp-who {
+  display: block; font-size: 11px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--ink-faint); margin-bottom: 8px;
+}
+.rp-who-assistant { color: var(--accent); }
+
+.rp-ask-bubble { margin-bottom: 22px; }
+.rp-ask-text {
+  margin: 0; font-size: 19px; line-height: 1.45; font-weight: 600;
+  color: var(--ink); letter-spacing: -.012em; max-width: 60ch;
+}
+.rp-reply { border-left: 2px solid var(--border); padding-left: 20px; }
+
+/* Thinking: three dots, no cleverness. */
+.rp-thinking { display: flex; align-items: center; gap: 12px; padding: 6px 0 10px; }
+.rp-think-dots { display: inline-flex; gap: 5px; }
+.rp-think-dots i {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+  opacity: .3; animation: rp-pulse 1.25s var(--ease) infinite;
+}
+.rp-think-dots i:nth-child(2) { animation-delay: .16s; }
+.rp-think-dots i:nth-child(3) { animation-delay: .32s; }
+@keyframes rp-pulse { 0%,100% { opacity: .28; transform: scale(.86); }
+  40% { opacity: 1; transform: scale(1); } }
+.rp-think-label { font-size: 14px; color: var(--ink-muted); }
+
+/* Controls, only once the answer has finished arriving. */
+.rp-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-soft); }
+.rp-action {
+  display: inline-flex; align-items: center; gap: 7px; min-height: 36px;
+  padding: 8px 13px; border-radius: 999px; cursor: pointer;
+  background: transparent; border: 1px solid var(--border);
+  font: 500 12.5px/1 var(--sans); color: var(--ink-muted);
+  transition: all .17s var(--ease);
+}
+.rp-action:hover { color: var(--accent); border-color: var(--accent-line);
+  background: var(--accent-wash); }
+.rp-action:active { transform: scale(.97); }
+.rp-action:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.rp-action.rp-done { color: var(--green); border-color: var(--green-line);
+  background: var(--green-wash); }
+.rp-action-thanks { font-size: 12.5px; color: var(--green); font-weight: 550; }
+.rp-icon { flex: 0 0 auto; }
+
+.rp-error-detail { display: block; margin-top: 7px; font-size: 12px;
+  color: var(--ink-muted); font-family: var(--mono); word-break: break-word; }
+
+.gradio-container button.rp-restart { display: none !important; }
+.rp-answered .gradio-container button.rp-restart,
+body.rp-answered .gradio-container button.rp-restart { display: inline-flex !important; }
+
+/* ==================================================================== */
+/*  Categories: entry points that are questions                          */
+/* ==================================================================== */
+.rp-cats { margin-top: 30px; }
+.rp-cats-head { font-size: 12px; font-weight: 700; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--ink-faint); text-align: center;
+  margin-bottom: 14px; }
+.rp-cats-grid { display: grid; gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+.rp-cat {
+  display: flex; align-items: center; gap: 12px; text-align: left;
+  min-height: 56px; padding: 14px 16px; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); box-shadow: var(--shadow-sm);
+  font: 550 14px/1.35 var(--sans); color: var(--ink-soft);
+  animation: rp-arrive .44s var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+  transition: transform .18s var(--ease), box-shadow .22s var(--ease),
+              border-color .18s var(--ease), color .18s var(--ease);
+}
+.rp-cat:hover { transform: translateY(-2px); box-shadow: var(--shadow-md);
+  border-color: var(--accent-line); color: var(--ink); }
+.rp-cat:active { transform: translateY(0) scale(.985); }
+.rp-cat:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.rp-cat-icon { flex: 0 0 auto; width: 22px; height: 22px;
+  background-size: contain; background-repeat: no-repeat; background-position: center;
+  opacity: .85; transition: transform .22s var(--ease); }
+.rp-cat:hover .rp-cat-icon { transform: scale(1.08); }
+.rp-cat-permit { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%232743c4%27%20stroke-width%3D%271.7%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M4%207.5A1.5%201.5%200%200%201%205.5%206h13A1.5%201.5%200%200%201%2020%207.5v9a1.5%201.5%200%200%201-1.5%201.5h-13A1.5%201.5%200%200%201%204%2016.5v-9ZM9%2011.5a1.8%201.8%200%201%200%200-3.6%201.8%201.8%200%200%200%200%203.6ZM6%2015.4c.5-1.4%201.7-2.1%203-2.1s2.5.7%203%202.1M14.5%2010h3M14.5%2013.5h3%27%2F%3E%3C%2Fsvg%3E"); }
+.rp-cat-housing { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%232743c4%27%20stroke-width%3D%271.7%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M4%2011%2012%205l8%206M6.5%209.8V19h11V9.8M10%2019v-5h4v5%27%2F%3E%3C%2Fsvg%3E"); }
+.rp-cat-docs { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%232743c4%27%20stroke-width%3D%271.7%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M7%204h6l4%204v12H7V4ZM13%204v4h4M9.5%2012.5h5M9.5%2016h5%27%2F%3E%3C%2Fsvg%3E"); }
+.rp-cat-student { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%232743c4%27%20stroke-width%3D%271.7%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M3%209.5%2012%205.5l9%204-9%204-9-4ZM7%2011.6V16c0%201.4%202.2%202.5%205%202.5s5-1.1%205-2.5v-4.4M20%2010.5V15%27%2F%3E%3C%2Fsvg%3E"); }
+.rp-cat-work { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%232743c4%27%20stroke-width%3D%271.7%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M4%208.5A1.5%201.5%200%200%201%205.5%207h13A1.5%201.5%200%200%201%2020%208.5v9a1.5%201.5%200%200%201-1.5%201.5h-13A1.5%201.5%200%200%201%204%2017.5v-9ZM9%207V5.5A1.5%201.5%200%200%201%2010.5%204h3A1.5%201.5%200%200%201%2015%205.5V7M4%2012h16%27%2F%3E%3C%2Fsvg%3E"); }
+.rp-cat-appt { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%232743c4%27%20stroke-width%3D%271.7%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M4%208.5A1.5%201.5%200%200%201%205.5%207h13A1.5%201.5%200%200%201%2020%208.5v9a1.5%201.5%200%200%201-1.5%201.5h-13A1.5%201.5%200%200%201%204%2017.5v-9ZM8%204.5V8M16%204.5V8M4%2011.5h16M11%2015l1.2%201.2L15%2013.5%27%2F%3E%3C%2Fsvg%3E"); }
+
+@media (max-width: 720px) {
+  .rp-cats-grid { grid-template-columns: 1fr 1fr; }
+  .rp-cat { font-size: 13px; padding: 12px 13px; min-height: 52px; }
+  .rp-ask-text { font-size: 17px; }
+  .rp-reply { padding-left: 14px; }
+  .rp-thread { gap: 26px; }
+}
+@media (max-width: 380px) { .rp-cats-grid { grid-template-columns: 1fr; } }
+
+
+/* The bug reporter carries a bug, from the same icon family as the rest. */
+.gradio-container .rp-report > .label-wrap::before {
+  content: ""; flex: 0 0 auto; width: 19px; height: 19px;
+  background: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%25232743c4%27%20stroke-width%3D%271.7%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M8.5%208.5a3.5%203.5%200%200%201%207%200%27%2F%3E%3Crect%20x%3D%277%27%20y%3D%278.5%27%20width%3D%2710%27%20height%3D%2711%27%20rx%3D%275%27%2F%3E%3Cpath%20d%3D%27M7%2013H3.5M20.5%2013H17M7.6%209.4%204.8%207.2M16.4%209.4l2.8-2.2M7.6%2017.2%204.8%2019.4M16.4%2017.2l2.8%202.2M9.8%206%208.6%204M14.2%206l1.2-2%27%2F%3E%3Cpath%20d%3D%27M12%2011v6%27%2F%3E%3C%2Fsvg%3E") center/contain no-repeat;
+  transition: transform .3s var(--ease);
+}
+.gradio-container .rp-report > .label-wrap:hover::before {
+  transform: rotate(-12deg) scale(1.08);
+}
+@media (max-width: 720px) {
+  /* On a phone the label would crowd the thumb zone; the icon carries it. */
+  .gradio-container .rp-report { left: auto; right: 14px; bottom: 14px;
+    max-width: none !important; }
+  .gradio-container .rp-report > .label-wrap {
+    width: 52px !important; height: 52px; padding: 0 !important;
+    justify-content: center !important; border-radius: 50% !important;
+    font-size: 0 !important;
+  }
+  .gradio-container .rp-report > .label-wrap::before { width: 22px; height: 22px; }
+  .gradio-container .rp-report[open] > .label-wrap,
+  .gradio-container .rp-report > .label-wrap[aria-expanded="true"] {
+    width: auto !important; border-radius: 999px !important;
+    padding: 11px 18px 11px 15px !important; font-size: 13px !important;
+  }
+}
+
+
+/* A flex parent will happily crush a button to its padding. Chips and the
+   primary action state the width they need so nothing squeezes them. */
+.gradio-container button.rp-chip,
+.gradio-container button.rp-submit,
+.gradio-container .rp-restart {
+  min-width: max-content !important; flex: 0 0 auto !important;
+}
+.rp-submit-row > *, .rp-submit-row > * > * {
+  flex: 0 0 auto !important; width: auto !important; min-width: 0 !important;
+}
+.gradio-container .rp-restart {
+  background: transparent !important; box-shadow: none !important;
+  color: var(--ink-muted) !important;
+}
+.gradio-container .rp-restart:hover {
+  background: var(--surface) !important; color: var(--accent) !important;
+}
+@media (max-width: 720px) {
+  .gradio-container button.rp-submit { width: 100% !important; }
+  .rp-submit-row { flex-direction: column !important; width: 100%; }
+  .rp-submit-row > * { width: 100% !important; }
+  .gradio-container .rp-restart { width: 100% !important; }
+}
+
+
+/* ==================================================================== */
+/*  Accessibility                                                        */
+/* ==================================================================== */
+
+/* Cards inherit the hero's centring; their content is left-read. */
+.rp-near, .rp-near-title, .rp-near-meta, .rp-source, .rp-service, .rp-gloss,
+.rp-turn, .rp-answer, .rp-actions { text-align: left; }
+
+/* One visible focus ring everywhere, on the keyboard only. */
+.gradio-container :focus-visible,
+.rp-cat:focus-visible, .rp-action:focus-visible, .rp-source:focus-visible,
+.rp-service:focus-visible, .rp-near:focus-visible, .rp-sources-toggle:focus-visible,
+.rp-copy:focus-visible, .rp-fr:focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px !important; border-radius: var(--radius-xs);
+}
+.gradio-container :focus:not(:focus-visible) { outline: none !important; }
+
+/* Reachable by keyboard, invisible until it is needed. */
+.rp-skip {
+  position: absolute; left: 12px; top: -60px; z-index: 200;
+  padding: 12px 18px; border-radius: var(--radius-sm);
+  background: var(--accent); color: #fff; font: 600 14px/1 var(--sans);
+  text-decoration: none; transition: top .18s var(--ease);
+}
+.rp-skip:focus { top: 12px; }
+
+.rp-sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* iOS: keep the floating control clear of the home indicator. */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .gradio-container .rp-report {
+    bottom: calc(20px + env(safe-area-inset-bottom));
+  }
+  @media (max-width: 720px) {
+    .gradio-container .rp-report {
+      bottom: calc(14px + env(safe-area-inset-bottom));
+    }
+    .gradio-container { padding-bottom: calc(104px + env(safe-area-inset-bottom)) !important; }
+  }
+}
+
+
+/* Smallest phones: the language control has to fit before it has to be
+   pretty, and the skip link is a touch target like any other. */
+.rp-skip { min-height: 44px; display: inline-flex; align-items: center; }
+
+@media (max-width: 400px) {
+  .gradio-container .rp-switch label { padding: 8px 10px !important;
+    font-size: 12px !important; }
+  .gradio-container .rp-switch-site label::before {
+    width: 15px; height: 15px; margin-right: 6px;
+  }
+  .gradio-container .rp-switch .wrap:not(.default) { padding: 2px !important; }
+  .rp-reply-row .rp-lang-label { display: none; }
+}
+
+
+/* The positioning line, where a first-time visitor actually reads it. */
+.rp-promise {
+  margin: 4px 0 0 51px; font-size: 13px; font-weight: 500;
+  color: var(--ink-muted); letter-spacing: -.005em;
+  animation: rp-arrive .6s var(--ease-out) .22s both;
+}
+@media (max-width: 720px) { .rp-promise { margin-left: 0; font-size: 12.5px; } }

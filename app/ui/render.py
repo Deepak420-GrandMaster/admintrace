@@ -50,8 +50,8 @@ def _mark_french(text: str, lang: str = "en") -> str:
             continue
         gloss = term.explanation_fr if lang == "fr" else term.explanation_en
         source = ("service-public.gouv.fr" if term.is_official
-                  else ("écrit pour En Clair" if lang == "fr"
-                        else "written for En Clair"))
+                  else ("écrit pour Claré" if lang == "fr"
+                        else "written for Claré"))
         attrs = (f'class="rp-fr" tabindex="0" '
                  f'data-en="{html.escape(term.en, quote=True)}" '
                  f'data-gloss="{html.escape(gloss, quote=True)}" '
@@ -249,7 +249,8 @@ def services_html(services: list[ServiceLink], lang: str = "en") -> str:
         rows.append(
             f"<a class='rp-service' style='--i:{index}' "
             f"href='{html.escape(service.url)}' target='_blank' "
-            f"rel='noopener noreferrer'>"
+            f"rel='noopener noreferrer' "
+            f"data-pop-label=\"{html.escape(t(lang, 'pop_service'), quote=True)}\">"
             f"<span class='rp-service-icon'>&#8599;</span>"
             f"<span class='rp-service-body'>"
             f"<span class='rp-service-title'>{html.escape(service.title)}</span>"
@@ -329,7 +330,8 @@ def sources_html(citations: list[Citation], lang: str = "en") -> str:
         cards.append(
             f"<a class='rp-source' style='--i:{index}' "
             f"href='{html.escape(citation.url)}' target='_blank' "
-            f"rel='noopener noreferrer' title='{html.escape(citation.url)}'>"
+            f"rel='noopener noreferrer' title='{html.escape(citation.url)}' "
+            f"data-pop-label=\"{html.escape(t(lang, 'pop_source'), quote=True)}\">"
             f"<span class='rp-source-link'>&#8599;</span>"
             f"<div class='rp-source-title'>{html.escape(citation.title_fr)}</div>"
             f"<div class='rp-source-meta'>"
@@ -458,7 +460,7 @@ def glossary_html(search: str = "", lang: str = "en") -> str:
             f"<span class='rp-prov rp-prov-official'>Official definition · "
             f"{html.escape(term.definition_id or '')}</span>"
             if term.is_official else
-            "<span class='rp-prov rp-prov-authored'>Written for En Clair</span>"
+            "<span class='rp-prov rp-prov-authored'>Written for Claré</span>"
         )
         aliases = [a for a in term.aliases_en
                    if a.lower() not in {term.fr.lower(), term.en.lower()}]
@@ -485,3 +487,147 @@ def glossary_html(search: str = "", lang: str = "en") -> str:
             f"{also}{provenance}</div></div>"
         )
     return f"<div class='rp-gloss-grid'>{''.join(cards)}</div>"
+
+
+# ==========================================================================
+#  The conversation
+#  A question and its answer belong together on screen. The landing state
+#  and the answered state are the same surface, so asking does not feel like
+#  being taken somewhere else.
+# ==========================================================================
+
+ICONS = {
+    # One family, drawn on a 24-grid, stroked not filled, so they scale and
+    # recolour with the text beside them.
+    "send": "M5 12h14M13 6l6 6-6 6",
+    "copy": "M9 9V6.5A1.5 1.5 0 0 1 10.5 5h7A1.5 1.5 0 0 1 19 6.5v7"
+            "a1.5 1.5 0 0 1-1.5 1.5H15M5.5 9h8A1.5 1.5 0 0 1 15 10.5v7"
+            "A1.5 1.5 0 0 1 13.5 19h-8A1.5 1.5 0 0 1 4 17.5v-7A1.5 1.5 0 0 1 5.5 9Z",
+    "up": "M7 11l5-5 5 5M12 6v12",
+    "down": "M7 13l5 5 5-5M12 18V6",
+    "external": "M14 5h5v5M19 5l-8 8M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11"
+                "A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10",
+    "restart": "M4 10a8 8 0 1 1 1.5 6M4 5v5h5",
+    "bug": "M8.5 8.5a3.5 3.5 0 0 1 7 0M7 13H3.5M20.5 13H17M7.6 9.4 4.8 7.2"
+           "M16.4 9.4l2.8-2.2M7.6 17.2 4.8 19.4M16.4 17.2l2.8 2.2M9.8 6 8.6 4"
+           "M14.2 6l1.2-2M12 11v6",
+    "globe": "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18ZM3 12h18"
+             "M12 3c2.2 2.4 3.3 5.4 3.3 9s-1.1 6.6-3.3 9c-2.2-2.4-3.3-5.4-3.3-9S9.8 5.4 12 3Z",
+}
+
+
+def icon(name: str, size: int = 16, cls: str = "") -> str:
+    path = ICONS.get(name, "")
+    return (
+        f"<svg class='rp-icon {cls}' width='{size}' height='{size}' "
+        f"viewBox='0 0 24 24' fill='none' stroke='currentColor' "
+        f"stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round' "
+        f"aria-hidden='true'><path d='{path}'/></svg>"
+    )
+
+
+def thinking_html(lang: str = "en") -> str:
+    """Shown while the sources are being read. Three dots, nothing clever."""
+    return (
+        "<div class='rp-thinking' role='status' aria-live='polite'>"
+        "<span class='rp-think-dots'><i></i><i></i><i></i></span>"
+        f"<span class='rp-think-label'>{html.escape(t(lang, 'thinking'))}…</span>"
+        "</div>"
+    )
+
+
+def turn_html(turn: dict, lang: str, reply_lang: str, index: int) -> str:
+    """One question and its answer."""
+    question = html.escape(turn.get("question", ""))
+    body_parts: list[str] = []
+
+    result = turn.get("result")
+    if turn.get("state") == "thinking" or result is None:
+        body_parts.append(thinking_html(lang))
+    else:
+        if result.rate_limited and not result.text:
+            body_parts.append(limit_html(result, lang))
+        elif result.error and not result.text:
+            body_parts.append(error_html(result.error, lang))
+        else:
+            body_parts.append(
+                answer_html(result, streaming=turn.get("streaming", False),
+                            lang=reply_lang))
+            if result.refused:
+                body_parts.append(near_misses_html(result, lang))
+            else:
+                body_parts.append(services_html(result.services, lang))
+                body_parts.append(sources_html(result.citations, lang))
+            if not turn.get("streaming"):
+                body_parts.append(actions_html(index, lang))
+
+    return (
+        f"<article class='rp-turn' aria-label='{html.escape(t(lang, 'you'))}'>"
+        f"<div class='rp-ask-bubble'><span class='rp-who'>"
+        f"{html.escape(t(lang, 'you'))}</span>"
+        f"<p class='rp-ask-text'>{question}</p></div>"
+        f"<div class='rp-reply'>"
+        f"<span class='rp-who rp-who-assistant'>"
+        f"{html.escape(t(lang, 'assistant'))}</span>"
+        f"{''.join(p for p in body_parts if p)}"
+        f"</div></article>"
+    )
+
+
+def actions_html(index: int, lang: str = "en") -> str:
+    """Quiet controls, only after the answer has finished arriving."""
+    return (
+        "<div class='rp-actions'>"
+        f"<button type='button' class='rp-action' data-copy-answer "
+        f"data-done=\"{html.escape(t(lang, 'copied_answer'))}\" "
+        f"aria-label='{html.escape(t(lang, 'copy_answer'))}'>"
+        f"{icon('copy')}<span>{html.escape(t(lang, 'copy_answer'))}</span></button>"
+        f"<button type='button' class='rp-action' data-vote='up' "
+        f"aria-label='{html.escape(t(lang, 'helpful'))}'>"
+        f"{icon('up')}<span>{html.escape(t(lang, 'helpful'))}</span></button>"
+        f"<button type='button' class='rp-action' data-vote='down' "
+        f"aria-label='{html.escape(t(lang, 'not_helpful'))}'>"
+        f"{icon('down')}<span>{html.escape(t(lang, 'not_helpful'))}</span></button>"
+        f"<span class='rp-action-thanks' hidden>"
+        f"{html.escape(t(lang, 'thanks_feedback'))}</span>"
+        "</div>"
+    )
+
+
+def error_html(message: str, lang: str = "en") -> str:
+    """An error the reader can act on, not a stack trace."""
+    friendly = t(lang, "err_network") if "unreachable" in message.lower() \
+        else t(lang, "err_unknown")
+    return (
+        f"<div class='rp-error' role='alert'>"
+        f"<strong>{html.escape(friendly)}</strong>"
+        f"<span class='rp-error-detail'>{html.escape(message[:200])}</span>"
+        f"</div>"
+    )
+
+
+def thread_html(turns: list[dict], lang: str, reply_lang: str) -> str:
+    if not turns:
+        return ""
+    return ("<div class='rp-thread' role='log' aria-live='polite'>"
+            + "".join(turn_html(turn, lang, reply_lang, i)
+                      for i, turn in enumerate(turns))
+            + "</div>")
+
+
+def categories_html(lang: str = "en") -> str:
+    """Entry points that are questions, not filters."""
+    from app.ui.i18n import CATEGORIES
+
+    rows = []
+    for index, (key, slug, question) in enumerate(CATEGORIES.get(lang, CATEGORIES["en"])):
+        rows.append(
+            f"<button type='button' class='rp-cat' style='--i:{index}' "
+            f"data-question=\"{html.escape(question, quote=True)}\">"
+            f"<span class='rp-cat-icon rp-cat-{slug}' aria-hidden='true'></span>"
+            f"<span class='rp-cat-label'>{html.escape(t(lang, key))}</span>"
+            f"</button>"
+        )
+    return (f"<div class='rp-cats'><div class='rp-cats-head'>"
+            f"{html.escape(t(lang, 'cat_head'))}</div>"
+            f"<div class='rp-cats-grid'>{''.join(rows)}</div></div>")

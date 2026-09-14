@@ -31,6 +31,7 @@ class AnswerResult:
     language: str
     text: str
     refused: bool
+    carried_context: bool = False
     citations: list[Citation] = field(default_factory=list)
     services: list[ServiceLink] = field(default_factory=list)
     prepared: PreparedQuery | None = None
@@ -76,6 +77,34 @@ def _messages(prepared: PreparedQuery, decision: GateDecision) -> list[ChatMessa
     ]
 
 
+# Openers that mean the question leans on the one before it.
+_ELLIPTICAL = (
+    "and ", "what about", "how about", "ok and", "also", "then ", "so ",
+    "et ", "et pour", "et si", "aussi", "alors", "donc ", "puis ",
+)
+
+
+def resolve_followup(question: str, previous: str | None) -> tuple[str, bool]:
+    """Expand a question that only makes sense after the last one.
+
+    A conversation on screen promises the assistant remembers. Retrieval does
+    not, so "and for my spouse?" would be searched on its own and answered
+    about nothing. Rather than let the interface imply a memory that is not
+    there, the short elliptical follow-ups that actually depend on the last
+    question carry it with them. A question that stands on its own is left
+    alone — dragging the previous topic into every search would distort far
+    more answers than it rescued.
+    """
+    asked = (question or "").strip()
+    if not previous or not asked:
+        return asked, False
+    lowered = asked.lower()
+    leans_back = lowered.startswith(_ELLIPTICAL) or len(asked.split()) <= 4
+    if not leans_back:
+        return asked, False
+    return f"{previous.strip()} — {asked}", True
+
+
 def _retrieve(question: str, settings: Settings) -> tuple[PreparedQuery, GateDecision]:
     prepared = prepare(question, settings)
     candidates = _search(prepared, settings)
@@ -84,7 +113,8 @@ def _retrieve(question: str, settings: Settings) -> tuple[PreparedQuery, GateDec
 
 
 def answer_stream(question: str, settings: Settings | None = None,
-                  language: str | None = None) -> Iterator[AnswerResult]:
+                  language: str | None = None,
+                  previous_question: str | None = None) -> Iterator[AnswerResult]:
     """Yield the answer as it is written, then a final complete result.
 
     ``language`` forces the language the answer is written in. Retrieval still
@@ -102,7 +132,8 @@ def answer_stream(question: str, settings: Settings | None = None,
                            error="Ask a question to get started.")
         return
 
-    prepared, decision = _retrieve(question, settings)
+    searchable, carried = resolve_followup(question, previous_question)
+    prepared, decision = _retrieve(searchable, settings)
 
     wanted = language or settings.answer_language
     if wanted in {"en", "fr"} and wanted != prepared.language:
@@ -113,8 +144,8 @@ def answer_stream(question: str, settings: Settings | None = None,
 
     partial = AnswerResult(
         question=question, language=prepared.language, text="",
-        refused=decision.should_refuse, citations=citations, services=services,
-        prepared=prepared, gate=decision,
+        refused=decision.should_refuse, carried_context=carried,
+        citations=citations, services=services, prepared=prepared, gate=decision,
     )
     yield partial
 
@@ -127,7 +158,7 @@ def answer_stream(question: str, settings: Settings | None = None,
             partial = AnswerResult(
                 question=question, language=prepared.language,
                 text="".join(collected), refused=decision.should_refuse,
-                citations=citations, services=services, prepared=prepared,
+                carried_context=carried, citations=citations, services=services, prepared=prepared,
                 gate=decision, elapsed=time.time() - started,
             )
             yield partial
@@ -135,7 +166,7 @@ def answer_stream(question: str, settings: Settings | None = None,
         yield AnswerResult(
             question=question, language=prepared.language,
             text="".join(collected), refused=decision.should_refuse,
-            citations=citations, services=services, prepared=prepared,
+            carried_context=carried, citations=citations, services=services, prepared=prepared,
             gate=decision, error=str(exc),
             rate_limited=getattr(exc, "rate_limited", False),
             retry_after=getattr(exc, "retry_after", None),
@@ -145,7 +176,7 @@ def answer_stream(question: str, settings: Settings | None = None,
 
     yield AnswerResult(
         question=question, language=prepared.language, text="".join(collected).strip(),
-        refused=decision.should_refuse, citations=citations, services=services,
+        refused=decision.should_refuse, carried_context=carried, citations=citations, services=services,
         prepared=prepared, gate=decision, elapsed=time.time() - started,
     )
 

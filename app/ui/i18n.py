@@ -15,8 +15,10 @@ from __future__ import annotations
 STRINGS: dict[str, dict[str, str]] = {
     "en": {
         "headline": "What do you need to sort out?",
-        "subhead": "Ask in English or French. Every answer comes from an "
-                   "official government page — with the link, and the date it "
+        "promise": "French administration, made clear.",
+        "subhead": "Understand what to do, what you need, and where to go. "
+                   "Ask in English or French — every answer comes from an "
+                   "official government page, with the link and the date it "
                    "was last checked.",
         "study_prompt": "Studying in France? Tell me where and I can be more "
                         "precise — your institution decides which préfecture "
@@ -25,7 +27,7 @@ STRINGS: dict[str, dict[str, str]] = {
                    "every answer comes from an official government page, with "
                    "the link and the date it was last checked.",
         "disclaimer_lead": "This isn't legal advice.",
-        "disclaimer_body": "En Clair tells you what the official pages say, and "
+        "disclaimer_body": "Claré tells you what the official pages say, and "
                            "shows you which ones. It can't advise you on a "
                            "refusal, an appeal, or your own particular case — "
                            "for that you need the administration itself.",
@@ -44,7 +46,7 @@ STRINGS: dict[str, dict[str, str]] = {
                           "letter. The ones marked official are defined by the "
                           "government itself; the rest we wrote plainly.",
         "glossary_search": "Search a word…",
-        "corpus_intro": "Everything En Clair has read, and where it came from.",
+        "corpus_intro": "Everything Claré has read, and where it came from.",
         "refresh": "Refresh",
         "empty": "Ask a question and the answer will appear here.",
         "debug_empty": "Ask something, and this panel will show exactly how the "
@@ -103,6 +105,27 @@ STRINGS: dict[str, dict[str, str]] = {
         "pop_service": "This opens the official service",
         "sources_toggle_one": "Check it against the official page",
         "sources_toggle_many": "Check it against the {n} official pages",
+        "you": "You",
+        "assistant": "Claré",
+        "thinking": "Reading the official pages",
+        "ask_another": "Ask another question",
+        "new_question": "Start over",
+        "copy_answer": "Copy",
+        "copied_answer": "Copied",
+        "helpful": "This helped",
+        "not_helpful": "This didn't help",
+        "thanks_feedback": "Noted — thank you.",
+        "followup_ph": "Ask a follow-up…",
+        "cat_head": "What can I help you with?",
+        "cat_permit": "Residence permits",
+        "cat_housing": "Housing and landlords",
+        "cat_docs": "Documents and proof",
+        "cat_student": "Studying in France",
+        "cat_work": "Work and contracts",
+        "cat_appt": "Appointments",
+        "err_network": "We couldn't reach the service. Try again in a moment.",
+        "err_unknown": "Something went wrong while preparing the answer.",
+        "err_retry": "Try again",
         "near_head": "Closest pages we found",
         "near_note": "None of these answered your question closely enough to "
                      "quote, but they are the nearest official pages and may "
@@ -126,8 +149,10 @@ STRINGS: dict[str, dict[str, str]] = {
     },
     "fr": {
         "headline": "Qu'est-ce qu'il faut régler ?",
-        "subhead": "Posez votre question en français ou en anglais. Chaque "
-                   "réponse vient d'une page officielle — avec le lien et la "
+        "promise": "L'administration française, en clair.",
+        "subhead": "Comprendre quoi faire, ce qu'il faut fournir et où aller. "
+                   "Posez votre question en français ou en anglais — chaque "
+                   "réponse vient d'une page officielle, avec le lien et la "
                    "date de dernière vérification.",
         "study_prompt": "Vous étudiez en France ? Dites-moi où et je serai plus "
                         "précis : votre établissement détermine la préfecture "
@@ -136,7 +161,7 @@ STRINGS: dict[str, dict[str, str]] = {
                    "français ou en anglais — chaque réponse vient d'une page "
                    "officielle, avec le lien et la date.",
         "disclaimer_lead": "Ceci n'est pas un conseil juridique.",
-        "disclaimer_body": "En Clair vous dit ce que disent les pages "
+        "disclaimer_body": "Claré vous dit ce que disent les pages "
                            "officielles, et vous montre lesquelles. Il ne peut "
                            "pas vous conseiller sur un refus, un recours ou "
                            "votre situation personnelle — pour cela, adressez-"
@@ -157,7 +182,7 @@ STRINGS: dict[str, dict[str, str]] = {
                           "par l'administration ; les autres, nous les avons "
                           "écrits simplement.",
         "glossary_search": "Chercher un mot…",
-        "corpus_intro": "Tout ce que En Clair a lu, et d'où cela vient.",
+        "corpus_intro": "Tout ce que Claré a lu, et d'où cela vient.",
         "refresh": "Actualiser",
         "empty": "Posez une question, la réponse apparaîtra ici.",
         "debug_empty": "Posez une question et ce panneau montrera exactement "
@@ -220,6 +245,27 @@ STRINGS: dict[str, dict[str, str]] = {
         "pop_service": "Ouvre le service officiel",
         "sources_toggle_one": "Vérifier sur la page officielle",
         "sources_toggle_many": "Vérifier sur les {n} pages officielles",
+        "you": "Vous",
+        "assistant": "Claré",
+        "thinking": "Lecture des pages officielles",
+        "ask_another": "Poser une autre question",
+        "new_question": "Recommencer",
+        "copy_answer": "Copier",
+        "copied_answer": "Copié",
+        "helpful": "Ça m'a aidé",
+        "not_helpful": "Ça ne m'a pas aidé",
+        "thanks_feedback": "C'est noté — merci.",
+        "followup_ph": "Poser une question complémentaire…",
+        "cat_head": "Sur quoi puis-je vous aider ?",
+        "cat_permit": "Titres de séjour",
+        "cat_housing": "Logement et propriétaires",
+        "cat_docs": "Papiers et justificatifs",
+        "cat_student": "Études en France",
+        "cat_work": "Travail et contrats",
+        "cat_appt": "Rendez-vous",
+        "err_network": "Le service est injoignable. Réessayez dans un instant.",
+        "err_unknown": "Un problème est survenu pendant la préparation de la réponse.",
+        "err_retry": "Réessayer",
         "near_head": "Les pages les plus proches",
         "near_note": "Aucune ne répondait d'assez près pour être citée, mais "
                      "ce sont les pages officielles les plus proches et elles "
@@ -244,18 +290,25 @@ STRINGS: dict[str, dict[str, str]] = {
     },
 }
 
-EXAMPLES = {
+
+# Each category carries the question it asks, so a tap is a question and not
+# a filter that goes nowhere.
+CATEGORIES = {
     "en": [
-        "I'm a student — when do I need to renew my residence permit?",
-        "How much deposit can a landlord ask for?",
-        "What counts as proof of address when I've just arrived?",
-        "There are no appointment slots at my préfecture. What can I do?",
+        ("cat_permit",  "permit",  "How do I renew my residence permit, and what do I need?"),
+        ("cat_housing", "housing", "How much deposit can a landlord ask for, and when do I get it back?"),
+        ("cat_docs",    "docs",    "What counts as proof of address when I have just arrived?"),
+        ("cat_student", "student", "I am a student in France — what am I allowed to work?"),
+        ("cat_work",    "work",    "What is the difference between a CDI and a CDD?"),
+        ("cat_appt",    "appt",    "There are no appointment slots at my préfecture. What can I do?"),
     ],
     "fr": [
-        "Je viens d'arriver, comment valider mon VLS-TS ?",
-        "Quel dépôt de garantie un propriétaire peut-il demander ?",
-        "Qu'est-ce qui est accepté comme justificatif de domicile ?",
-        "Il n'y a aucun créneau à ma préfecture. Que puis-je faire ?",
+        ("cat_permit",  "permit",  "Comment renouveler mon titre de séjour, et que faut-il fournir ?"),
+        ("cat_housing", "housing", "Quel dépôt de garantie un propriétaire peut-il demander, et quand est-il rendu ?"),
+        ("cat_docs",    "docs",    "Qu'est-ce qui est accepté comme justificatif de domicile quand on vient d'arriver ?"),
+        ("cat_student", "student", "Je suis étudiant en France — combien puis-je travailler ?"),
+        ("cat_work",    "work",    "Quelle est la différence entre un CDI et un CDD ?"),
+        ("cat_appt",    "appt",    "Il n'y a aucun créneau à ma préfecture. Que puis-je faire ?"),
     ],
 }
 

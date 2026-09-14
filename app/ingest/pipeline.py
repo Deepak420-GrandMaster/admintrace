@@ -18,7 +18,7 @@ from app.ingest.parse import ParseReport, deduplicate, parse_directory
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Build the En Clair index.")
+    parser = argparse.ArgumentParser(description="Build the Claré index.")
     parser.add_argument("--refresh", action="store_true",
                         help="re-download the feeds and rebuild the index")
     args = parser.parse_args(argv)
@@ -26,7 +26,7 @@ def main(argv: list[str] | None = None) -> int:
     settings = get_settings()
     started = time.time()
 
-    print(f"En Clair ingestion — feed version {settings.feed_version}", flush=True)
+    print(f"Claré ingestion — feed version {settings.feed_version}", flush=True)
     print("Source: DILA / service-public.gouv.fr open data (Licence Ouverte)\n",
           flush=True)
 

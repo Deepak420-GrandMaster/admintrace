@@ -1,4 +1,4 @@
-"""En Clair — grounded answers for people newly arrived in France.
+"""Claré — grounded answers for people newly arrived in France.
 
 The system answers questions in English or French from an official French
 corpus, cites its sources, and refuses when the corpus does not cover the

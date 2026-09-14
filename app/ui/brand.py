@@ -1,10 +1,9 @@
 """The mark and the wordmark.
 
-*En clair* is the French for putting something plainly — decoding it, saying
-it in the open. It is what this does and the only thing it does: official
-administrative French, in the clear. Half the people who need it do not read
-French, and *clair* carries to English, Spanish, Italian and Portuguese
-speakers without translation.
+*Claré* is built on *clair* — clear — and the job is the whole name: French
+administration, made clear. Half the people who need this do not read French,
+and *clair* carries to English, Spanish, Italian and Portuguese speakers
+without translation.
 
 The mark is the job: dense, unreadable official text on the left, resolving
 into three clean lines on the right. Inline SVG, so it stays sharp at any
@@ -38,7 +37,7 @@ def wordmark(size: int = 38, animated: bool = True) -> str:
     return f"""
 <div class="rp-brand">
   {mark(size, animated)}
-  <span class="rp-wordmark">En&nbsp;Cl<span class="rp-accent">ai</span>r</span>
+  <span class="rp-wordmark">Cl<span class="rp-accent">a</span>ré</span>
 </div>
 """
 
