@@ -1,108 +1,131 @@
-/* Sésame — light, professional, quiet.
-   The subject matter is stressful and often consequential, so the interface
-   stays calm: generous space, one accent colour, motion that orients rather
-   than entertains. Every animation is suppressed under prefers-reduced-motion. */
+/* En Clair — the thread through the labyrinth.
+   =====================================================================
 
+   The design problem: someone anxious, often reading their second or third
+   language, usually with a deadline, trying to find one fact inside a system
+   built to be exhaustive rather than clear.
+
+   So the system has a FAMILY of colours rather than one accent doing every
+   job. Each part of an answer carries its own hue — what to do, what to
+   bring, what to watch for, what to say out loud — and a reader scanning in
+   a language they are still learning can find the part they need before they
+   have parsed a single word. Colour here is wayfinding, not decoration.
+
+   All accents share a lightness and chroma and vary only in hue, so they sit
+   together as one family and none shouts over the others.
+*/
+
+/* ------------------------------------------------------------- tokens -- */
 :root {
-  --ink:        #16181d;
-  --ink-soft:   #444c57;
-  --ink-muted:  #6b7481;
-  --ink-faint:  #98a1ad;
-
-  --bg:         #faf9f7;
+  /* Ground: warm paper, not screen white. */
+  --paper:      #fbf9f6;
+  --paper-deep: #f3efe8;
   --surface:    #ffffff;
-  --surface-2:  #f4f2ee;
-  --border:     #e6e2dc;
-  --border-soft:#efece7;
+  --surface-2:  #f6f3ee;
+  --surface-3:  #efeae1;
 
-  --accent:      #1f3fd8;
-  --accent-deep: #16309f;
-  --accent-wash: #eef1fe;
-  --accent-line: #c9d3fb;
+  --ink:        #191a1f;
+  --ink-soft:   #41454e;
+  --ink-muted:  #6b707b;
+  --ink-faint:  #9aa0ac;
 
-  --warn:      #9a5b06;
-  --warn-wash: #fdf5e7;
-  --good:      #0f7a58;
-  --good-wash: #ecf8f3;
-  --stop:      #a33434;
-  --stop-wash: #fdf0ef;
+  --border:      #e6e0d6;
+  --border-soft: #f0ebe3;
 
-  --radius:    14px;
-  --radius-sm: 9px;
-  --shadow-sm: 0 1px 2px rgba(22,24,29,.05), 0 1px 1px rgba(22,24,29,.03);
-  --shadow-md: 0 4px 16px rgba(22,24,29,.07), 0 1px 3px rgba(22,24,29,.04);
-  --shadow-lg: 0 18px 48px rgba(22,24,29,.10), 0 2px 8px rgba(22,24,29,.05);
+  /* The family. One lightness, one chroma, five hues. */
+  --blue:       oklch(0.52 0.17 262);
+  --blue-deep:  oklch(0.40 0.16 262);
+  --blue-wash:  oklch(0.965 0.022 262);
+  --blue-line:  oklch(0.88 0.055 262);
 
-  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, "Segoe UI", Roboto, sans-serif;
-  --serif: "New York", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
-  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --violet:      oklch(0.52 0.17 300);
+  --violet-wash: oklch(0.965 0.022 300);
+  --violet-line: oklch(0.88 0.055 300);
+
+  --green:      oklch(0.52 0.14 158);
+  --green-wash: oklch(0.965 0.022 158);
+  --green-line: oklch(0.88 0.05 158);
+
+  --amber:      oklch(0.56 0.14 70);
+  --amber-wash: oklch(0.965 0.03 70);
+  --amber-line: oklch(0.88 0.06 70);
+
+  --rose:      oklch(0.54 0.15 20);
+  --rose-wash: oklch(0.965 0.026 20);
+  --rose-line: oklch(0.88 0.055 20);
+
+  /* Primary is the blue; the rest are named by their job below. */
+  --accent:      var(--blue);
+  --accent-deep: var(--blue-deep);
+  --accent-wash: var(--blue-wash);
+  --accent-line: var(--blue-line);
+  --bg:          var(--paper);
+  --good:        var(--green);
+  --good-wash:   var(--green-wash);
+  --warn:        var(--amber);
+  --warn-wash:   var(--amber-wash);
+  --stop:        var(--rose);
+  --stop-wash:   var(--rose-wash);
+
+  --radius:    16px;
+  --radius-sm: 10px;
+  --radius-xs: 7px;
+
+  /* Layered, warm-tinted shadows: a grey shadow on warm paper looks dirty. */
+  --shadow-sm: 0 1px 2px rgba(61,47,26,.05), 0 1px 3px rgba(61,47,26,.04);
+  --shadow-md: 0 2px 4px rgba(61,47,26,.04), 0 8px 20px rgba(61,47,26,.07);
+  --shadow-lg: 0 4px 8px rgba(61,47,26,.05), 0 20px 48px rgba(61,47,26,.11);
+  --shadow-xl: 0 8px 16px rgba(61,47,26,.06), 0 32px 72px rgba(61,47,26,.14);
+
+  --serif: "Newsreader", "New York", "Iowan Old Style", Georgia, serif;
+  --sans: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
   --ease: cubic-bezier(.22,.61,.36,1);
-
-  /* The whole surface animates when the palette swaps, so changing language
-     reads as the page turning over rather than as text being replaced. */
-  --swap: 620ms cubic-bezier(.22,.61,.36,1);
-
-  /* The reading column. Wide enough to feel like a page rather than a
-     letterbox, narrow enough that a line of an answer stays readable —
-     long measures are hard work in any language and harder in a second
-     one. The ground around it is full-bleed. */
-  --measure: 1240px;
+  --ease-out: cubic-bezier(.16,1,.3,1);
+  --swap: 560ms cubic-bezier(.22,.61,.36,1);
+  --measure: 1180px;
 }
 
-/* ------------------------------------------------------------ palettes
-   Each language gets its own light. English sits on cool paper under an
-   indigo accent; French on warm ivory under a deeper blue, with the red of
-   the tricolore kept for small emphasis. The marker element is rendered by
-   the masthead, so the palette follows the language with no scripting. */
+/* French gets its own light: warmer paper, a deeper blue, the tricolore's
+   red kept for the smallest emphasis. */
 :root:has(.rp-theme-fr) {
-  --accent:      #123a8c;
-  --accent-deep: #0c2860;
-  --accent-wash: #eef2fb;
-  --accent-line: #c2d0ec;
-  --bg:          #fbf9f5;
-  --surface-2:   #f4f0e8;
-  --border:      #e7e0d4;
-  --border-soft: #efe9de;
-  --ink:         #171922;
-  --stop:        #a5262b;
+  --paper:      #fcfaf5;
+  --paper-deep: #f4efe4;
+  --surface-2:  #f6f2e9;
+  --border:     #e8e1d2;
+  --blue:       oklch(0.46 0.16 258);
+  --blue-deep:  oklch(0.35 0.15 258);
+  --rose:       oklch(0.50 0.17 22);
 }
-:root:has(.rp-theme-fr) .rp-wordmark .rp-accent { color: #c8102e; }
+:root:has(.rp-theme-fr) .rp-wordmark .rp-accent { color: var(--rose); }
 
-.gradio-container, .gradio-container .rp-answer, .gradio-container .rp-source,
-.gradio-container .rp-gloss, .gradio-container .rp-stat,
-.gradio-container .rp-note, .gradio-container .rp-say {
-  transition: background-color var(--swap), border-color var(--swap),
-              color var(--swap);
-}
-.rp-theme { display: none; }
+html, body { background: var(--paper); color-scheme: light; margin: 0; }
 
-/* The page commits to a light palette rather than following the host theme:
-   the design is built around paper-like surfaces and would not survive an
-   automatic inversion. */
-html, body {
-  background: var(--bg);
-  color-scheme: light;
-  margin: 0;
-}
+/* --------------------------------------------------------- the shell -- */
 .gradio-container, .gradio-container * { color-scheme: light !important; }
-
-/* Gradio paints from its own variables. Setting ours on individual elements
-   left every component we had not thought of on its dark defaults, which is
-   how the accordion and the glossary search came out black. Point Gradio's
-   own tokens at our palette once, and the whole library follows. */
 .gradio-container {
-  --body-background-fill: var(--bg);
+  background: transparent !important;
+  font-family: var(--sans) !important;
+  color: var(--ink) !important;
+  max-width: var(--measure) !important;
+  width: 100% !important;
+  margin: 0 auto !important;
+  padding: 0 clamp(18px, 4vw, 40px) 120px !important;
+  position: relative;
+
+  /* Gradio paints from its own variables; point them at ours once. */
+  --body-background-fill: transparent;
   --background-fill-primary: var(--surface);
   --background-fill-secondary: var(--surface-2);
-  --block-background-fill: var(--surface);
-  --block-label-background-fill: var(--surface);
+  --block-background-fill: transparent;
+  --block-label-background-fill: transparent;
   --block-title-background-fill: transparent;
   --input-background-fill: var(--surface);
   --input-background-fill-focus: var(--surface);
   --border-color-primary: var(--border);
   --border-color-accent: var(--accent-line);
-  --block-border-color: var(--border);
+  --block-border-color: transparent;
   --input-border-color: var(--border);
   --input-border-color-focus: var(--accent-line);
   --body-text-color: var(--ink);
@@ -114,554 +137,965 @@ html, body {
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-wash);
   --link-text-color: var(--accent);
-  --neutral-50: var(--bg);      --neutral-100: var(--surface-2);
+  --neutral-50: var(--paper);   --neutral-100: var(--surface-2);
   --neutral-200: var(--border); --neutral-700: var(--ink-soft);
   --neutral-800: var(--ink);    --neutral-900: var(--ink);
   --panel-background-fill: var(--surface);
   --table-even-background-fill: var(--surface);
   --table-odd-background-fill: var(--surface-2);
 }
-.gradio-container {
-  background: var(--bg) !important;
-  font-family: var(--sans) !important;
-  color: var(--ink) !important;
-  max-width: var(--measure) !important;
-  width: 100% !important;
-  margin: 0 auto !important;
-  padding: 0 clamp(18px, 4vw, 44px) 84px !important;
-  background: transparent !important;
-}
-/* Gradio wraps the app in its own shells; none of them may paint. */
+.gradio-container > * { position: relative; z-index: 1; }
+footer, .gradio-container > .main > .wrap > .contain > footer { display: none !important; }
 body > gradio-app, gradio-app, .gradio-app,
 .gradio-container > .main, .gradio-container > .wrap {
-  background: transparent !important;
-  width: 100% !important;
-  max-width: none !important;
+  background: transparent !important; width: 100% !important; max-width: none !important;
 }
-.gradio-container .prose :is(h1,h2,h3,h4) { font-family: var(--sans); }
-footer, .gradio-container > .main > .wrap > .contain > footer { display: none !important; }
-
-/* ---------------------------------------------------------------- masthead */
-.rp-masthead { padding: 34px 0 8px; position: relative; }
-
-/* --------------------------------------------------- top bar + switcher */
-.rp-topbar {
-  display: flex !important; align-items: flex-start !important;
-  justify-content: space-between !important; gap: 18px;
-  flex-wrap: nowrap !important; margin: 0 !important;
+.gradio-container .block, .gradio-container .form {
+  background: transparent !important; border: 0 !important; box-shadow: none !important;
 }
-.rp-topbar > *:first-child { flex: 1 1 auto !important; min-width: 0 !important; }
-.rp-topbar > *:last-child {
-  flex: 0 0 auto !important; width: auto !important; min-width: 0 !important;
-  display: flex !important; justify-content: flex-end !important;
-  padding-top: 30px !important;
-}
-.rp-flag { border-radius: 50%; flex: 0 0 auto; display: inline-block;
-  vertical-align: -3px; margin-right: 7px;
-  transition: transform .3s var(--ease); }
-.gradio-container .rp-switch label:has(input:checked) .rp-flag,
-.gradio-container .rp-switch label.selected .rp-flag { transform: scale(1.08); }
 
-/* ------------------------------------------------------------ brand mark */
-.rp-brand { display: flex; align-items: center; gap: 14px; }
+/* Grain and a vignette, at the threshold of noticing: they stop large flat
+   areas reading as dead screen. */
+body::before {
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  opacity: .04; mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+body::after {
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(128% 92% at 50% 8%, transparent 46%, rgba(61,47,26,.05) 100%);
+}
+
+/* The wash behind the hero: three hues of the family, drifting. */
+.rp-wash {
+  position: absolute; left: 50%; top: -220px; transform: translateX(-50%);
+  width: min(1600px, 150vw); height: 680px; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(42% 54% at 42% 36%, color-mix(in oklch, var(--blue) 22%, transparent) 0%, transparent 66%),
+    radial-gradient(40% 48% at 68% 24%, color-mix(in oklch, var(--violet) 17%, transparent) 0%, transparent 68%),
+    radial-gradient(46% 44% at 24% 22%, color-mix(in oklch, var(--amber) 15%, transparent) 0%, transparent 70%),
+    radial-gradient(34% 40% at 78% 52%, color-mix(in oklch, var(--rose) 12%, transparent) 0%, transparent 70%);
+  filter: blur(34px); opacity: .8;
+  animation: rp-drift 26s ease-in-out infinite alternate;
+}
+@keyframes rp-drift {
+  from { transform: translateX(-50%) translateY(0) scale(1) rotate(0deg); }
+  to   { transform: translateX(-50%) translateY(22px) scale(1.06) rotate(2deg); }
+}
+
+.rp-spot {
+  position: fixed; left: 0; top: 0; z-index: 0; pointer-events: none;
+  width: 560px; height: 560px; margin: -280px 0 0 -280px; border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in oklch, var(--blue) 11%, transparent) 0%, transparent 62%);
+  opacity: 0; transition: opacity .55s var(--ease);
+  transform: translate3d(var(--sx, 50vw), var(--sy, 40vh), 0); will-change: transform;
+}
+.rp-spot.rp-lit { opacity: 1; }
+
+/* ---------------------------------------------------------- masthead -- */
+.rp-masthead { padding: 26px 0 4px !important; position: relative; }
+.rp-brand { display: flex; align-items: center; gap: 13px; }
 .rp-mark { flex: 0 0 auto; color: var(--ink); overflow: visible; }
 .rp-mark-arc {
-  stroke-dasharray: 34 95; stroke-dashoffset: 34;
-  animation: rp-draw 1.15s cubic-bezier(.22,.61,.36,1) .15s both;
+  stroke-dasharray: 30 102; stroke-dashoffset: 30;
+  animation: rp-draw 1.2s var(--ease-out) .15s both;
 }
 @keyframes rp-draw { to { stroke-dashoffset: 0; } }
-.rp-mark-key { transform-origin: 19.5px 19.5px; }
-.rp-brand:hover .rp-mark-key {
-  animation: rp-turn 1.25s cubic-bezier(.34,.9,.3,1) both;
+/* On hover the dense side settles and the clear side draws itself: the
+   whole idea of the thing in three-quarters of a second. */
+.rp-mark-clear path {
+  stroke-dasharray: 16; stroke-dashoffset: 0;
+  transition: stroke-dashoffset .5s var(--ease-out);
 }
-@keyframes rp-turn {
-  0% { transform: rotate(0deg); }
-  42% { transform: rotate(-26deg); }
-  74% { transform: rotate(6deg); }
-  100% { transform: rotate(0deg); }
-}
+.rp-brand:hover .rp-mark-clear path { animation: rp-clear .75s var(--ease-out) both; }
+.rp-brand:hover .rp-mark-clear path:nth-child(2) { animation-delay: .07s; }
+.rp-brand:hover .rp-mark-clear path:nth-child(3) { animation-delay: .14s; }
+@keyframes rp-clear { from { stroke-dashoffset: 16; } to { stroke-dashoffset: 0; } }
+.rp-brand:hover .rp-mark-walls { opacity: .14; transition: opacity .5s var(--ease); }
 .rp-wordmark {
-  font-family: var(--serif);
-  font-size: 34px; font-weight: 600; letter-spacing: -.018em;
-  color: var(--ink); margin: 0; line-height: 1.1;
+  font-family: var(--serif); font-size: 31px; font-weight: 500;
+  letter-spacing: -.018em; color: var(--ink); line-height: 1.1;
+  animation: rp-arrive .7s var(--ease-out) .18s both;
 }
 .rp-wordmark .rp-accent { color: var(--accent); }
+
+/* ------------------------------------------------------------- hero -- */
+.rp-hero { text-align: center; padding: 34px 0 28px; }
+.rp-headline {
+  font-family: var(--serif); margin: 0 auto; max-width: 17ch;
+  font-size: clamp(34px, 5.4vw, 58px); line-height: 1.04;
+  font-weight: 500; letter-spacing: -.03em; color: var(--ink);
+  text-wrap: balance;
+}
 .rp-tagline {
-  margin: 11px 0 0; font-size: 15.5px; color: var(--ink-muted);
-  max-width: 64ch; line-height: 1.6;
-  animation: rp-rise .5s cubic-bezier(.22,.61,.36,1) .08s both;
+  margin: 17px auto 0; max-width: 56ch; text-align: center;
+  font-size: 16px; line-height: 1.62; color: var(--ink-muted);
+  animation: rp-arrive .6s var(--ease-out) .1s both;
 }
-.rp-masthead .rp-brand { animation: rp-rise .45s cubic-bezier(.22,.61,.36,1) both; }
+@keyframes rp-arrive {
+  from { opacity: 0; transform: translateY(14px); filter: blur(5px); }
+  to   { opacity: 1; transform: none; filter: blur(0); }
+}
+.rp-stage-in > * { animation: rp-arrive .62s var(--ease-out) both; }
+.rp-stage-in > *:nth-child(1) { animation-delay: .02s; }
+.rp-stage-in > *:nth-child(2) { animation-delay: .10s; }
+.rp-stage-in > *:nth-child(3) { animation-delay: .18s; }
 
-/* -------------------------------------------------- language switchers */
-.rp-lang-bar {
-  display: flex !important; flex-wrap: wrap !important; align-items: center !important;
-  gap: 10px 22px !important; margin: 20px 0 4px;
-  animation: rp-rise .5s cubic-bezier(.22,.61,.36,1) .16s both;
-}
-/* Gradio gives a Row's children equal widths; these must hug their content. */
-.rp-lang-bar > * {
-  flex: 0 0 auto !important; width: auto !important;
-  min-width: 0 !important; margin: 0 !important;
-}
-.rp-lang-bar .rp-lang-label { margin-right: -12px; }
-.rp-lang-group { display: flex; align-items: center; gap: 9px; }
-.rp-lang-label {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-size: 12.5px; color: var(--ink-faint); white-space: nowrap;
-}
-.rp-lang-label svg { opacity: .7; }
-
-/* Gradio radios become a segmented control. */
-.gradio-container .rp-switch { border: 0 !important; background: none !important;
-  padding: 0 !important; box-shadow: none !important; min-width: 0 !important; }
-.gradio-container .rp-switch > label:first-child,
-.gradio-container .rp-switch .head { display: none !important; }
-/* Gradio uses the class "wrap" twice inside a radio: once for the group that
-   holds the options, and once for a status overlay that sits above it. Styling
-   both drew the control twice, one ghosted above the other — the fieldset's
-   label padding kept them from coinciding, so the ghost was visible. Only the
-   group is a control. */
-.gradio-container .rp-switch > .wrap.default { display: none !important; }
-.gradio-container .rp-switch { padding: 0 !important; }
-
-.gradio-container .rp-switch .wrap:not(.default),
-.gradio-container .rp-switch fieldset > div:not(.default) {
-  display: inline-flex !important; flex-direction: row !important;
-  flex-wrap: nowrap !important;
-  gap: 3px !important; padding: 3px !important;
-  background: var(--surface-2) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 999px !important; box-shadow: none !important;
-  width: auto !important;
-}
-.gradio-container .rp-switch label {
-  display: inline-flex !important; align-items: center !important;
-  gap: 0 !important; margin: 0 !important; padding: 6px 14px !important;
-  border: 0 !important; border-radius: 999px !important;
-  background: transparent !important; box-shadow: none !important;
-  font-size: 13px !important; font-weight: 560 !important;
-  color: var(--ink-muted) !important; cursor: pointer;
-  transition: color .18s var(--ease), background .24s var(--ease),
-              box-shadow .24s var(--ease), transform .16s var(--ease);
-  white-space: nowrap;
-}
-.gradio-container .rp-switch label:hover { color: var(--ink) !important; }
-.gradio-container .rp-switch label:active { transform: scale(.97); }
-.gradio-container .rp-switch input { display: none !important; }
-.gradio-container .rp-switch label:has(input:checked) {
-  background: var(--surface) !important; color: var(--accent) !important;
-  box-shadow: var(--shadow-sm) !important;
-}
-.gradio-container .rp-switch label.selected {
-  background: var(--surface) !important; color: var(--accent) !important;
-  box-shadow: var(--shadow-sm) !important;
-}
-
-/* Always visible, never dismissible. */
-.rp-disclaimer {
-  display: flex; gap: 10px; align-items: flex-start;
-  margin: 20px 0 6px; padding: 12px 15px;
-  background: var(--warn-wash);
-  border: 1px solid #f0e0c2; border-left: 3px solid var(--warn);
-  border-radius: var(--radius-sm);
-  font-size: 13.5px; color: #6d4204; line-height: 1.5;
-}
-.rp-disclaimer strong { color: var(--warn); font-weight: 650; }
-.rp-disclaimer svg { flex: 0 0 auto; margin-top: 1px; }
-
-/* ------------------------------------------------------------------- tabs */
+/* -------------------------------------------------------------- tabs -- */
 .gradio-container .tab-nav, .gradio-container div[role="tablist"] {
   border-bottom: 1px solid var(--border) !important;
-  gap: 2px !important; margin-bottom: 22px !important;
+  gap: 2px !important; margin-bottom: 8px !important;
 }
 .gradio-container button[role="tab"] {
   background: transparent !important; border: 0 !important;
-  color: var(--ink-muted) !important;
-  font-family: var(--sans) !important; font-size: 14.5px !important;
-  font-weight: 550 !important; padding: 11px 16px !important;
-  border-radius: 0 !important;
+  color: var(--ink-muted) !important; font-family: var(--sans) !important;
+  font-size: 14px !important; font-weight: 500 !important;
+  padding: 12px 16px !important; border-radius: 0 !important;
   border-bottom: 2px solid transparent !important;
   transition: color .18s var(--ease), border-color .18s var(--ease);
 }
 .gradio-container button[role="tab"]:hover { color: var(--ink) !important; }
 .gradio-container button[role="tab"][aria-selected="true"] {
-  color: var(--accent) !important;
-  border-bottom-color: var(--accent) !important;
+  color: var(--accent) !important; border-bottom-color: var(--accent) !important;
 }
-.tabitem { animation: rp-tab .34s var(--ease) both; }
-@keyframes rp-tab { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.tabitem { animation: rp-arrive .4s var(--ease-out) both; }
 
-/* ------------------------------------------------------------------- input */
-.rp-ask textarea, .gradio-container .rp-ask textarea,
-.gradio-container .rp-ask .input-container textarea {
-  font-family: var(--sans) !important; font-size: 16px !important;
-  line-height: 1.5 !important; color: var(--ink) !important;
-  background: var(--surface) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: var(--radius) !important;
-  padding: 15px 17px !important;
-  box-shadow: var(--shadow-sm) !important;
-  transition: border-color .18s var(--ease), box-shadow .22s var(--ease);
-  resize: none !important;
-}
-.rp-ask textarea:focus, .gradio-container .rp-ask textarea:focus {
-  border-color: var(--accent-line) !important;
-  box-shadow: 0 0 0 4px var(--accent-wash), var(--shadow-sm) !important;
-  outline: none !important;
-}
-.rp-ask textarea::placeholder, .gradio-container .rp-ask textarea::placeholder { color: var(--ink-faint) !important; }
-/* Gradio 6 nests the textarea inside the <label>, so the label itself must
-   stay laid out; only its caption text is hidden. */
-.rp-ask label > span:not(.rp-fr), .rp-ask .head { display: none !important; }
-.gradio-container .rp-ask > .container,
+/* ------------------------------------------------------------- input -- */
+.gradio-container .rp-ask, .gradio-container .rp-ask > .container,
 .gradio-container .rp-ask .input-container {
   background: transparent !important; border: 0 !important;
   box-shadow: none !important; padding: 0 !important;
 }
-.gradio-container .rp-ask { padding: 0 !important; border: 0 !important;
-  background: transparent !important; box-shadow: none !important; }
-.gradio-container .rp-submit-row {
-  margin-top: 12px !important; display: flex !important; align-items: center !important;
-  gap: 10px 16px !important; flex-wrap: wrap !important;
+.rp-ask label > span:not(.rp-fr), .rp-ask .head { display: none !important; }
+.gradio-container .rp-ask textarea,
+.gradio-container .rp-ask .input-container textarea {
+  font-family: var(--sans) !important; font-size: 17px !important;
+  line-height: 1.55 !important; color: var(--ink) !important;
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 20px !important; padding: 22px 24px !important;
+  min-height: 100px !important; resize: none !important;
+  box-shadow: 0 2px 4px rgba(61,47,26,.04), 0 16px 40px rgba(61,47,26,.08) !important;
+  transition: border-color .18s var(--ease), box-shadow .26s var(--ease);
 }
-.rp-submit-row > * { flex: 0 0 auto !important; width: auto !important;
-  min-width: 0 !important; margin: 0 !important; }
-/* The answer-language control sits away from the primary action. */
-.rp-submit-row > *:nth-child(2) { margin-left: auto !important; }
+.gradio-container .rp-ask textarea::placeholder { color: var(--ink-faint) !important; }
+.gradio-container .rp-ask textarea:focus {
+  border-color: var(--accent-line) !important; outline: none !important;
+  box-shadow: 0 0 0 4px var(--accent-wash), 0 18px 46px rgba(61,47,26,.10) !important;
+}
 
-.rp-submit button, button.rp-submit, .gradio-container button.rp-submit {
-  background: var(--accent) !important; color: #fff !important;
-  border: 0 !important; border-radius: var(--radius-sm) !important;
-  font-family: var(--sans) !important; font-size: 14.5px !important;
-  font-weight: 600 !important; letter-spacing: .005em;
-  padding: 12px 22px !important;
-  box-shadow: 0 1px 2px rgba(31,63,216,.28) !important;
-  transition: transform .14s var(--ease), background .18s var(--ease), box-shadow .18s var(--ease);
+.rp-submit-row { justify-content: center !important; margin-top: 18px !important; }
+.gradio-container button.rp-submit {
+  background: linear-gradient(180deg,
+    color-mix(in oklch, var(--accent) 92%, white),
+    var(--accent)) !important;
+  color: #fff !important; border: 0 !important;
+  font-family: var(--sans) !important; font-size: 16px !important;
+  font-weight: 650 !important; letter-spacing: .01em;
+  padding: 16px 54px !important; border-radius: 14px !important;
+  position: relative; overflow: hidden;
+  box-shadow: 0 2px 4px color-mix(in oklch, var(--accent) 24%, transparent),
+              0 10px 24px color-mix(in oklch, var(--accent) 22%, transparent) !important;
+  transition: transform .16s var(--ease), box-shadow .24s var(--ease),
+              filter .18s var(--ease);
 }
-.rp-submit button:hover, .gradio-container button.rp-submit:hover {
-  background: var(--accent-deep) !important;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(31,63,216,.24) !important;
+.gradio-container button.rp-submit:hover {
+  transform: translateY(-2px); filter: brightness(1.06);
+  box-shadow: 0 4px 8px color-mix(in oklch, var(--accent) 26%, transparent),
+              0 16px 36px color-mix(in oklch, var(--accent) 28%, transparent) !important;
 }
-.rp-submit button:active, .gradio-container button.rp-submit:active { transform: translateY(0); }
+.gradio-container button.rp-submit:active { transform: translateY(0) scale(.985); }
 
-/* Example questions. */
-/* Gradio lays a Row out as equal-width columns; these must hug their text. */
-.rp-examples { display: flex !important; flex-wrap: wrap !important; gap: 7px;
-  margin: 13px 0 2px; align-items: center; }
-.rp-examples > * { flex: 0 0 auto !important; width: auto !important;
-  min-width: 0 !important; }
-.gradio-container button.rp-chip { white-space: nowrap !important; width: auto !important;
-  min-width: 0 !important; }
-.rp-chip-label { font-size: 12.5px; color: var(--ink-faint); align-self: center; margin-right: 3px; }
-.gradio-container .rp-chip button,
+.rp-reply-row {
+  display: flex !important; justify-content: center !important;
+  align-items: center !important; gap: 12px !important;
+  flex-wrap: wrap !important; margin-top: 16px !important;
+}
+.rp-reply-row > *, .rp-lang-bar > * {
+  flex: 0 0 auto !important; width: auto !important;
+  min-width: 0 !important; margin: 0 !important;
+}
+.rp-lang-label {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12.5px; color: var(--ink-faint); white-space: nowrap;
+}
+
+/* ----------------------------------------------------- segmented sets -- */
+.gradio-container .rp-switch { border: 0 !important; background: none !important;
+  padding: 0 !important; box-shadow: none !important; min-width: 0 !important; }
+.gradio-container .rp-switch > .wrap.default { display: none !important; }
+.gradio-container .rp-switch > label:first-child,
+.gradio-container .rp-switch .head { display: none !important; }
+.gradio-container .rp-switch .wrap:not(.default) {
+  display: inline-flex !important; flex-direction: row !important;
+  flex-wrap: nowrap !important; gap: 3px !important; padding: 3px !important;
+  background: var(--surface-2) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 999px !important; box-shadow: none !important; width: auto !important;
+}
+.gradio-container .rp-switch label {
+  display: inline-flex !important; align-items: center !important;
+  margin: 0 !important; padding: 7px 15px !important;
+  border: 0 !important; border-radius: 999px !important;
+  background: transparent !important; box-shadow: none !important;
+  font-size: 13px !important; font-weight: 550 !important;
+  color: var(--ink-muted) !important; cursor: pointer; white-space: nowrap;
+  transition: color .18s var(--ease), background .24s var(--ease),
+              box-shadow .24s var(--ease), transform .16s var(--ease);
+}
+.gradio-container .rp-switch label:hover { color: var(--ink) !important; }
+.gradio-container .rp-switch label:active { transform: scale(.97); }
+.gradio-container .rp-switch input { display: none !important; }
+.gradio-container .rp-switch label:has(input:checked),
+.gradio-container .rp-switch label.selected {
+  background: var(--surface) !important; color: var(--accent) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+/* ------------------------------------------------------------- chips -- */
+.rp-examples { display: flex !important; flex-wrap: wrap !important;
+  gap: 8px; margin: 14px 0 2px; justify-content: center !important; }
+.rp-examples > * { flex: 0 0 auto !important; width: auto !important; min-width: 0 !important; }
+.rp-chip-label { width: 100%; text-align: center; font-size: 12.5px;
+  color: var(--ink-faint); margin-bottom: 4px; }
 .gradio-container button.rp-chip {
   background: var(--surface) !important; color: var(--ink-soft) !important;
   border: 1px solid var(--border) !important; border-radius: 999px !important;
   font-size: 13px !important; font-weight: 500 !important;
-  padding: 7px 14px !important; box-shadow: none !important;
-  transition: all .16s var(--ease);
+  padding: 9px 16px !important; white-space: nowrap !important;
+  width: auto !important; min-width: 0 !important;
+  box-shadow: var(--shadow-sm) !important; position: relative; overflow: hidden;
+  transition: all .17s var(--ease);
 }
-.gradio-container .rp-chip button:hover,
 .gradio-container button.rp-chip:hover {
   border-color: var(--accent-line) !important; color: var(--accent) !important;
-  background: var(--accent-wash) !important; transform: translateY(-1px);
+  background: var(--accent-wash) !important; transform: translateY(-2px);
+  box-shadow: var(--shadow-md) !important;
 }
+.gradio-container button.rp-chip:active { transform: scale(.97); }
+.rp-ripple {
+  position: absolute; border-radius: 50%; pointer-events: none;
+  background: currentColor; opacity: .22; transform: scale(0);
+  animation: rp-ripple .62s var(--ease-out) forwards;
+}
+@keyframes rp-ripple { to { transform: scale(2.6); opacity: 0; } }
 
-/* ------------------------------------------------------------------ answer */
-.rp-answer {
+/* ==================================================================== */
+/*  The thread through the labyrinth                                     */
+/*  Waiting is the moment a worried person is most alone with the        */
+/*  question, so the wait shows the work: a thread finding its way out.  */
+/* ==================================================================== */
+.rp-loader {
+  display: flex; gap: 22px; align-items: center;
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius); box-shadow: var(--shadow-md);
-  padding: 26px 30px 24px; margin-top: 6px;
-  animation: rp-rise .4s var(--ease) both;
+  padding: 26px 28px; margin-top: 6px;
+  animation: rp-arrive .45s var(--ease-out) both;
 }
-@keyframes rp-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
-
-.rp-answer h2 {
-  font-family: var(--sans); font-size: 12px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: .085em;
-  color: var(--accent); margin: 26px 0 9px; padding-bottom: 6px;
-  border-bottom: 1px solid var(--border-soft);
+.rp-maze { flex: 0 0 auto; }
+.rp-maze-walls { stroke: var(--border); stroke-width: 2.4; stroke-linecap: round; }
+.rp-maze-thread {
+  stroke: var(--accent); stroke-width: 3; fill: none;
+  stroke-linecap: round; stroke-linejoin: round;
+  stroke-dasharray: 330; stroke-dashoffset: 330;
+  animation: rp-thread 3.6s var(--ease) infinite;
 }
-.rp-answer h2:first-child { margin-top: 0; }
-.rp-answer p { max-width: 76ch; font-size: 15.5px; line-height: 1.68; color: var(--ink-soft); margin: 0 0 12px; }
-.rp-answer li { max-width: 74ch; font-size: 15.5px; line-height: 1.62; color: var(--ink-soft); margin: 0 0 7px; }
-.rp-answer ul, .rp-answer ol { margin: 0 0 14px; padding-left: 22px; }
-.rp-answer strong { color: var(--ink); font-weight: 620; }
-
-/* French vocabulary the reader will need at a counter. */
-.rp-fr {
-  font-weight: 600; color: var(--accent-deep);
-  background: var(--accent-wash);
-  border-radius: 4px; padding: 1px 5px;
-  box-decoration-break: clone; -webkit-box-decoration-break: clone;
+@keyframes rp-thread {
+  0%   { stroke-dashoffset: 330; }
+  62%  { stroke-dashoffset: 0; }
+  88%  { stroke-dashoffset: 0; opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
 }
-
-/* The copyable French phrasing. */
-.rp-say {
-  background: var(--accent-wash); border: 1px solid var(--accent-line);
-  border-radius: var(--radius-sm); padding: 15px 18px; margin: 6px 0 4px;
+.rp-maze-head {
+  fill: var(--accent); r: 3.4;
+  animation: rp-head 3.6s var(--ease) infinite;
+  offset-path: path("M10 10 L10 34 L26 34 L26 18 L42 18 L42 42 L58 42 L58 10 L74 10 L74 50");
+  offset-distance: 0%;
 }
-.rp-say p { color: var(--accent-deep); font-size: 15.5px; margin-bottom: 0; }
-.rp-say-note { font-size: 12px; color: var(--ink-muted); margin-top: 9px !important; font-style: italic; }
-
-/* A refusal is a designed outcome, not an error state. */
-.rp-refusal { border-left: 3px solid var(--ink-faint); background: var(--surface-2); }
-.rp-refusal .rp-badge { background: var(--surface); color: var(--ink-muted); border-color: var(--border); }
-
-.rp-badge {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-size: 11.5px; font-weight: 650; letter-spacing: .04em; text-transform: uppercase;
-  padding: 5px 10px; border-radius: 999px; margin-bottom: 16px;
-  background: var(--good-wash); color: var(--good); border: 1px solid #cceadd;
+@keyframes rp-head {
+  0%   { offset-distance: 0%; opacity: 0; }
+  6%   { opacity: 1; }
+  62%  { offset-distance: 100%; opacity: 1; }
+  100% { offset-distance: 100%; opacity: 0; }
 }
-.rp-badge .rp-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-
-/* Caret while the answer streams in. */
-.rp-caret {
-  display: inline-block; width: 2px; height: 1.05em; vertical-align: -.16em;
-  background: var(--accent); margin-left: 2px; animation: rp-blink 1.05s steps(2, start) infinite;
-}
-@keyframes rp-blink { to { visibility: hidden; } }
-
-/* ----------------------------------------------------------------- sources */
-.rp-sources-head {
-  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .085em;
-  color: var(--ink-muted); margin: 30px 0 12px;
-}
-.rp-source {
-  display: block; text-align: left; background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm); padding: 15px 17px; margin-bottom: 9px;
-  text-decoration: none !important; color: inherit !important;
-  box-shadow: var(--shadow-sm);
-  animation-name: rp-rise; animation-duration: .42s;
-  animation-timing-function: cubic-bezier(.22,.61,.36,1);
-  animation-fill-mode: both;
-  animation-delay: calc(var(--i, 0) * 65ms);
-  transition: border-color .18s var(--ease), box-shadow .22s var(--ease), transform .18s var(--ease);
-}
-.rp-source:hover {
-  border-color: var(--accent-line); box-shadow: var(--shadow-md); transform: translateY(-2px);
-}
-.rp-source-title {
-  font-size: 15px; font-weight: 620; color: var(--ink); line-height: 1.4; margin-bottom: 5px;
-}
-.rp-source:hover .rp-source-title { color: var(--accent); }
-.rp-source-meta {
-  display: flex; flex-wrap: wrap; gap: 5px 12px; align-items: center;
-  font-size: 12.5px; color: var(--ink-muted);
-}
-.rp-source-id { font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint); }
-.rp-scope {
-  background: var(--surface-2); border: 1px solid var(--border-soft);
-  border-radius: 4px; padding: 1px 7px; font-size: 11.5px; color: var(--ink-soft);
-}
-.rp-date-suspect { color: var(--warn); }
-
-/* Retrieval score, drawn rather than printed. */
-.rp-score { display: flex; align-items: center; gap: 8px; margin-left: auto; }
-.rp-score-track { width: 64px; height: 4px; border-radius: 2px; background: var(--surface-2); overflow: hidden; }
-.rp-score-fill {
-  display: block; height: 100%; border-radius: 2px; background: var(--accent);
-  width: var(--w, 0%);
-  animation-name: rp-fill;
-  animation-duration: .85s;
-  animation-timing-function: cubic-bezier(.22,.61,.36,1);
-  animation-fill-mode: both;
-  animation-delay: calc(var(--i, 0) * 65ms + 160ms);
-}
-@keyframes rp-fill { from { width: 0; } to { width: var(--w, 0%); } }
-.rp-score-value { font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint); min-width: 30px; }
-
-/* ------------------------------------------------------------------- debug */
-.rp-debug { font-size: 13px; }
-.rp-debug-grid {
-  display: grid; grid-template-columns: 165px 1fr; gap: 7px 16px;
-  padding: 4px 0 14px; border-bottom: 1px solid var(--border-soft); margin-bottom: 14px;
-}
-.rp-debug-key { color: var(--ink-muted); font-size: 12.5px; }
-.rp-debug-val { color: var(--ink); font-size: 12.5px; word-break: break-word; }
-.rp-debug-val code { font-family: var(--mono); font-size: 11.5px; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
-.rp-gate-pass { color: var(--good); font-weight: 620; }
-.rp-gate-fail { color: var(--stop); font-weight: 620; }
-.rp-chunk {
-  border: 1px solid var(--border-soft); border-radius: var(--radius-sm);
-  padding: 10px 12px; margin-bottom: 7px; background: var(--surface);
-}
-.rp-chunk.rp-dropped { background: var(--stop-wash); border-color: #f2dbd9; }
-.rp-chunk-head { display: flex; align-items: center; gap: 9px; font-size: 12px; margin-bottom: 5px; flex-wrap: wrap; }
-.rp-chunk-id { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); }
-.rp-tag {
-  font-size: 10.5px; font-weight: 650; text-transform: uppercase; letter-spacing: .04em;
-  padding: 2px 6px; border-radius: 4px; background: var(--accent-wash); color: var(--accent);
-}
-.rp-tag.rp-tag-kw { background: #f3f0e7; color: #7a6420; }
-.rp-chunk-text { font-size: 12px; color: var(--ink-muted); line-height: 1.5; }
-
-/* Skeleton shown while retrieval runs. */
-.rp-skeleton { padding: 26px 30px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); }
-.rp-sk-line { height: 11px; border-radius: 5px; margin-bottom: 11px;
-  background: linear-gradient(90deg, var(--surface-2) 25%, #ece8e2 37%, var(--surface-2) 63%);
-  background-size: 400% 100%; animation: rp-shimmer 1.3s ease-in-out infinite; }
-@keyframes rp-shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
-.rp-sk-status { font-size: 13px; color: var(--ink-muted); margin-bottom: 15px; display: flex; align-items: center; gap: 9px; }
-.rp-spinner {
-  width: 13px; height: 13px; border: 2px solid var(--accent-line);
-  border-top-color: var(--accent); border-radius: 50%; animation: rp-spin .7s linear infinite;
-}
-@keyframes rp-spin { to { transform: rotate(360deg); } }
-
-/* ---------------------------------------------------------------- glossary */
-.rp-gloss-search input, .gradio-container .rp-gloss-search input {
-  font-family: var(--sans) !important; font-size: 14.5px !important;
-  border: 1px solid var(--border) !important; border-radius: var(--radius-sm) !important;
-  background: var(--surface) !important; padding: 11px 14px !important;
-  box-shadow: var(--shadow-sm) !important;
-}
-.rp-gloss-search input:focus { border-color: var(--accent-line) !important; box-shadow: 0 0 0 4px var(--accent-wash) !important; outline: none !important; }
-.rp-gloss-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 11px; }
-.rp-gloss {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); padding: 15px 17px;
-  box-shadow: var(--shadow-sm);
-  animation-name: rp-rise; animation-duration: .4s;
-  animation-timing-function: cubic-bezier(.22,.61,.36,1);
-  animation-fill-mode: both; animation-delay: calc(var(--i, 0) * 22ms);
-  transition: border-color .18s var(--ease), box-shadow .2s var(--ease), transform .18s var(--ease);
-}
-.rp-gloss:hover { border-color: var(--accent-line); box-shadow: var(--shadow-md); transform: translateY(-2px); }
-.rp-gloss-fr { font-size: 15.5px; font-weight: 640; color: var(--ink); }
-.rp-gloss-en { font-size: 13.5px; color: var(--accent); margin: 2px 0 9px; font-weight: 520; }
-.rp-gloss-def { font-size: 13.5px; line-height: 1.55; color: var(--ink-soft); margin-bottom: 7px; }
-.rp-gloss-def-fr { font-size: 13px; line-height: 1.55; color: var(--ink-muted); padding-top: 9px; border-top: 1px dashed var(--border); }
-.rp-prov { display: inline-block; font-size: 10.5px; font-weight: 620; letter-spacing: .03em; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; margin-top: 9px; }
-.rp-prov-official { background: var(--good-wash); color: var(--good); }
-.rp-prov-authored { background: var(--surface-2); color: var(--ink-muted); }
-
-/* ------------------------------------------------------------------ corpus */
-.rp-stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 11px; margin-bottom: 22px; }
-.rp-stat {
-  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
-  padding: 17px 19px; box-shadow: var(--shadow-sm);
-  animation-name: rp-rise; animation-duration: .4s;
-  animation-timing-function: cubic-bezier(.22,.61,.36,1);
-  animation-fill-mode: both; animation-delay: calc(var(--i, 0) * 55ms);
-}
-.rp-stat-value { font-family: var(--serif); font-size: 27px; font-weight: 600; color: var(--ink); line-height: 1.1; letter-spacing: -.01em; }
-.rp-stat-label { font-size: 12.5px; color: var(--ink-muted); margin-top: 5px; }
-.rp-note { font-size: 13px; color: var(--ink-muted); line-height: 1.6; background: var(--surface-2); border-radius: var(--radius-sm); padding: 14px 16px; margin-top: 6px; }
-.rp-note a { color: var(--accent); }
-
-.rp-error { background: var(--stop-wash); border: 1px solid #f2dbd9; border-left: 3px solid var(--stop);
-  border-radius: var(--radius-sm); padding: 14px 16px; font-size: 13.5px; color: #7d2b2b; line-height: 1.55; }
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: .001ms !important; animation-iteration-count: 1 !important;
-    transition-duration: .001ms !important;
-  }
-  .rp-score-fill { width: var(--w, 0%) !important; animation: none !important; }
-}
-
-
-/* ===================================================================
-   Interaction layer
-   =================================================================== */
-
-/* Answer sections arrive one after another rather than all at once, which
-   lets the eye follow the structure instead of meeting a wall of text. */
-.rp-answer h2 { animation: rp-rise .34s cubic-bezier(.22,.61,.36,1) both; }
-.rp-answer h2:nth-of-type(2) { animation-delay: .05s; }
-.rp-answer h2:nth-of-type(3) { animation-delay: .10s; }
-.rp-answer h2:nth-of-type(4) { animation-delay: .15s; }
-.rp-answer h2:nth-of-type(5) { animation-delay: .20s; }
-
-/* The French phrase is the one thing people physically carry away, so it is
-   built to be taken: one tap, clear confirmation. */
-.rp-say { position: relative; }
-.rp-copy {
-  position: absolute; top: 10px; right: 10px;
-  display: inline-flex; align-items: center; gap: 5px;
-  font: 600 11.5px/1 var(--sans); letter-spacing: .03em;
-  color: var(--accent); background: var(--surface);
-  border: 1px solid var(--accent-line); border-radius: 7px;
-  padding: 6px 10px; cursor: pointer;
-  opacity: 0; transform: translateY(-3px);
-  transition: opacity .2s var(--ease), transform .2s var(--ease),
-              background .16s var(--ease), color .16s var(--ease);
-}
-.rp-say:hover .rp-copy, .rp-copy:focus-visible { opacity: 1; transform: none; }
-.rp-copy:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
-.rp-copy.rp-done { opacity: 1; transform: none; background: var(--good);
-  border-color: var(--good); color: #fff; }
-
-/* Loading is staged, because retrieval and writing are genuinely different
-   waits and a single spinner tells the person nothing. */
-.rp-stages { display: flex; flex-direction: column; gap: 9px; margin-bottom: 16px; }
+.rp-stages { display: flex; flex-direction: column; gap: 10px; }
 .rp-stage {
-  display: flex; align-items: center; gap: 10px;
-  font-size: 13.5px; color: var(--ink-faint);
-  transition: color .3s var(--ease);
+  display: flex; align-items: center; gap: 11px;
+  font-size: 14px; color: var(--ink-faint);
+  transition: color .35s var(--ease);
 }
-.rp-stage.rp-on { color: var(--ink); }
-.rp-stage.rp-done-stage { color: var(--good); }
+.rp-stage.rp-on { color: var(--ink); font-weight: 500; }
+.rp-stage.rp-done-stage { color: var(--green); }
 .rp-stage-dot {
-  width: 15px; height: 15px; border-radius: 50%; flex: 0 0 auto;
+  width: 16px; height: 16px; border-radius: 50%; flex: 0 0 auto;
   border: 2px solid var(--border); position: relative;
 }
 .rp-stage.rp-on .rp-stage-dot {
   border-color: var(--accent-line); border-top-color: var(--accent);
   animation: rp-spin .75s linear infinite;
 }
-.rp-stage.rp-done-stage .rp-stage-dot {
-  border-color: var(--good); background: var(--good);
-}
+@keyframes rp-spin { to { transform: rotate(360deg); } }
+.rp-stage.rp-done-stage .rp-stage-dot { border-color: var(--green); background: var(--green); }
 .rp-stage.rp-done-stage .rp-stage-dot::after {
-  content: ""; position: absolute; left: 3.5px; top: 1px;
+  content: ""; position: absolute; left: 4px; top: 1.5px;
   width: 3px; height: 7px; border: solid #fff; border-width: 0 2px 2px 0;
   transform: rotate(45deg);
 }
 
-/* Sources reveal on a gentle stagger and lift toward the cursor. */
-.rp-source { position: relative; overflow: hidden; }
+/* ==================================================================== */
+/*  The answer                                                           */
+/*  Each part carries its own hue. Someone scanning in a language they   */
+/*  are still learning can find the part they need — the documents, the  */
+/*  deadline, the sentence to say out loud — before parsing a word.      */
+/* ==================================================================== */
+.rp-answer {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-md);
+  padding: 30px 34px 28px; margin-top: 8px;
+  animation: rp-arrive .45s var(--ease-out) both;
+}
+.rp-badge {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 11.5px; font-weight: 650; letter-spacing: .05em;
+  text-transform: uppercase; padding: 6px 12px; border-radius: 999px;
+  margin-bottom: 20px;
+  background: var(--green-wash); color: var(--green);
+  border: 1px solid var(--green-line);
+}
+.rp-badge .rp-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+.rp-answer h2 {
+  font-family: var(--sans); font-size: 11.5px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .09em;
+  margin: 30px 0 12px; padding: 0 0 8px 0;
+  border-bottom: 1.5px solid currentColor;
+  color: var(--accent); animation: rp-arrive .34s var(--ease-out) both;
+}
+.rp-answer h2:first-child { margin-top: 0; }
+/* Hue by position, matching the order the prompt writes them in. */
+.rp-answer h2:nth-of-type(1) { color: var(--blue); }
+.rp-answer h2:nth-of-type(2) { color: var(--violet); animation-delay: .05s; }
+.rp-answer h2:nth-of-type(3) { color: var(--green); animation-delay: .10s; }
+.rp-answer h2:nth-of-type(4) { color: var(--amber); animation-delay: .15s; }
+.rp-answer h2:nth-of-type(5) { color: var(--rose);  animation-delay: .20s; }
+
+.rp-answer p { max-width: 74ch; font-size: 16px; line-height: 1.68;
+  color: var(--ink-soft); margin: 0 0 13px; }
+.rp-answer li { max-width: 72ch; font-size: 16px; line-height: 1.62;
+  color: var(--ink-soft); margin: 0 0 9px; }
+.rp-answer ul, .rp-answer ol { margin: 0 0 16px; padding-left: 24px; }
+.rp-answer ol { counter-reset: step; list-style: none; padding-left: 0; }
+.rp-answer ol > li {
+  counter-increment: step; position: relative; padding-left: 42px; min-height: 28px;
+}
+.rp-answer ol > li::before {
+  content: counter(step, decimal-leading-zero);
+  position: absolute; left: 0; top: 1px;
+  font-family: var(--mono); font-size: 12px; font-weight: 600;
+  color: var(--violet); background: var(--violet-wash);
+  border: 1px solid var(--violet-line); border-radius: 7px;
+  padding: 3px 7px; line-height: 1.25;
+}
+.rp-answer ul > li::marker { color: var(--green); }
+.rp-answer strong { color: var(--ink); font-weight: 650; }
+
+/* French vocabulary, carrying its own definition. */
+.rp-fr {
+  position: relative; cursor: help; outline: none;
+  font-weight: 600; color: var(--violet);
+  background: var(--violet-wash); border-radius: 5px; padding: 1px 5px;
+  box-decoration-break: clone; -webkit-box-decoration-break: clone;
+}
+.rp-fr::after {
+  content: attr(data-en) " · " attr(data-gloss);
+  position: absolute; left: 50%; bottom: calc(100% + 11px);
+  transform: translateX(-50%) translateY(5px) scale(.97);
+  transform-origin: bottom center; width: max-content; max-width: 300px;
+  padding: 12px 14px; border-radius: 11px;
+  background: var(--ink); color: #fff;
+  font: 400 12.5px/1.5 var(--sans); box-shadow: var(--shadow-lg);
+  opacity: 0; pointer-events: none; z-index: 40; text-align: left;
+  transition: opacity .17s var(--ease), transform .22s var(--ease);
+}
+.rp-fr::before {
+  content: ""; position: absolute; left: 50%; bottom: calc(100% + 5px);
+  transform: translateX(-50%) translateY(5px);
+  border: 6px solid transparent; border-top-color: var(--ink);
+  opacity: 0; pointer-events: none; z-index: 40;
+  transition: opacity .17s var(--ease), transform .22s var(--ease);
+}
+.rp-fr:hover::after, .rp-fr:focus::after,
+.rp-fr:hover::before, .rp-fr:focus::before {
+  opacity: 1; transform: translateX(-50%) translateY(0) scale(1);
+}
+
+/* The sentence to say out loud: the one thing carried to a counter. */
+.rp-say {
+  position: relative; background: var(--rose-wash);
+  border: 1px solid var(--rose-line); border-left: 3px solid var(--rose);
+  border-radius: var(--radius-sm); padding: 17px 20px; margin: 6px 0 4px;
+}
+.rp-say p { color: var(--ink); font-size: 16.5px; margin-bottom: 0; }
+.rp-say-note { font-size: 12px !important; color: var(--ink-muted) !important;
+  margin-top: 10px !important; font-style: italic; }
+.rp-copy {
+  position: absolute; top: 11px; right: 11px;
+  display: inline-flex; align-items: center; gap: 5px;
+  font: 600 11.5px/1 var(--sans); letter-spacing: .03em;
+  color: var(--rose); background: var(--surface);
+  border: 1px solid var(--rose-line); border-radius: 8px;
+  padding: 7px 11px; cursor: pointer; opacity: 0; transform: translateY(-3px);
+  transition: all .2s var(--ease);
+}
+.rp-say:hover .rp-copy, .rp-copy:focus-visible { opacity: 1; transform: none; }
+.rp-copy:hover { background: var(--rose); color: #fff; border-color: var(--rose); }
+.rp-copy.rp-done { opacity: 1; transform: none; background: var(--green);
+  border-color: var(--green); color: #fff; }
+
+.rp-refusal { border-left: 3px solid var(--ink-faint); background: var(--surface-2); }
+.rp-refusal .rp-badge { background: var(--surface); color: var(--ink-muted);
+  border-color: var(--border); }
+.rp-caret {
+  display: inline-block; width: 2px; height: 1.05em; vertical-align: -.16em;
+  background: var(--accent); margin-left: 2px;
+  animation: rp-blink 1.05s steps(2, start) infinite;
+}
+@keyframes rp-blink { to { visibility: hidden; } }
+
+/* ------------------------------------------------------ do it here -- */
+.rp-services { margin-top: 26px; }
+.rp-sources-head {
+  font-size: 11.5px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .09em; color: var(--ink-muted); margin: 0 0 12px;
+}
+.rp-service {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 18px; margin-bottom: 9px;
+  background: linear-gradient(180deg, var(--blue-wash), var(--surface) 88%);
+  border: 1px solid var(--blue-line); border-radius: var(--radius-sm);
+  text-decoration: none !important; color: inherit !important;
+  position: relative; isolation: isolate;
+  animation: rp-arrive .44s var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+  transition: transform .2s var(--ease), box-shadow .24s var(--ease),
+              border-color .2s var(--ease);
+}
+.rp-service:hover { transform: translateY(-2px); box-shadow: var(--shadow-md);
+  border-color: var(--blue); }
+.rp-service-icon {
+  flex: 0 0 auto; width: 36px; height: 36px; border-radius: 10px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--blue); color: #fff; font-size: 17px; line-height: 1;
+  transition: transform .24s var(--ease);
+}
+.rp-service:hover .rp-service-icon { transform: translate(2px, -2px); }
+.rp-service-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.rp-service-title { font-size: 15px; font-weight: 600; color: var(--ink); line-height: 1.35; }
+.rp-service-host { font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rp-service-note { font-size: 12px; color: var(--ink-faint); margin-top: 8px; }
+
+/* --------------------------------------------------------- sources -- */
+.rp-sources { margin-top: 22px; }
+.rp-sources > summary { list-style: none; }
+.rp-sources > summary::-webkit-details-marker { display: none; }
+.rp-sources-toggle {
+  display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+  font-size: 13px; font-weight: 550; color: var(--ink-muted);
+  padding: 9px 15px 9px 12px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--surface);
+  user-select: none; transition: all .18s var(--ease);
+}
+.rp-sources-toggle:hover { color: var(--accent); border-color: var(--accent-line);
+  background: var(--accent-wash); }
+.rp-chev { transition: transform .24s var(--ease); flex: 0 0 auto; }
+.rp-sources[open] > summary .rp-chev { transform: rotate(90deg); }
+.rp-sources-body { padding-top: 12px; animation: rp-arrive .34s var(--ease-out) both; }
+.rp-source {
+  display: block; text-align: left; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 16px 18px; margin-bottom: 9px;
+  text-decoration: none !important; color: inherit !important;
+  box-shadow: var(--shadow-sm); position: relative; overflow: hidden;
+  isolation: isolate;
+  animation: rp-arrive .42s var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
+  transition: all .2s var(--ease);
+}
 .rp-source::after {
   content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
-  background: var(--accent); transform: scaleY(0); transform-origin: center;
-  transition: transform .26s var(--ease);
+  background: var(--accent); transform: scaleY(0); transition: transform .26s var(--ease);
 }
+.rp-source:hover { border-color: var(--accent-line); box-shadow: var(--shadow-md);
+  transform: translateY(-2px); }
 .rp-source:hover::after { transform: scaleY(1); }
-.rp-source-open {
-  font-size: 12px; color: var(--accent); opacity: 0;
-  transition: opacity .2s var(--ease); margin-left: 8px; white-space: nowrap;
+.rp-source-title { font-size: 15px; font-weight: 620; color: var(--ink);
+  line-height: 1.4; margin-bottom: 6px; }
+.rp-source:hover .rp-source-title { color: var(--accent); }
+.rp-source-meta { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center;
+  font-size: 12.5px; color: var(--ink-muted); }
+.rp-source-id { font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint); }
+.rp-scope { background: var(--surface-2); border: 1px solid var(--border-soft);
+  border-radius: 5px; padding: 2px 8px; font-size: 11.5px; color: var(--ink-soft); }
+.rp-date-suspect { color: var(--amber); }
+.rp-source-link {
+  position: absolute; top: 13px; right: 14px; z-index: 3;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 8px; color: var(--ink-faint);
+  text-decoration: none !important; font-size: 15px; line-height: 1;
+  opacity: 0; transform: translateY(-2px); transition: all .2s var(--ease);
 }
-.rp-source:hover .rp-source-open { opacity: 1; }
+.rp-source:hover .rp-source-link { opacity: 1; transform: none; }
+.rp-source-link:hover { background: var(--accent-wash); color: var(--accent) !important; }
+.rp-score { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.rp-score-track { width: 62px; height: 5px; border-radius: 3px;
+  background: var(--surface-3); overflow: hidden; }
+.rp-score-fill {
+  display: block; height: 100%; border-radius: 3px;
+  background: linear-gradient(90deg, var(--blue), var(--violet));
+  width: var(--w, 0%);
+  animation-name: rp-fill; animation-duration: .85s;
+  animation-timing-function: var(--ease-out); animation-fill-mode: both;
+  animation-delay: calc(var(--i, 0) * 60ms + 160ms);
+}
+@keyframes rp-fill { from { width: 0; } to { width: var(--w, 0%); } }
+.rp-score-value { font-family: var(--mono); font-size: 11.5px;
+  color: var(--ink-faint); min-width: 30px; }
+.rp-peek { display: inline-block; margin-top: 11px; font-size: 12px;
+  color: var(--ink-faint); border-bottom: 1px dashed var(--border); cursor: pointer;
+  transition: all .16s var(--ease); }
+.rp-peek:hover { color: var(--accent); border-bottom-color: var(--accent-line); }
+.rp-excerpt {
+  display: block; max-height: 0; opacity: 0; overflow: hidden;
+  font-size: 13px; line-height: 1.6; color: var(--ink-muted);
+  border-top: 1px dashed transparent; margin-top: 0; padding-top: 0;
+  transition: max-height .42s var(--ease), opacity .3s var(--ease),
+              margin-top .3s var(--ease), padding-top .3s var(--ease);
+}
+.rp-source.rp-open .rp-excerpt { max-height: 320px; opacity: 1;
+  margin-top: 13px; padding-top: 13px; border-top-color: var(--border-soft); }
+.rp-source.rp-open { border-color: var(--accent-line); box-shadow: var(--shadow-md); }
 
-/* Chips press like real buttons. */
-.gradio-container button.rp-chip:active { transform: scale(.97); }
+/* Hover lights a card from where the pointer actually is. */
+.rp-source::before, .rp-service::before, .rp-gloss::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+  opacity: 0; transition: opacity .3s var(--ease);
+  background: radial-gradient(220px circle at var(--mx, 50%) var(--my, 50%),
+    color-mix(in oklch, var(--accent) 9%, transparent), transparent 70%);
+}
+.rp-source:hover::before, .rp-service:hover::before, .rp-gloss:hover::before { opacity: 1; }
 
-/* The answer card breathes in rather than appearing. */
-.rp-answer { transform-origin: top center; }
+.rp-pop {
+  position: fixed; z-index: 60; max-width: 360px; pointer-events: none;
+  background: var(--ink); color: #fff; border-radius: 12px; padding: 14px 16px;
+  box-shadow: var(--shadow-xl); font-size: 12.5px; line-height: 1.55;
+  opacity: 0; transform: translateY(6px) scale(.97); transform-origin: top left;
+  transition: opacity .17s var(--ease), transform .2s var(--ease);
+}
+.rp-pop.rp-pop-on { opacity: 1; transform: translateY(0) scale(1); }
+.rp-pop-label { display: block; font-size: 10px; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase;
+  color: color-mix(in oklch, var(--blue) 55%, white); margin-bottom: 7px; }
+.rp-pop-meta { display: block; margin-top: 9px; padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,.16);
+  font-family: var(--mono); font-size: 10.5px; color: rgba(255,255,255,.6); }
 
-/* Tabs slide their content in the direction of travel. */
-.tabitem { animation: rp-tab .38s cubic-bezier(.22,.61,.36,1) both; }
+/* ==================================================================== */
+/*  Words                                                                */
+/* ==================================================================== */
+.gradio-container .rp-gloss-search input {
+  font-family: var(--sans) !important; font-size: 15px !important;
+  border: 1px solid var(--border) !important; border-radius: var(--radius-sm) !important;
+  background: var(--surface) !important; padding: 13px 16px !important;
+  box-shadow: var(--shadow-sm) !important; color: var(--ink) !important;
+}
+.gradio-container .rp-gloss-search input:focus {
+  border-color: var(--accent-line) !important;
+  box-shadow: 0 0 0 4px var(--accent-wash) !important; outline: none !important;
+}
+.rp-gloss-grid { display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.rp-gloss {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 17px 19px; cursor: pointer;
+  box-shadow: var(--shadow-sm); position: relative; isolation: isolate;
+  animation: rp-arrive .4s var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 18ms);
+  transition: all .2s var(--ease);
+}
+.rp-gloss:hover { border-color: var(--violet-line); box-shadow: var(--shadow-md);
+  transform: translateY(-2px); }
+.rp-gloss:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--violet-line); }
+.rp-gloss-fr { display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; font-size: 16px; font-weight: 650; color: var(--ink); }
+.rp-gloss-chev { flex: 0 0 auto; color: var(--ink-faint);
+  transition: transform .28s var(--ease), color .18s var(--ease); }
+.rp-gloss:hover .rp-gloss-chev { color: var(--violet); }
+.rp-gloss.rp-open .rp-gloss-chev { transform: rotate(180deg); color: var(--violet); }
+.rp-gloss-en { font-size: 13.5px; color: var(--violet); margin: 3px 0 10px; font-weight: 550; }
+.rp-gloss-def { font-size: 14px; line-height: 1.58; color: var(--ink-soft); }
+.rp-gloss-more { max-height: 0; opacity: 0; overflow: hidden;
+  transition: max-height .4s var(--ease), opacity .3s var(--ease), margin-top .3s var(--ease); }
+.rp-gloss.rp-open .rp-gloss-more { max-height: 460px; opacity: 1; margin-top: 6px; }
+.rp-gloss-def-fr { font-size: 13.5px; line-height: 1.58; color: var(--ink-muted);
+  padding-top: 11px; border-top: 1px dashed var(--border); }
+.rp-gloss-aliases { margin-top: 11px; display: flex; flex-wrap: wrap; gap: 5px; align-items: baseline; }
+.rp-gloss-aliases-label { font-size: 10.5px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--ink-faint); margin-right: 3px; }
+.rp-alias { font-size: 11.5px; color: var(--ink-soft); background: var(--surface-2);
+  border-radius: 5px; padding: 3px 8px; }
+.rp-prov { display: inline-block; font-size: 10.5px; font-weight: 650;
+  letter-spacing: .04em; text-transform: uppercase; padding: 3px 8px;
+  border-radius: 5px; margin-top: 11px; }
+.rp-prov-official { background: var(--green-wash); color: var(--green);
+  border: 1px solid var(--green-line); }
+.rp-prov-authored { background: var(--surface-2); color: var(--ink-muted);
+  border: 1px solid var(--border); }
+
+/* ==================================================================== */
+/*  Sources tab                                                          */
+/* ==================================================================== */
+.rp-stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px; margin-bottom: 24px; }
+.rp-stat { background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 19px 21px; box-shadow: var(--shadow-sm);
+  position: relative; isolation: isolate;
+  animation: rp-arrive .4s var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 55ms); }
+.rp-stat-value { font-family: var(--serif); font-size: 28px; font-weight: 550;
+  color: var(--ink); line-height: 1.08; letter-spacing: -.015em; }
+.rp-stat:nth-child(4n+1) .rp-stat-value { color: var(--blue); }
+.rp-stat:nth-child(4n+2) .rp-stat-value { color: var(--violet); }
+.rp-stat:nth-child(4n+3) .rp-stat-value { color: var(--green); }
+.rp-stat:nth-child(4n+4) .rp-stat-value { color: var(--amber); }
+.rp-stat-label { font-size: 12.5px; color: var(--ink-muted); margin-top: 6px; }
+.rp-note { font-size: 13px; color: var(--ink-muted); line-height: 1.62;
+  background: var(--surface-2); border-radius: var(--radius-sm);
+  padding: 15px 17px; margin-top: 6px; }
+.rp-note a { color: var(--accent); }
+.rp-error { background: var(--rose-wash); border: 1px solid var(--rose-line);
+  border-left: 3px solid var(--rose); border-radius: var(--radius-sm);
+  padding: 15px 17px; font-size: 13.5px; color: var(--rose); line-height: 1.58; }
+
+/* Running out of allowance is not a fault and must not read like one. */
+.rp-limit { display: flex; gap: 17px; align-items: flex-start;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-sm);
+  padding: 26px 28px; margin-top: 6px;
+  animation: rp-arrive .45s var(--ease-out) both; }
+.rp-limit-cup { flex: 0 0 auto; color: var(--amber);
+  animation: rp-steam 3.4s ease-in-out infinite; }
+@keyframes rp-steam { 0%,100% { transform: translateY(0) rotate(0); }
+  50% { transform: translateY(-2px) rotate(-2deg); } }
+.rp-limit-title { font-family: var(--serif); font-size: 22px; font-weight: 550;
+  color: var(--ink); letter-spacing: -.015em; }
+.rp-limit-body { margin: 9px 0 0; font-size: 15px; line-height: 1.62;
+  color: var(--ink-soft); max-width: 58ch; }
+.rp-limit-wait { margin: 12px 0 0; font-size: 13px; font-weight: 600; color: var(--amber); }
+.rp-limit-local { margin: 11px 0 0; padding-top: 11px;
+  border-top: 1px dashed var(--border-soft); font-size: 12.5px; color: var(--ink-muted); }
+
+/* ==================================================================== */
+/*  Where you study                                                      */
+/* ==================================================================== */
+.gradio-container .rp-study-ask {
+  background: var(--surface) !important; border: 1px solid var(--violet-line) !important;
+  border-radius: var(--radius) !important; box-shadow: var(--shadow-sm) !important;
+  padding: 19px 21px !important; margin-top: 20px !important; gap: 0 !important;
+}
+.gradio-container .rp-study-ask > * { background: transparent !important; }
+.rp-study-prompt { margin: 0 0 13px; font-size: 14px; line-height: 1.6;
+  color: var(--ink-soft); max-width: 68ch; }
+.gradio-container .rp-study-search input,
+.gradio-container .rp-study-search textarea {
+  font-family: var(--sans) !important; font-size: 15px !important;
+  background: var(--surface) !important; border: 1px solid var(--border) !important;
+  border-radius: var(--radius-sm) !important; padding: 13px 16px !important;
+  color: var(--ink) !important; box-shadow: var(--shadow-sm) !important;
+}
+.gradio-container .rp-study-search input:focus,
+.gradio-container .rp-study-search textarea:focus {
+  border-color: var(--violet-line) !important;
+  box-shadow: 0 0 0 4px var(--violet-wash) !important; outline: none !important;
+}
+.gradio-container .rp-study-hits { border: 0 !important; background: none !important;
+  padding: 0 !important; box-shadow: none !important; }
+.gradio-container .rp-study-hits > .wrap.default { display: none !important; }
+.gradio-container .rp-study-hits .wrap:not(.default) {
+  display: flex !important; flex-direction: column !important;
+  gap: 3px !important; margin-top: 11px !important;
+  background: transparent !important; border: 0 !important; padding: 0 !important;
+}
+.gradio-container .rp-study-hits label {
+  display: flex !important; align-items: center !important; width: 100% !important;
+  margin: 0 !important; padding: 12px 14px !important; min-height: 44px;
+  border: 1px solid transparent !important; border-radius: var(--radius-sm) !important;
+  background: transparent !important; font-size: 14px !important;
+  color: var(--ink-soft) !important; box-shadow: none !important;
+  cursor: pointer; text-align: left !important; transition: all .16s var(--ease);
+}
+.gradio-container .rp-study-hits label:hover {
+  background: var(--violet-wash) !important; border-color: var(--violet-line) !important;
+  color: var(--ink) !important;
+}
+.gradio-container .rp-study-hits label:has(input:checked),
+.gradio-container .rp-study-hits label.selected {
+  background: var(--violet-wash) !important; border-color: var(--violet) !important;
+  color: var(--ink) !important; font-weight: 550 !important;
+}
+.gradio-container .rp-study-hits input { display: none !important; }
+.rp-place { margin-top: 13px; padding: 16px 18px; background: var(--violet-wash);
+  border: 1px solid var(--violet-line); border-radius: var(--radius-sm);
+  animation: rp-arrive .4s var(--ease-out) both; }
+.rp-place-name { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+  font-size: 15px; font-weight: 650; color: var(--ink); }
+.rp-place-site { margin-left: auto; font-size: 12.5px; font-weight: 550;
+  color: var(--violet) !important; text-decoration: none !important; white-space: nowrap; }
+.rp-place-site:hover { text-decoration: underline !important; }
+.rp-place-grid { display: flex; flex-wrap: wrap; gap: 9px 24px; margin-top: 12px; }
+.rp-place-cell { font-size: 14px; color: var(--ink-soft); }
+.rp-place-key { display: block; font-size: 10px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--ink-faint); margin-bottom: 3px; }
+.rp-place-why { margin-top: 12px; padding-top: 11px;
+  border-top: 1px dashed var(--violet-line); font-size: 12.5px;
+  line-height: 1.55; color: var(--ink-muted); }
+
+/* ==================================================================== */
+/*  Clean, neat, bolder                                                  */
+/*  The chrome stays quiet and the type carries the weight. Colour is    */
+/*  spent inside the answer, where it helps someone find the part they   */
+/*  need; spending it on the shell as well would leave nothing standing  */
+/*  out anywhere.                                                        */
+/* ==================================================================== */
+:root {
+  --paper:     #fafaf8;
+  --surface-2: #f4f3f0;
+  --surface-3: #eceae6;
+  --border:      #e5e3de;
+  --border-soft: #efedea;
+  --shadow-sm: 0 1px 2px rgba(20,20,25,.04), 0 1px 3px rgba(20,20,25,.03);
+  --shadow-md: 0 2px 4px rgba(20,20,25,.03), 0 8px 20px rgba(20,20,25,.06);
+  --shadow-lg: 0 4px 8px rgba(20,20,25,.04), 0 20px 48px rgba(20,20,25,.09);
+}
+:root:has(.rp-theme-fr) { --paper: #fbfaf7; --surface-2: #f5f3ee; }
+
+.rp-headline {
+  font-family: var(--sans); font-weight: 700;
+  letter-spacing: -.035em; max-width: 16ch;
+  font-size: clamp(30px, 5.2vw, 52px); line-height: 1.02;
+}
+.rp-wordmark { font-family: var(--sans); font-weight: 700;
+  font-size: 25px; letter-spacing: -.028em; }
+.rp-wash { opacity: .34; filter: blur(46px); }
+body::after { background: radial-gradient(130% 94% at 50% 6%,
+  transparent 52%, rgba(20,20,25,.035) 100%); }
+
+/* ==================================================================== */
+/*  Footer                                                               */
+/* ==================================================================== */
+.rp-privacy, .rp-footer, .rp-credit {
+  max-width: 76ch; margin-left: auto; margin-right: auto;
+}
+.rp-privacy {
+  display: flex; gap: 11px; align-items: flex-start; margin: 44px auto 0;
+  padding: 16px 18px; background: var(--green-wash);
+  border: 1px solid var(--green-line); border-radius: var(--radius-sm);
+  font-size: 13px; line-height: 1.58; color: var(--green);
+}
+.rp-privacy strong { font-weight: 650; }
+.rp-privacy svg { flex: 0 0 auto; margin-top: 1px; }
+.rp-disclaimer {
+  display: flex; gap: 11px; align-items: flex-start;
+  font-size: 12.5px; line-height: 1.58; color: var(--ink-muted);
+}
+.rp-footer {
+  margin: 18px auto 0 !important; border: 0 !important;
+  border-top: 1px solid var(--border) !important; border-radius: 0 !important;
+  background: transparent !important; padding: 18px 2px 0 !important;
+}
+.rp-footer strong { color: var(--amber); font-weight: 650; }
+.rp-credit { text-align: center; margin-top: 28px; padding-top: 20px;
+  border-top: 1px solid var(--border); }
+.rp-credit-made { display: flex; align-items: center; justify-content: center;
+  gap: 8px; font-size: 13px; font-weight: 550; color: var(--ink-soft); }
+.rp-credit-made svg { color: var(--rose); animation: rp-beat 2.6s ease-in-out infinite; }
+@keyframes rp-beat { 0%,88%,100% { transform: scale(1); }
+  92% { transform: scale(1.22); } 96% { transform: scale(1.05); } }
+.rp-credit-year { color: var(--ink-faint); font-weight: 400; }
+.rp-credit-community { margin: 10px auto 0; font-size: 12.5px; line-height: 1.6;
+  color: var(--ink-muted); max-width: 58ch; text-align: center; }
+
+/* ==================================================================== */
+/*  Reporting a bug                                                      */
+/*  Parked where a help affordance is looked for, on every screen,       */
+/*  never between someone and their question.                            */
+/* ==================================================================== */
+.gradio-container .rp-report {
+  position: fixed !important; left: 20px; bottom: 20px; z-index: 55;
+  width: auto !important; max-width: min(400px, calc(100vw - 40px));
+  margin: 0 !important; border: 0 !important; background: transparent !important;
+  padding: 0 !important; display: flex !important;
+  flex-direction: column-reverse !important; align-items: flex-start !important;
+}
+.gradio-container .rp-report, .gradio-container .rp-report > * {
+  overflow-x: visible !important;
+}
+.gradio-container .rp-report > .label-wrap,
+.gradio-container .rp-report button.label-wrap {
+  display: inline-flex !important; align-items: center !important;
+  gap: 9px !important; width: auto !important; min-height: 44px;
+  padding: 11px 18px 11px 15px !important;
+  background: var(--surface) !important; border: 1px solid var(--border) !important;
+  border-radius: 999px !important; box-shadow: var(--shadow-md) !important;
+  font-size: 13px !important; font-weight: 560 !important;
+  color: var(--ink-soft) !important; transition: all .2s var(--ease);
+}
+.gradio-container .rp-report > .label-wrap:hover {
+  transform: translateY(-2px); border-color: var(--rose-line) !important;
+  color: var(--rose) !important; box-shadow: var(--shadow-lg) !important;
+}
+.gradio-container .rp-report > .label-wrap .icon,
+.gradio-container .rp-report > .label-wrap svg { display: none !important; }
+.gradio-container .rp-report > :not(.label-wrap) {
+  background: var(--surface) !important; border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important; box-shadow: var(--shadow-xl) !important;
+  padding: 20px 22px !important; margin-bottom: 10px !important;
+  animation: rp-pop-up .34s var(--ease-out) both;
+}
+@keyframes rp-pop-up { from { opacity: 0; transform: translateY(10px) scale(.98); }
+  to { opacity: 1; transform: none; } }
+.rp-report-intro { font-size: 13.5px; line-height: 1.6; color: var(--ink-soft);
+  margin: 2px 0 12px; }
+.gradio-container .rp-report-text textarea {
+  font-family: var(--sans) !important; font-size: 14.5px !important;
+  background: var(--surface) !important; border: 1px solid var(--border) !important;
+  border-radius: var(--radius-sm) !important; padding: 13px 15px !important;
+  color: var(--ink) !important;
+}
+.gradio-container .rp-report-text textarea:focus {
+  border-color: var(--rose-line) !important;
+  box-shadow: 0 0 0 4px var(--rose-wash) !important; outline: none !important;
+}
+.rp-report-keeps { font-size: 12px; line-height: 1.55; color: var(--ink-faint);
+  margin: 10px 0 12px; }
+.rp-report-done { margin-top: 14px; padding: 15px 17px; background: var(--green-wash);
+  border: 1px solid var(--green-line); border-radius: var(--radius-sm);
+  animation: rp-arrive .4s var(--ease-out) both; }
+.rp-report-thanks { font-size: 14px; font-weight: 650; color: var(--green); }
+.rp-report-headline { margin-top: 7px; font-size: 13.5px; color: var(--ink-soft); line-height: 1.5; }
+.rp-report-note { margin-top: 8px; font-size: 12.5px; line-height: 1.55;
+  color: var(--amber); background: var(--amber-wash); border-radius: 7px; padding: 9px 11px; }
+.rp-report-path { margin-top: 9px; font-size: 11.5px; color: var(--ink-muted); }
+.rp-report-path code { font-family: var(--mono); font-size: 11px;
+  background: var(--surface-2); padding: 2px 6px; border-radius: 4px; }
+
+/* Gradio's own progress chrome: our staged lines already say what is
+   happening, in words. */
+.gradio-container .progress-bar, .gradio-container .progress-text,
+.gradio-container .progress-level, .gradio-container .progress-level-inner,
+.gradio-container .eta-bar { display: none !important; }
+.gradio-container .wrap.default { opacity: 1 !important; background: transparent !important; }
+.gradio-container .gr-accordion, .gradio-container [class*="accordion"] {
+  overflow-x: visible !important;
+}
+
+/* ==================================================================== */
+/*  Every screen                                                         */
+/*  Most people meeting this are on a phone, often on a bad connection,  */
+/*  often standing in a queue. The phone layout is the real one.         */
+/* ==================================================================== */
+
+/* Touch targets never below 44px, whatever the viewport. */
+.gradio-container button, .gradio-container [role="tab"],
+.gradio-container .rp-switch label, .rp-sources-toggle {
+  min-height: 44px;
+}
+
+@media (max-width: 1024px) {           /* tablet */
+  .gradio-container { padding: 0 24px 110px !important; }
+  .rp-hero { padding: 26px 0 22px; }
+  .rp-answer { padding: 26px 24px 24px; }
+  .rp-gloss-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+}
+
+@media (max-width: 720px) {            /* phone */
+  .gradio-container { padding: 0 16px 104px !important; }
+
+  .rp-topbar { flex-wrap: wrap !important; gap: 12px !important; }
+  .rp-topbar > *:first-child { order: 1; flex: 1 1 auto !important; }
+  .rp-topbar > *:last-child { order: 0; width: 100% !important;
+    padding-top: 0 !important; justify-content: flex-end !important; }
+
+  .rp-masthead { padding: 16px 0 0 !important; }
+  .rp-wordmark { font-size: 22px; }
+  .rp-hero { padding: 20px 0 18px; }
+  .rp-headline { font-size: clamp(27px, 8vw, 34px); max-width: 14ch; }
+  .rp-tagline { font-size: 15px; }
+
+  /* Tabs scroll rather than wrap into an unreadable stack. */
+  .gradio-container .tab-nav, .gradio-container div[role="tablist"] {
+    overflow-x: auto !important; flex-wrap: nowrap !important;
+    scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  .gradio-container .tab-nav::-webkit-scrollbar { display: none; }
+  .gradio-container button[role="tab"] { white-space: nowrap !important;
+    padding: 12px 13px !important; font-size: 13.5px !important; }
+
+  .gradio-container .rp-ask textarea { font-size: 16px !important;  /* no iOS zoom */
+    padding: 17px 18px !important; min-height: 88px !important; border-radius: 16px !important; }
+  .gradio-container button.rp-submit { width: 100% !important; padding: 16px 32px !important; }
+  .rp-submit-row { width: 100%; }
+  .rp-reply-row { gap: 8px !important; }
+  .gradio-container .rp-switch label { padding: 9px 13px !important; font-size: 12.5px !important; }
+
+  .rp-examples { justify-content: flex-start !important; }
+  .gradio-container button.rp-chip { white-space: normal !important;
+    text-align: left !important; font-size: 13px !important; }
+
+  .rp-answer { padding: 22px 18px 20px; border-radius: 14px; }
+  .rp-answer p, .rp-answer li { font-size: 15.5px; }
+  .rp-answer ol > li { padding-left: 38px; }
+  .rp-loader { flex-direction: column; align-items: flex-start; gap: 16px;
+    padding: 22px 20px; }
+  .rp-source-meta { gap: 5px 10px; }
+  .rp-score { margin-left: 0; width: 100%; }
+  .rp-gloss-grid { grid-template-columns: 1fr; }
+  .rp-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rp-place-site { margin-left: 0; }
+
+  /* A tooltip that runs off a phone screen is worse than none. */
+  .rp-fr::after { max-width: min(280px, calc(100vw - 40px)); }
+
+  .gradio-container .rp-report { left: 12px; right: 12px; bottom: 12px;
+    max-width: none !important; }
+  .gradio-container .rp-report > .label-wrap { width: auto !important; }
+}
+
+@media (max-width: 380px) {
+  .rp-headline { font-size: 25px; }
+  .rp-stat-grid { grid-template-columns: 1fr; }
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .rp-mark-arc, .rp-mark-needle, .rp-answer h2 { animation: none !important; }
+  *, *::before, *::after {
+    animation-duration: .001ms !important; animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+  .rp-wash, .rp-spot { animation: none !important; }
+  .rp-spot { display: none; }
+  body::before { display: none; }
+  .rp-score-fill { width: var(--w, 0%) !important; }
   .rp-say .rp-copy { opacity: 1; transform: none; }
 }
 
 
-/* ---------------------------------------------------- flags on the switcher
-   Gradio escapes HTML inside a radio label, so the flag is painted by CSS.
-   Option order is fixed by the choices list, which is what nth-child keys on. */
+/* Flags on the site-language switcher. Gradio escapes HTML inside a radio
+   label, so the flag is painted by CSS; option order fixes nth-child. */
 .gradio-container .rp-switch-site label::before {
-  content: ""; width: 17px; height: 17px; margin-right: 8px;
-  flex: 0 0 auto; border-radius: 50%;
-  background-size: cover; background-position: center;
-  box-shadow: 0 0 0 1px rgba(0,0,0,.14) inset;
-  transition: transform .32s var(--ease), box-shadow .2s var(--ease);
+  content: ""; width: 17px; height: 17px; margin-right: 8px; flex: 0 0 auto;
+  border-radius: 50%; background-size: cover; background-position: center;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.13) inset;
+  transition: transform .3s var(--ease), box-shadow .2s var(--ease);
 }
 .gradio-container .rp-switch-site label:nth-child(1)::before {
   background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cdefs%3E%3CclipPath%20id%3D%27c%27%3E%3Ccircle%20cx%3D%2712%27%20cy%3D%2712%27%20r%3D%2711.5%27%2F%3E%3C%2FclipPath%3E%3C%2Fdefs%3E%3Cg%20clip-path%3D%27url%28%23c%29%27%3E%3Crect%20width%3D%2724%27%20height%3D%2724%27%20fill%3D%27%230b2d6b%27%2F%3E%3Cpath%20d%3D%27M0%200%20L24%2024%20M24%200%20L0%2024%27%20stroke%3D%27%23fff%27%20stroke-width%3D%275.2%27%2F%3E%3Cpath%20d%3D%27M0%200%20L24%2024%20M24%200%20L0%2024%27%20stroke%3D%27%23c8102e%27%20stroke-width%3D%272.6%27%2F%3E%3Cpath%20d%3D%27M12%200%20V24%20M0%2012%20H24%27%20stroke%3D%27%23fff%27%20stroke-width%3D%277.6%27%2F%3E%3Cpath%20d%3D%27M12%200%20V24%20M0%2012%20H24%27%20stroke%3D%27%23c8102e%27%20stroke-width%3D%274.4%27%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
@@ -673,670 +1107,48 @@ footer, .gradio-container > .main > .wrap > .contain > footer { display: none !i
 .gradio-container .rp-switch-site label:has(input:checked)::before,
 .gradio-container .rp-switch-site label.selected::before {
   transform: scale(1.14);
-  box-shadow: 0 0 0 1px rgba(0,0,0,.14) inset, 0 0 0 2px var(--accent-line);
+  box-shadow: 0 0 0 1px rgba(0,0,0,.13) inset, 0 0 0 2px var(--accent-line);
 }
 
-
-/* ===================================================================
-   Inline definitions
-   Knowing the French word is half of it; the reader also needs to know
-   what it means, and sending them to another tab mid-procedure is how
-   you lose them. The definition travels with the word.
-   =================================================================== */
-.rp-fr { position: relative; cursor: help; outline: none; }
-.rp-fr::after {
-  content: attr(data-en) " · " attr(data-gloss);
-  position: absolute; left: 50%; bottom: calc(100% + 11px);
-  transform: translateX(-50%) translateY(5px) scale(.97);
-  transform-origin: bottom center;
-  width: max-content; max-width: 300px;
-  padding: 11px 13px; border-radius: 10px;
-  background: var(--ink); color: #fff;
-  font: 400 12.5px/1.5 var(--sans); letter-spacing: .002em;
-  box-shadow: var(--shadow-lg);
-  opacity: 0; pointer-events: none; z-index: 40;
-  transition: opacity .18s var(--ease), transform .22s var(--ease);
-  white-space: normal; text-align: left;
-}
-.rp-fr::before {
-  content: ""; position: absolute; left: 50%; bottom: calc(100% + 5px);
-  transform: translateX(-50%) translateY(5px);
-  border: 6px solid transparent; border-top-color: var(--ink);
-  opacity: 0; pointer-events: none; z-index: 40;
-  transition: opacity .18s var(--ease), transform .22s var(--ease);
-}
-.rp-fr:hover::after, .rp-fr:focus::after,
-.rp-fr:hover::before, .rp-fr:focus::before {
-  opacity: 1; transform: translateX(-50%) translateY(0) scale(1);
-}
-.rp-fr:focus { box-shadow: 0 0 0 3px var(--accent-line); }
-
-/* ===================================================================
-   Source cards open in place
-   =================================================================== */
-.rp-source-link {
-  position: absolute; top: 12px; right: 13px; z-index: 3;
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 26px; height: 26px; border-radius: 7px;
-  color: var(--ink-faint); text-decoration: none !important;
-  font-size: 15px; line-height: 1;
-  opacity: 0; transform: translateY(-2px);
-  transition: all .2s var(--ease);
-}
-.rp-source:hover .rp-source-link { opacity: 1; transform: none; }
-.rp-source-link:hover {
-  background: var(--accent-wash); color: var(--accent) !important;
-}
-.rp-peek {
-  display: inline-block; margin-top: 10px;
-  font-size: 12px; color: var(--ink-faint);
-  border-bottom: 1px dashed var(--border); cursor: pointer;
-  transition: color .16s var(--ease), border-color .16s var(--ease);
-}
-.rp-peek:hover { color: var(--accent); border-bottom-color: var(--accent-line); }
-.rp-source.rp-open .rp-peek { color: var(--accent); }
-.rp-excerpt {
-  display: block;
-  max-height: 0; opacity: 0; overflow: hidden;
-  font-size: 13px; line-height: 1.6; color: var(--ink-muted);
-  border-top: 1px dashed transparent; margin-top: 0; padding-top: 0;
-  transition: max-height .42s var(--ease), opacity .3s var(--ease),
-              margin-top .3s var(--ease), padding-top .3s var(--ease),
-              border-color .3s var(--ease);
-}
-.rp-source.rp-open .rp-excerpt {
-  max-height: 320px; opacity: 1; margin-top: 12px; padding-top: 12px;
-  border-top-color: var(--border-soft);
-}
-.rp-source.rp-open { border-color: var(--accent-line); box-shadow: var(--shadow-md); }
-
-/* ===================================================================
-   Press feedback
-   =================================================================== */
-.rp-ripple {
-  position: absolute; border-radius: 50%; pointer-events: none;
-  background: currentColor; opacity: .28; transform: scale(0);
-  animation: rp-ripple .62s cubic-bezier(.22,.61,.36,1) forwards;
-}
-@keyframes rp-ripple { to { transform: scale(2.6); opacity: 0; } }
-.gradio-container button.rp-submit, .gradio-container button.rp-chip {
-  position: relative; overflow: hidden;
-}
-
-/* A hint that the keyboard works, shown only where a keyboard exists. */
-.rp-kbd {
-  display: inline-flex; align-items: center; gap: 3px;
-  font: 600 10.5px/1 var(--mono); color: var(--ink-faint);
-  border: 1px solid var(--border); border-radius: 5px;
-  padding: 4px 6px; background: var(--surface);
-}
-.rp-hint {
-  display: flex; align-items: center; gap: 7px; margin-top: 9px;
-  font-size: 12.5px; color: var(--ink-faint);
-}
-@media (hover: none) { .rp-hint { display: none; } }
-
-/* Sources arrive as they enter the viewport rather than all at once. */
-.rp-reveal { opacity: 0; transform: translateY(14px); }
-.rp-reveal.rp-in {
-  opacity: 1; transform: none;
-  transition: opacity .5s var(--ease), transform .5s var(--ease);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .rp-ripple { display: none; }
-  .rp-reveal { opacity: 1; transform: none; }
-}
-
-
-/* ===================================================================
-   Do it here
-   Telling somebody a service exists and leaving them to find it is most
-   of what makes this hard. The working address goes directly under the
-   answer, and only ever one read out of the official corpus.
-   =================================================================== */
-.rp-services { margin-top: 26px; }
-.rp-service {
-  display: flex; align-items: center; gap: 13px;
-  padding: 15px 17px; margin-bottom: 8px;
-  background: linear-gradient(180deg, var(--accent-wash), var(--surface) 85%);
-  border: 1px solid var(--accent-line); border-radius: var(--radius-sm);
-  text-decoration: none !important; color: inherit !important;
-  animation-name: rp-rise; animation-duration: .44s;
-  animation-timing-function: cubic-bezier(.22,.61,.36,1);
-  animation-fill-mode: both;
-  animation-delay: calc(var(--i, 0) * 70ms);
-  transition: transform .2s var(--ease), box-shadow .24s var(--ease),
-              border-color .2s var(--ease);
-}
-.rp-service:hover {
-  transform: translateY(-2px); box-shadow: var(--shadow-md);
-  border-color: var(--accent);
-}
-.rp-service-icon {
-  flex: 0 0 auto; width: 32px; height: 32px; border-radius: 9px;
-  display: inline-flex; align-items: center; justify-content: center;
-  background: var(--accent); color: #fff; font-size: 16px; line-height: 1;
-  transition: transform .24s var(--ease);
-}
-.rp-service:hover .rp-service-icon { transform: translate(2px, -2px); }
-.rp-service-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.rp-service-title {
-  font-size: 14.5px; font-weight: 600; color: var(--ink); line-height: 1.35;
-}
-.rp-service:hover .rp-service-title { color: var(--accent-deep); }
-.rp-service-host {
-  font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.rp-service-note { font-size: 12px; color: var(--ink-faint); margin-top: 8px; }
-
-/* The disclaimer now closes the page instead of interrupting it. */
-.rp-footer {
-  margin: 44px 0 0 !important;
-  border-top: 1px solid var(--border) !important;
-  border-left: 0 !important; border-right: 0 !important; border-bottom: 0 !important;
-  border-radius: 0 !important; background: transparent !important;
-  padding: 18px 2px 0 !important; color: var(--ink-muted) !important;
-  font-size: 12.5px !important;
-}
-.rp-footer strong { color: var(--warn); }
-
-
-/* ===================================================================
-   Sources, tucked away
-   The licence requires the source and its date to be stated and it is
-   how a reader checks an answer, so it stays — one quiet line instead
-   of a wall of cards.
-   =================================================================== */
-.rp-sources { margin-top: 22px; }
-.rp-sources > summary { list-style: none; }
-.rp-sources > summary::-webkit-details-marker { display: none; }
-.rp-sources-toggle {
-  display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
-  font-size: 13px; font-weight: 550; color: var(--ink-muted);
-  padding: 8px 14px 8px 11px; border-radius: 999px;
-  border: 1px solid var(--border); background: var(--surface);
-  transition: color .18s var(--ease), border-color .18s var(--ease),
-              background .18s var(--ease);
-  user-select: none;
-}
-.rp-sources-toggle:hover {
-  color: var(--accent); border-color: var(--accent-line);
-  background: var(--accent-wash);
-}
-.rp-chev { transition: transform .24s var(--ease); flex: 0 0 auto; }
-.rp-sources[open] > summary .rp-chev { transform: rotate(90deg); }
-.rp-sources-body { padding-top: 12px; animation: rp-rise .34s var(--ease) both; }
-
-
-/* A notice, not an alarm. */
-.gradio-container .rp-notice,
-.gradio-container [class*="toast"].rp-notice {
-  background: var(--surface) !important;
-  color: var(--ink-soft) !important;
-  border: 1px solid var(--border) !important;
-  border-left: 3px solid var(--accent) !important;
-  border-radius: var(--radius-sm) !important;
-  box-shadow: var(--shadow-md) !important;
-}
-.gradio-container .rp-notice [class*="title"] {
-  color: var(--accent) !important; font-weight: 650 !important;
-}
-.gradio-container .rp-notice svg { color: var(--accent) !important; }
-
-
-/* ===================================================================
-   Atmosphere
-   Borrowed from cinematic work and dialled almost to nothing: depth
-   and light, no scenes. A page that feels made rather than generated,
-   without a single frame of anything that could hold an anxious
-   reader up.
-   =================================================================== */
-.gradio-container { position: relative; }
-
-/* Grain. At 3.5% it is felt rather than seen — it stops large flat
-   areas reading as dead screen. Fixed, so it never slides with scroll. */
-body::before {
-  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  opacity: .035; mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-/* A vignette so the page has a centre. */
-body::after {
-  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background: radial-gradient(130% 96% at 50% 12%,
-    transparent 44%, rgba(28,26,23,.045) 100%);
-}
-.gradio-container > * { position: relative; z-index: 1; }
-
-/* The light follows the cursor. The reference swings a clock hand at the
-   pointer; here it is a soft warmth under the question, so the page
-   answers the hand before it answers the question. */
-.rp-spot {
-  position: fixed; left: 0; top: 0; z-index: 0; pointer-events: none;
-  width: 520px; height: 520px; margin: -260px 0 0 -260px; border-radius: 50%;
-  background: radial-gradient(circle,
-    color-mix(in oklch, var(--accent) 13%, transparent) 0%,
-    transparent 62%);
-  opacity: 0; transition: opacity .55s var(--ease);
-  transform: translate3d(var(--sx, 50vw), var(--sy, 40vh), 0);
-  will-change: transform;
-}
-.rp-spot.rp-lit { opacity: 1; }
-
-/* ===================================================================
-   Hover that answers
-   Every surface a pointer can land on says so, in one vocabulary:
-   lift, a warmed ground, and a light that tracks the cursor across it.
-   =================================================================== */
-.rp-source, .rp-service, .rp-gloss, .rp-stat,
-.gradio-container button.rp-chip {
-  position: relative; isolation: isolate;
-}
-.rp-source::before, .rp-service::before, .rp-gloss::before {
-  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
-  opacity: 0; transition: opacity .3s var(--ease);
-  background: radial-gradient(220px circle at var(--mx, 50%) var(--my, 50%),
-    color-mix(in oklch, var(--accent) 9%, transparent), transparent 70%);
-}
-.rp-source:hover::before, .rp-service:hover::before, .rp-gloss:hover::before {
-  opacity: 1;
-}
-
-/* ===================================================================
-   Popovers
-   A hover should answer the question it raises. A source says what it
-   actually contains; a link says where it will take you.
-   =================================================================== */
-.rp-pop {
-  position: fixed; z-index: 60; max-width: 360px; pointer-events: none;
-  background: var(--ink); color: #fff;
-  border-radius: 11px; padding: 13px 15px;
-  box-shadow: var(--shadow-lg);
-  font-size: 12.5px; line-height: 1.55;
-  opacity: 0; transform: translateY(6px) scale(.97); transform-origin: top left;
-  transition: opacity .17s var(--ease), transform .2s var(--ease);
-}
-.rp-pop.rp-pop-on { opacity: 1; transform: translateY(0) scale(1); }
-.rp-pop-label {
-  display: block; font-size: 10px; font-weight: 700; letter-spacing: .12em;
-  text-transform: uppercase; color: color-mix(in oklch, var(--accent) 60%, white);
-  margin-bottom: 7px;
-}
-.rp-pop-meta {
-  display: block; margin-top: 9px; padding-top: 8px;
-  border-top: 1px solid rgba(255,255,255,.16);
-  font-family: var(--mono); font-size: 10.5px; color: rgba(255,255,255,.6);
-}
-
-/* ===================================================================
-   Arrival
-   The reference stages its opening rather than cutting to it. Same
-   idea, one second long: the page assembles, then settles.
-   =================================================================== */
-@keyframes rp-arrive {
-  from { opacity: 0; transform: translateY(16px); filter: blur(6px); }
-  to   { opacity: 1; transform: none; filter: blur(0); }
-}
-.rp-stage-in > * { animation: rp-arrive .62s cubic-bezier(.22,.61,.36,1) both; }
-.rp-stage-in > *:nth-child(1) { animation-delay: .02s; }
-.rp-stage-in > *:nth-child(2) { animation-delay: .10s; }
-.rp-stage-in > *:nth-child(3) { animation-delay: .18s; }
-.rp-stage-in > *:nth-child(4) { animation-delay: .26s; }
-.rp-stage-in > *:nth-child(5) { animation-delay: .34s; }
-
-/* The mark draws itself, then the wordmark arrives behind it. */
-.rp-wordmark {
-  animation: rp-arrive .7s cubic-bezier(.22,.61,.36,1) .18s both;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .rp-spot { display: none; }
-  .rp-stage-in > *, .rp-wordmark { animation: none !important; }
-  body::before { display: none; }
-}
-
-
-/* A headline the page can be read from across a room, and a subhead that
-   does the explaining. One long sentence was doing both jobs badly. */
-.rp-headline {
-  font-family: var(--serif);
-  font-size: 40px; line-height: 1.08; font-weight: 600;
-  letter-spacing: -0.026em; color: var(--ink);
-  margin: 18px 0 0; max-width: 20ch; text-wrap: pretty;
-}
-.rp-masthead .rp-tagline { margin-top: 12px; max-width: 58ch; }
-@media (max-width: 720px) { .rp-headline { font-size: 31px; } }
-
-
-/* What happens to a question, said plainly and without a cookie banner. */
-.rp-privacy {
-  display: flex; gap: 10px; align-items: flex-start;
-  margin: 40px 0 0; padding: 16px 18px;
-  background: var(--good-wash); border: 1px solid #cceadd;
-  border-radius: var(--radius-sm);
-  font-size: 13px; line-height: 1.58; color: #14604a;
-}
-.rp-privacy strong { color: var(--good); font-weight: 650; }
-.rp-privacy svg { flex: 0 0 auto; margin-top: 1px; color: var(--good); }
-.rp-privacy + .rp-footer { margin-top: 16px !important; }
-
-
-/* ===================================================================
-   Gradio's own progress chrome
-   A blue bar sliding across the top says "system busy". Our staged
-   lines already say what is happening, in words, so the bar is noise.
-   =================================================================== */
-.gradio-container .progress-bar,
-.gradio-container .progress-text,
-.gradio-container .progress-level,
-.gradio-container .progress-level-inner,
-.gradio-container .eta-bar,
-.gradio-container > .main .wrap.default:not(.rp-skeleton) > .progress-text {
-  display: none !important;
-}
-.gradio-container .wrap.default { opacity: 1 !important; background: transparent !important; }
-
-/* ===================================================================
-   Glossary cards open
-   The card shows what a word means; opening it shows the other ways it
-   gets written, which is how you actually recognise it on a form.
-   =================================================================== */
-.rp-gloss { cursor: pointer; }
-.rp-gloss-fr {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
-}
-.rp-gloss-chev {
-  flex: 0 0 auto; color: var(--ink-faint);
-  transition: transform .28s var(--ease), color .18s var(--ease);
-}
-.rp-gloss:hover .rp-gloss-chev { color: var(--accent); }
-.rp-gloss.rp-open .rp-gloss-chev { transform: rotate(180deg); color: var(--accent); }
-.rp-gloss:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-line); }
-.rp-gloss-more {
-  max-height: 0; opacity: 0; overflow: hidden;
-  transition: max-height .4s var(--ease), opacity .3s var(--ease),
-              margin-top .3s var(--ease);
-}
-.rp-gloss.rp-open .rp-gloss-more { max-height: 420px; opacity: 1; margin-top: 4px; }
-.rp-gloss-aliases { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 5px;
-  align-items: baseline; }
-.rp-gloss-aliases-label {
-  font-size: 10.5px; font-weight: 700; letter-spacing: .08em;
-  text-transform: uppercase; color: var(--ink-faint); margin-right: 3px;
-}
-.rp-alias {
-  font-size: 11.5px; color: var(--ink-soft); background: var(--surface-2);
-  border-radius: 5px; padding: 2px 7px;
-}
-
-/* ===================================================================
-   The footer credit
-   =================================================================== */
-.rp-credit { margin-top: 26px; padding-top: 18px; border-top: 1px solid var(--border); }
-.rp-credit-made {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 13px; font-weight: 550; color: var(--ink-soft);
-}
-.rp-credit-made svg { color: #c0392b; animation: rp-beat 2.6s ease-in-out infinite; }
-@keyframes rp-beat {
-  0%, 88%, 100% { transform: scale(1); }
-  92% { transform: scale(1.22); }
-  96% { transform: scale(1.05); }
-}
-.rp-credit-year { color: var(--ink-faint); font-weight: 400; }
-.rp-credit-community {
-  margin: 9px 0 0; font-size: 12.5px; line-height: 1.6;
-  color: var(--ink-muted); max-width: 62ch;
-}
-
-/* The language switcher holds the top-right corner on every width. */
-.rp-topbar > *:last-child { align-self: flex-start !important; }
-@media (max-width: 640px) {
-  .rp-topbar { flex-wrap: wrap !important; }
-  .rp-topbar > *:last-child { padding-top: 0 !important; order: -1;
-    width: 100% !important; justify-content: flex-end !important; }
-}
-
-
-/* ===================================================================
-   Where you study
-   Optional, and it earns its place: the institution gives the
-   departement, and the departement is what decides which prefecture
-   handles a file. It says nothing about banks — no official register
-   records that.
-   =================================================================== */
-.rp-study-row { margin-top: 14px !important; }
-.gradio-container .rp-study {
-  background: transparent !important; border: 0 !important; padding: 0 !important;
-  box-shadow: none !important; max-width: 460px;
-}
-.gradio-container .rp-study label > span,
-.gradio-container .rp-study .block-title {
-  font-size: 12.5px !important; font-weight: 550 !important;
-  color: var(--ink-muted) !important; margin-bottom: 6px !important;
-}
-.gradio-container .rp-study input,
-.gradio-container .rp-study .wrap-inner,
-.gradio-container .rp-study .secondary-wrap {
-  background: var(--surface) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: var(--radius-sm) !important;
-  font-size: 14px !important; color: var(--ink) !important;
-  box-shadow: var(--shadow-sm) !important;
-}
-.gradio-container .rp-study input:focus {
-  border-color: var(--accent-line) !important;
-  box-shadow: 0 0 0 4px var(--accent-wash) !important; outline: none !important;
-}
-.gradio-container .rp-study .options,
-.gradio-container .rp-study ul {
-  background: var(--surface) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: var(--radius-sm) !important;
-  box-shadow: var(--shadow-lg) !important;
-}
-.gradio-container .rp-study .item,
-.gradio-container .rp-study li {
-  font-size: 13.5px !important; color: var(--ink-soft) !important;
-  padding: 9px 13px !important;
-}
-.gradio-container .rp-study .item:hover,
-.gradio-container .rp-study li:hover,
-.gradio-container .rp-study .active {
-  background: var(--accent-wash) !important; color: var(--accent) !important;
-}
-
-.rp-place {
-  margin-top: 12px; padding: 15px 17px; max-width: 560px;
-  background: var(--surface); border: 1px solid var(--accent-line);
-  border-radius: var(--radius-sm); box-shadow: var(--shadow-sm);
-  animation: rp-rise .4s cubic-bezier(.22,.61,.36,1) both;
-}
-.rp-place-name {
-  display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
-  font-size: 14.5px; font-weight: 620; color: var(--ink);
-}
-.rp-place-site {
-  margin-left: auto; font-size: 12px; font-weight: 550;
-  color: var(--accent) !important; text-decoration: none !important;
-  white-space: nowrap;
-}
-.rp-place-site:hover { text-decoration: underline !important; }
-.rp-place-grid { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 11px; }
-.rp-place-cell { font-size: 13.5px; color: var(--ink-soft); }
-.rp-place-key {
-  display: block; font-size: 10px; font-weight: 700; letter-spacing: .1em;
-  text-transform: uppercase; color: var(--ink-faint); margin-bottom: 2px;
-}
-.rp-place-why {
-  margin-top: 11px; padding-top: 10px; border-top: 1px dashed var(--border-soft);
-  font-size: 12px; line-height: 1.55; color: var(--ink-muted);
-}
-
-
-/* ===================================================================
-   Telling us it went wrong
-   Quiet, always there, and never in the way of the question. Someone
-   who has just been handed a wrong answer about their visa should not
-   have to hunt for this, nor compose it in English.
-   =================================================================== */
-.gradio-container .rp-report {
-  margin-top: 30px !important; background: transparent !important;
-  border: 0 !important; border-top: 1px solid var(--border) !important;
-  border-radius: 0 !important; box-shadow: none !important;
-}
-.gradio-container .rp-report > .label-wrap,
-.gradio-container .rp-report button.label-wrap {
-  background: transparent !important; padding: 15px 2px !important;
-  font-size: 13px !important; font-weight: 550 !important;
-  color: var(--ink-muted) !important;
-}
-.gradio-container .rp-report > .label-wrap:hover { color: var(--accent) !important; }
-.rp-report-intro {
-  font-size: 13.5px; line-height: 1.6; color: var(--ink-soft);
-  margin: 2px 0 12px; max-width: 66ch;
-}
-.gradio-container .rp-report-text textarea {
-  font-family: var(--sans) !important; font-size: 14.5px !important;
-  line-height: 1.55 !important; background: var(--surface) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: var(--radius-sm) !important; padding: 13px 15px !important;
-  color: var(--ink) !important; box-shadow: var(--shadow-sm) !important;
-}
-.gradio-container .rp-report-text textarea:focus {
-  border-color: var(--accent-line) !important;
-  box-shadow: 0 0 0 4px var(--accent-wash) !important; outline: none !important;
-}
-.rp-report-keeps {
-  font-size: 12px; line-height: 1.55; color: var(--ink-faint);
-  margin: 10px 0 12px; max-width: 66ch;
-}
-.rp-report-done {
-  margin-top: 14px; padding: 15px 17px;
-  background: var(--good-wash); border: 1px solid #cceadd;
-  border-radius: var(--radius-sm);
-  animation: rp-rise .4s cubic-bezier(.22,.61,.36,1) both;
-}
-.rp-report-thanks { font-size: 14px; font-weight: 620; color: var(--good); }
-.rp-report-headline {
-  margin-top: 7px; font-size: 13.5px; color: #14604a; line-height: 1.5;
-}
-.rp-report-note {
-  margin-top: 8px; font-size: 12.5px; line-height: 1.55; color: #6d5a1e;
-  background: var(--warn-wash); border-radius: 7px; padding: 9px 11px;
-}
-.rp-report-path { margin-top: 9px; font-size: 11.5px; color: var(--ink-muted); }
-.rp-report-path code {
-  font-family: var(--mono); font-size: 11px;
-  background: var(--surface); padding: 2px 6px; border-radius: 4px;
-}
-
-
-/* Running out of allowance is not a fault and must not read like one. */
-.rp-limit {
-  display: flex; gap: 16px; align-items: flex-start;
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); box-shadow: var(--shadow-sm);
-  padding: 24px 26px; margin-top: 6px;
-  animation: rp-rise .45s cubic-bezier(.22,.61,.36,1) both;
-}
-.rp-limit-cup {
-  flex: 0 0 auto; color: var(--accent);
-  animation: rp-steam 3.4s ease-in-out infinite;
-}
-@keyframes rp-steam {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-2px) rotate(-2deg); }
-}
-.rp-limit-title {
-  font-family: var(--serif); font-size: 21px; font-weight: 600;
-  color: var(--ink); letter-spacing: -0.012em;
-}
-.rp-limit-body {
-  margin: 8px 0 0; font-size: 14.5px; line-height: 1.62;
-  color: var(--ink-soft); max-width: 58ch;
-}
-.rp-limit-wait {
-  margin: 11px 0 0; font-size: 13px; font-weight: 600; color: var(--accent);
-}
-.rp-limit-local {
-  margin: 10px 0 0; padding-top: 10px; border-top: 1px dashed var(--border-soft);
-  font-size: 12.5px; color: var(--ink-muted);
-}
-
-
-/* ===================================================================
-   The landing composition
-   The question sits in the middle of the page and the field sits under
-   it, because that is where the reader's attention already is. A page
-   that opens with a statement about itself asks them to care about the
-   product before their own problem.
-   =================================================================== */
-.rp-wash {
-  position: absolute; left: 50%; top: -190px; transform: translateX(-50%);
-  width: min(1500px, 148vw); height: 620px; z-index: -1; pointer-events: none;
-  background:
-    radial-gradient(46% 58% at 50% 34%,
-      color-mix(in oklch, var(--accent) 20%, transparent) 0%, transparent 68%),
-    radial-gradient(64% 52% at 26% 20%,
-      color-mix(in oklch, var(--accent) 11%, transparent) 0%, transparent 72%),
-    radial-gradient(58% 50% at 76% 16%,
-      color-mix(in oklch, var(--warn) 9%, transparent) 0%, transparent 70%);
-  filter: blur(28px); opacity: .72;
-  animation: rp-drift 22s ease-in-out infinite alternate;
-}
-@keyframes rp-drift {
-  from { transform: translateX(-50%) translateY(0) scale(1); }
-  to   { transform: translateX(-50%) translateY(16px) scale(1.045); }
-}
-
-.rp-masthead { padding: 26px 0 4px !important; }
-
-.rp-hero { text-align: center; padding: 30px 0 26px; }
-.rp-hero .rp-headline {
-  margin: 0 auto; max-width: 17ch;
-  font-size: clamp(32px, 5.1vw, 54px); line-height: 1.06;
-  font-weight: 600; letter-spacing: -0.03em;
-}
-.rp-hero .rp-tagline {
-  margin: 15px auto 0; max-width: 56ch; text-align: center;
-  font-size: 15.5px; line-height: 1.62;
-}
-
-/* The field is the page's centre of gravity, so it is given the room. */
+/* The field should invite a sentence, not a paragraph. Gradio sizes a
+   textarea from its line count; ours was growing past the fold. */
 .gradio-container .rp-ask textarea,
 .gradio-container .rp-ask .input-container textarea {
-  font-size: 17px !important; padding: 21px 24px !important;
-  border-radius: 20px !important; min-height: 96px !important;
-  box-shadow: 0 14px 42px rgba(22,24,29,.07), 0 2px 6px rgba(22,24,29,.04) !important;
+  min-height: 0 !important; height: auto !important;
+  max-height: 220px !important; overflow-y: auto !important;
 }
-.gradio-container .rp-ask textarea:focus {
-  box-shadow: 0 0 0 4px var(--accent-wash),
-              0 16px 46px rgba(22,24,29,.09) !important;
-}
-.rp-submit-row { justify-content: center !important; }
-.rp-submit-row > *:nth-child(2) { margin-left: 0 !important; }
-.rp-examples { justify-content: center !important; }
-.rp-hint { justify-content: center; }
-.rp-chip-label { width: 100%; text-align: center; }
+.gradio-container .rp-ask .input-container,
+.gradio-container .rp-ask > .container { min-height: 0 !important; }
 
-/* ===================================================================
-   The institution question, asked only when it matters
-   =================================================================== */
-.gradio-container .rp-study-ask {
-  background: var(--surface) !important;
-  border: 1px solid var(--accent-line) !important;
-  border-radius: var(--radius) !important;
-  box-shadow: var(--shadow-sm) !important;
-  padding: 18px 20px !important; margin-top: 20px !important;
-  animation: rp-rise .45s cubic-bezier(.22,.61,.36,1) both;
-}
-.rp-study-prompt {
-  margin: 0 0 12px; font-size: 13.5px; line-height: 1.6; color: var(--ink-soft);
-  max-width: 68ch;
-}
-.gradio-container .rp-study { max-width: 100%; }
 
-@media (prefers-reduced-motion: reduce) { .rp-wash { animation: none; } }
+/* A refusal that ends the conversation is only half honest. */
+.rp-near-block { margin-top: 26px; }
+.rp-near-note { font-size: 13px; line-height: 1.6; color: var(--ink-muted);
+  margin: 0 0 13px; max-width: 64ch; }
+.rp-near {
+  display: flex; flex-direction: column; gap: 5px;
+  padding: 14px 17px; margin-bottom: 8px;
+  background: var(--surface); border: 1px dashed var(--border);
+  border-radius: var(--radius-sm); text-decoration: none !important;
+  color: inherit !important;
+  animation: rp-arrive .42s var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
+  transition: all .2s var(--ease);
+}
+.rp-near:hover { border-style: solid; border-color: var(--accent-line);
+  background: var(--accent-wash); transform: translateY(-1px); }
+.rp-near-title { font-size: 14.5px; font-weight: 580; color: var(--ink-soft); line-height: 1.4; }
+.rp-near:hover .rp-near-title { color: var(--accent-deep); }
+.rp-near-meta { display: flex; gap: 12px; align-items: center;
+  font-size: 12px; color: var(--ink-faint); }
+.rp-near-search {
+  display: inline-flex; align-items: center; gap: 7px; margin-top: 6px;
+  padding: 11px 17px; min-height: 44px;
+  background: var(--accent); color: #fff !important;
+  border-radius: var(--radius-sm); text-decoration: none !important;
+  font-size: 13.5px; font-weight: 600;
+  box-shadow: 0 2px 6px color-mix(in oklch, var(--accent) 26%, transparent);
+  transition: all .2s var(--ease);
+}
+.rp-near-search:hover { filter: brightness(1.07); transform: translateY(-2px);
+  box-shadow: 0 6px 16px color-mix(in oklch, var(--accent) 30%, transparent); }

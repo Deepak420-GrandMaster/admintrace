@@ -25,7 +25,7 @@ STRINGS: dict[str, dict[str, str]] = {
                    "every answer comes from an official government page, with "
                    "the link and the date it was last checked.",
         "disclaimer_lead": "This isn't legal advice.",
-        "disclaimer_body": "Sésame tells you what the official pages say, and "
+        "disclaimer_body": "En Clair tells you what the official pages say, and "
                            "shows you which ones. It can't advise you on a "
                            "refusal, an appeal, or your own particular case — "
                            "for that you need the administration itself.",
@@ -44,7 +44,7 @@ STRINGS: dict[str, dict[str, str]] = {
                           "letter. The ones marked official are defined by the "
                           "government itself; the rest we wrote plainly.",
         "glossary_search": "Search a word…",
-        "corpus_intro": "Everything Sésame has read, and where it came from.",
+        "corpus_intro": "Everything En Clair has read, and where it came from.",
         "refresh": "Refresh",
         "empty": "Ask a question and the answer will appear here.",
         "debug_empty": "Ask something, and this panel will show exactly how the "
@@ -103,6 +103,11 @@ STRINGS: dict[str, dict[str, str]] = {
         "pop_service": "This opens the official service",
         "sources_toggle_one": "Check it against the official page",
         "sources_toggle_many": "Check it against the {n} official pages",
+        "near_head": "Closest pages we found",
+        "near_note": "None of these answered your question closely enough to "
+                     "quote, but they are the nearest official pages and may "
+                     "be worth a look.",
+        "search_official": "Search service-public.gouv.fr for this",
         "services_head": "Do it here",
         "services_note": "Official government service — opens in a new tab.",
         "stage_search": "Queueing at the right counter…",
@@ -131,7 +136,7 @@ STRINGS: dict[str, dict[str, str]] = {
                    "français ou en anglais — chaque réponse vient d'une page "
                    "officielle, avec le lien et la date.",
         "disclaimer_lead": "Ceci n'est pas un conseil juridique.",
-        "disclaimer_body": "Sésame vous dit ce que disent les pages "
+        "disclaimer_body": "En Clair vous dit ce que disent les pages "
                            "officielles, et vous montre lesquelles. Il ne peut "
                            "pas vous conseiller sur un refus, un recours ou "
                            "votre situation personnelle — pour cela, adressez-"
@@ -152,7 +157,7 @@ STRINGS: dict[str, dict[str, str]] = {
                           "par l'administration ; les autres, nous les avons "
                           "écrits simplement.",
         "glossary_search": "Chercher un mot…",
-        "corpus_intro": "Tout ce que Sésame a lu, et d'où cela vient.",
+        "corpus_intro": "Tout ce que En Clair a lu, et d'où cela vient.",
         "refresh": "Actualiser",
         "empty": "Posez une question, la réponse apparaîtra ici.",
         "debug_empty": "Posez une question et ce panneau montrera exactement "
@@ -215,6 +220,11 @@ STRINGS: dict[str, dict[str, str]] = {
         "pop_service": "Ouvre le service officiel",
         "sources_toggle_one": "Vérifier sur la page officielle",
         "sources_toggle_many": "Vérifier sur les {n} pages officielles",
+        "near_head": "Les pages les plus proches",
+        "near_note": "Aucune ne répondait d'assez près pour être citée, mais "
+                     "ce sont les pages officielles les plus proches et elles "
+                     "valent peut-être un coup d'œil.",
+        "search_official": "Chercher ceci sur service-public.gouv.fr",
         "services_head": "C'est ici que ça se passe",
         "services_note": "Service officiel de l'administration — s'ouvre dans un nouvel onglet.",
         "stage_search": "On fait la queue au bon guichet…",

@@ -174,18 +174,37 @@ def search(query: str, limit: int = 8) -> list[Institution]:
     if len(needle) < 2:
         return []
 
-    starts, contains = [], []
+    # Ranked in tiers, because a match on a name is worth more than a match
+    # on the parent university an institution happens to be attached to.
+    # Searching "sorbonne" otherwise returned a list of departments and
+    # apprentice-training centres attached to Sorbonne, and not Sorbonne.
+    tiers: dict[int, list[Institution]] = {n: [] for n in range(5)}
     for institution in load():
-        haystacks = [institution.name, institution.acronym,
-                     institution.commune, *institution.aliases]
-        folded = [_fold(h) for h in haystacks if h]
-        if any(h.startswith(needle) for h in folded):
-            starts.append(institution)
-        elif any(needle in h for h in folded):
-            contains.append(institution)
-        if len(starts) >= limit:
+        name = _fold(institution.name)
+        acronym = _fold(institution.acronym)
+        if name == needle or acronym == needle:
+            tier = 0
+        elif name.startswith(needle):
+            tier = 1
+        elif acronym.startswith(needle):
+            tier = 2
+        elif needle in name:
+            tier = 3
+        elif any(needle in _fold(h)
+                 for h in (*institution.aliases, institution.commune) if h):
+            tier = 4
+        else:
+            continue
+        tiers[tier].append(institution)
+
+    ranked: list[Institution] = []
+    for tier in range(5):
+        # Shorter names first within a tier: the university itself is almost
+        # always named more plainly than the things attached to it.
+        ranked.extend(sorted(tiers[tier], key=lambda i: (len(i.name), _fold(i.name))))
+        if len(ranked) >= limit:
             break
-    return (starts + contains)[:limit]
+    return ranked[:limit]
 
 
 def by_uai(uai: str) -> Institution | None:

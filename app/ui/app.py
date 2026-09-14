@@ -1,4 +1,4 @@
-"""Sésame — the local interface.
+"""En Clair — the local interface.
 
     uv run python -m app.ui.app     →  http://localhost:7860
 
@@ -34,6 +34,12 @@ STYLES = (Path(__file__).resolve().parent / "styles.css").read_text(encoding="ut
 # clipboard, and give the page its icon.
 HEAD = f"""
 <link rel="icon" href="{brand.FAVICON}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Public Sans is drawn for government use and stays legible at small sizes
+     for someone reading their second language; Newsreader carries the few
+     places that want warmth. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=JetBrains+Mono:wght@400;600&display=swap">
 <script>
 (() => {{
   // Everything here is delegated from the document, because Gradio replaces
@@ -579,8 +585,10 @@ def ask(question: str, ui_lang: str, answer_lang: str, uai: str = "",
         yield (
             gr.update(value=render.answer_html(result, streaming=True,
                                                lang=reply_lang), visible=True),
-            gr.update(value=render.services_html(result.services, ui_lang),
-                      visible=bool(result.services)),
+            gr.update(
+                value=(render.near_misses_html(result, ui_lang) if result.refused
+                       else render.services_html(result.services, ui_lang)),
+                visible=bool(result.services or result.refused)),
             gr.update(value=render.sources_html(result.citations, ui_lang),
                       visible=bool(result.citations)),
             render.debug_html(result, ui_lang),
@@ -592,8 +600,10 @@ def ask(question: str, ui_lang: str, answer_lang: str, uai: str = "",
         yield (
             gr.update(value=render.answer_html(final, streaming=False,
                                                lang=reply_lang), visible=True),
-            gr.update(value=render.services_html(final.services, ui_lang),
-                      visible=bool(final.services)),
+            gr.update(
+                value=(render.near_misses_html(final, ui_lang) if final.refused
+                       else render.services_html(final.services, ui_lang)),
+                visible=bool(final.services or final.refused)),
             gr.update(value=render.sources_html(final.citations, ui_lang),
                       visible=bool(final.citations)),
             render.debug_html(final, ui_lang),
@@ -607,7 +617,7 @@ def build() -> gr.Blocks:
     settings = get_settings()
     start = "en"
 
-    with gr.Blocks(title="Sésame — French paperwork, in plain words",
+    with gr.Blocks(title="En Clair — French paperwork, put plainly",
                    analytics_enabled=False) as demo:
         with gr.Row(elem_classes="rp-topbar"):
             head = gr.HTML(brand_block(start))
@@ -622,12 +632,13 @@ def build() -> gr.Blocks:
             with gr.Tab("01 · " + t(start, "tab_ask")) as tab_ask:
                 hero = gr.HTML(hero_block(start))
                 question = gr.Textbox(
-                    placeholder=t(start, "placeholder"), lines=2,
+                    placeholder=t(start, "placeholder"), lines=2, max_lines=6,
                     elem_classes="rp-ask", show_label=False,
                 )
                 with gr.Row(elem_classes="rp-submit-row"):
                     submit = gr.Button(t(start, "submit"), variant="primary",
                                        elem_classes="rp-submit", scale=0)
+                with gr.Row(elem_classes="rp-reply-row"):
                     reply_caption = gr.HTML(lang_caption(start, "answer_lang"))
                     reply_lang = gr.Radio(
                         choices=[(t(start, "lang_auto"), "auto"),
@@ -644,15 +655,16 @@ def build() -> gr.Blocks:
                 # Offered when the question is about studying, and not
                 # before: an empty institution picker on the landing page asks
                 # everyone to answer a question most of them do not have.
-                with gr.Group(visible=False, elem_classes="rp-study-ask") as study_ask:
+                with gr.Column(visible=False, elem_classes="rp-study-ask") as study_ask:
                     study_why = gr.HTML(
                         f"<p class='rp-study-prompt'>"
                         f"{html.escape(t(start, 'study_prompt'))}</p>")
-                    study = gr.Dropdown(
-                        choices=institution_choices(), value="",
-                        label=t(start, "study_label"), filterable=True,
-                        elem_classes="rp-study",
-                    )
+                    study_search = gr.Textbox(
+                        placeholder=t(start, "study_placeholder"),
+                        show_label=False, elem_classes="rp-study-search")
+                    study = gr.Radio(
+                        choices=[], value=None, show_label=False,
+                        container=False, elem_classes="rp-study-hits")
                 place_box = gr.HTML(visible=False)
 
                 answer_box = gr.HTML(visible=False)
@@ -744,10 +756,27 @@ def build() -> gr.Blocks:
         for chip, text in zip(chips, EXAMPLES[start]):
             chip.click(lambda t=text: t, None, question).then(ask, inputs, outputs)
 
+        def suggest(query: str):
+            """Live matches, previewed in place.
+
+            Nine thousand institutions do not belong in a dropdown, and a
+            picker whose resting state reads "Not a student" asks everyone to
+            deny being one. Typing is the interface.
+            """
+            hits = universities.search(query or "", limit=6)
+            if not hits:
+                return gr.update(choices=[], value=None)
+            return gr.update(
+                choices=[(f"{h.name} · {h.commune} · {h.departement}", h.uai)
+                         for h in hits],
+                value=None,
+            )
+
         def show_place(uai: str, lang: str):
             body = institution_context(uai, lang)
             return gr.update(value=body, visible=bool(body))
 
+        study_search.change(suggest, study_search, study)
         study.change(show_place, [study, site_lang], place_box)
         # Built when the tab is opened. It reads every chunk's metadata, so
         # rebuilding it on each language change froze the whole page.
@@ -774,7 +803,7 @@ def build() -> gr.Blocks:
                 gr.update(label="03 · " + t(lang, "tab_corpus")),
                 f"<p class='rp-study-prompt'>"
                 f"{html.escape(t(lang, 'study_prompt'))}</p>",
-                gr.update(label=t(lang, "study_label")),
+                gr.update(placeholder=t(lang, "study_placeholder")),
                 gr.update(label=t(lang, "report_open")),
                 f"<p class='rp-report-intro'>{html.escape(t(lang, 'report_intro'))}</p>",
                 gr.update(placeholder=t(lang, "report_placeholder")),
@@ -794,7 +823,7 @@ def build() -> gr.Blocks:
             [site_lang, search],
             [head, hero, disclaimer, reply_caption, reply_lang, question, submit,
              try_label, *chips, debug_acc, tab_ask, tab_gloss, tab_corpus,
-             study_why, study,
+             study_why, study_search,
              report_panel, report_intro, report_text, report_keeps, report_send,
              gloss_intro, search, gloss_box, corpus_intro, refresh],
         )

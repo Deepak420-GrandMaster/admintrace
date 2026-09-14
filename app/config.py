@@ -1,4 +1,4 @@
-"""Single source of configuration for Sésame.
+"""Single source of configuration for En Clair.
 
 Every tunable value in the system is defined here and nowhere else. Modules
 import ``get_settings()``; they never read ``os.environ`` or open ``.env``

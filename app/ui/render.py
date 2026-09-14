@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import html
 import re
+import urllib.parse
 
 from app.answer.cite import Citation, ServiceLink
 from app.answer.generate import AnswerResult
@@ -49,8 +50,8 @@ def _mark_french(text: str, lang: str = "en") -> str:
             continue
         gloss = term.explanation_fr if lang == "fr" else term.explanation_en
         source = ("service-public.gouv.fr" if term.is_official
-                  else ("écrit pour Sésame" if lang == "fr"
-                        else "written for Sésame"))
+                  else ("écrit pour En Clair" if lang == "fr"
+                        else "written for En Clair"))
         attrs = (f'class="rp-fr" tabindex="0" '
                  f'data-en="{html.escape(term.en, quote=True)}" '
                  f'data-gloss="{html.escape(gloss, quote=True)}" '
@@ -138,7 +139,18 @@ def markdown(text: str, lang: str = "en") -> str:
 STAGES = ("stage_search", "stage_read", "stage_write")
 
 
+# The route the thread takes. Declared once so the drawn line and the bead
+# travelling along it cannot drift apart.
+_MAZE_ROUTE = "M10 10 L10 34 L26 34 L26 18 L42 18 L42 42 L58 42 L58 10 L74 10 L74 50"
+
+
 def skeleton(active: int = 0, lang: str = "en") -> str:
+    """The wait, shown as the work.
+
+    Waiting is the moment a worried person is most alone with the question, so
+    rather than a spinner the page shows a thread finding its way out of a
+    labyrinth — which is the thing being done, and the thing the name means.
+    """
     rows = []
     for index, key in enumerate(STAGES):
         state = ("rp-done-stage" if index < active
@@ -147,10 +159,18 @@ def skeleton(active: int = 0, lang: str = "en") -> str:
             f"<div class='rp-stage {state}'><span class='rp-stage-dot'></span>"
             f"{html.escape(t(lang, key))}</div>"
         )
-    widths = ("92%", "99%", "78%", "88%")
-    lines = "".join(f"<div class='rp-sk-line' style='width:{w}'></div>" for w in widths)
-    return (f"<div class='rp-skeleton'><div class='rp-stages'>{''.join(rows)}</div>"
-            f"{lines}</div>")
+    maze = (
+        "<svg class='rp-maze' width='84' height='60' viewBox='0 0 84 60' "
+        "fill='none' aria-hidden='true'>"
+        "<g class='rp-maze-walls'>"
+        "<path d='M2 2h80v56H2z'/><path d='M18 2v26M34 58V32M50 2v26M66 58V26'/>"
+        "</g>"
+        f"<path class='rp-maze-thread' d='{_MAZE_ROUTE}'/>"
+        "<circle class='rp-maze-head' cx='0' cy='0'/>"
+        "</svg>"
+    )
+    return (f"<div class='rp-loader'>{maze}"
+            f"<div class='rp-stages'>{''.join(rows)}</div></div>")
 
 
 def limit_html(result: AnswerResult, lang: str = "en") -> str:
@@ -240,6 +260,57 @@ def services_html(services: list[ServiceLink], lang: str = "en") -> str:
             f"{''.join(rows)}"
             f"<div class='rp-service-note'>{html.escape(t(lang, 'services_note'))}</div>"
             f"</div>")
+
+
+def near_misses_html(result: AnswerResult, lang: str = "en") -> str:
+    """Where to go next when we refuse.
+
+    A refusal that ends the conversation is only half honest: the corpus was
+    searched, something came close, and the person is still standing where
+    they started. These are the passages that did not clear the bar, offered
+    as leads rather than as answers — plus the official search, so there is
+    always a next step that is not a guess.
+    """
+    if not result.refused or result.gate is None:
+        return ""
+
+    seen: dict[str, object] = {}
+    for hit in result.gate.rejected:
+        fiche = hit.metadata.get("fiche_id", "")
+        if fiche and fiche not in seen:
+            seen[fiche] = hit
+    near = list(seen.values())[:4]
+
+    query = (result.prepared.search_query if result.prepared else result.question)
+    search = (
+        "https://www.service-public.gouv.fr/particuliers/recherche?keyword="
+        + urllib.parse.quote(query or "")
+    )
+    rows = []
+    for index, hit in enumerate(near):
+        meta = hit.metadata
+        rows.append(
+            f"<a class='rp-near' style='--i:{index}' "
+            f"href='{html.escape(meta.get('source_url', ''))}' target='_blank' "
+            f"rel='noopener noreferrer'>"
+            f"<span class='rp-near-title'>"
+            f"{html.escape(meta.get('fiche_title_fr', ''))}</span>"
+            f"<span class='rp-near-meta'>"
+            f"<span class='rp-source-id'>{html.escape(meta.get('fiche_id', ''))}</span>"
+            + (f"<span>{html.escape(meta.get('last_updated', ''))}</span>"
+               if meta.get("last_updated") else "")
+            + "</span></a>"
+        )
+
+    return (
+        f"<div class='rp-near-block'>"
+        f"<div class='rp-sources-head'>{html.escape(t(lang, 'near_head'))}</div>"
+        f"<p class='rp-near-note'>{html.escape(t(lang, 'near_note'))}</p>"
+        f"{''.join(rows)}"
+        f"<a class='rp-near-search' href='{html.escape(search)}' target='_blank' "
+        f"rel='noopener noreferrer'>{html.escape(t(lang, 'search_official'))} "
+        f"&#8599;</a></div>"
+    )
 
 
 # ----------------------------------------------------------------- sources --
@@ -387,7 +458,7 @@ def glossary_html(search: str = "", lang: str = "en") -> str:
             f"<span class='rp-prov rp-prov-official'>Official definition · "
             f"{html.escape(term.definition_id or '')}</span>"
             if term.is_official else
-            "<span class='rp-prov rp-prov-authored'>Written for Sésame</span>"
+            "<span class='rp-prov rp-prov-authored'>Written for En Clair</span>"
         )
         aliases = [a for a in term.aliases_en
                    if a.lower() not in {term.fr.lower(), term.en.lower()}]
