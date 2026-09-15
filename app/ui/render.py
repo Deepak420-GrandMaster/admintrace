@@ -16,6 +16,7 @@ from app.answer.cite import Citation, ServiceLink
 from app.answer.generate import AnswerResult
 from app.query import glossary
 from app.retrieval.types import Retrieved
+from app.ui import brand
 from app.ui.i18n import t
 
 _BOLD = re.compile(r"\*\*(.+?)\*\*")
@@ -326,7 +327,6 @@ def sources_html(citations: list[Citation], lang: str = "en") -> str:
             if citation.scope_label else ""
         )
         date_class = "" if citation.last_updated_is_plausible else " class='rp-date-suspect'"
-        percent = max(4, min(100, round(citation.score * 100)))
         cards.append(
             f"<a class='rp-source' style='--i:{index}' "
             f"href='{html.escape(citation.url)}' target='_blank' "
@@ -338,10 +338,7 @@ def sources_html(citations: list[Citation], lang: str = "en") -> str:
             f"<span class='rp-source-id'>{html.escape(citation.fiche_id)}</span>"
             f"{scope}"
             f"<span{date_class}>{html.escape(citation.updated_label)}</span>"
-            f"<span class='rp-score'>"
-            f"<span class='rp-score-track'><span class='rp-score-fill' style='--w:{percent}%;--i:{index}'></span></span>"
-            f"<span class='rp-score-value'>{citation.score:.2f}</span>"
-            f"</span></div>"
+            f"</div>"
             + (f"<span class='rp-peek' data-expandable>"
                f"{html.escape(t(lang, 'peek'))}</span>"
                f"<span class='rp-excerpt'>{html.escape(citation.excerpt)}</span>"
@@ -542,7 +539,9 @@ def turn_html(turn: dict, lang: str, reply_lang: str, index: int) -> str:
     body_parts: list[str] = []
 
     result = turn.get("result")
-    if turn.get("state") == "thinking" or result is None:
+    if turn.get("state") == "clarify":
+        body_parts.append(clarification_html(turn.get("surface", ""), lang))
+    elif turn.get("state") == "thinking" or result is None:
         body_parts.append(thinking_html(lang))
     else:
         if result.rate_limited and not result.text:
@@ -554,23 +553,83 @@ def turn_html(turn: dict, lang: str, reply_lang: str, index: int) -> str:
                 answer_html(result, streaming=turn.get("streaming", False),
                             lang=reply_lang))
             if result.refused:
-                body_parts.append(near_misses_html(result, lang))
+                # A named institution owns this answer; the nearest
+                # public-administration pages do not, and offering them here
+                # is what made a miss look like a result.
+                institution = turn.get("institution")
+                if institution:
+                    body_parts.append(institution_gap_html(institution, lang))
+                else:
+                    body_parts.append(near_misses_html(result, lang))
             else:
                 body_parts.append(services_html(result.services, lang))
                 body_parts.append(sources_html(result.citations, lang))
             if not turn.get("streaming"):
                 body_parts.append(actions_html(index, lang))
 
+    # The speaker is carried by placement and by the mark, not by a caption
+    # over every message; the caption stays for screen readers, which have
+    # neither.
     return (
-        f"<article class='rp-turn' aria-label='{html.escape(t(lang, 'you'))}'>"
-        f"<div class='rp-ask-bubble'><span class='rp-who'>"
-        f"{html.escape(t(lang, 'you'))}</span>"
+        f"<article class='rp-turn'>"
+        f"<div class='rp-ask-bubble'>"
+        f"<span class='rp-sr-only'>{html.escape(t(lang, 'you'))}</span>"
         f"<p class='rp-ask-text'>{question}</p></div>"
         f"<div class='rp-reply'>"
+        f"<div class='rp-reply-head'>"
+        f"<span class='rp-reply-mark' aria-hidden='true'>{brand.mark(17)}</span>"
         f"<span class='rp-who rp-who-assistant'>"
-        f"{html.escape(t(lang, 'assistant'))}</span>"
+        f"{html.escape(t(lang, 'assistant'))}</span></div>"
         f"{''.join(p for p in body_parts if p)}"
         f"</div></article>"
+    )
+
+
+def clarification_html(surface: str, lang: str = "en") -> str:
+    """Ask the one question that makes the rest answerable.
+
+    Not an error and not styled as one: nothing has gone wrong, we just do not
+    know yet which institution was meant, and guessing would produce a
+    confident answer about the wrong one.
+    """
+    _ = surface
+    return (
+        f"<div class='rp-clarify' role='status'>"
+        f"<p class='rp-clarify-head'>{html.escape(t(lang, 'clarify_head'))}</p>"
+        f"<p class='rp-clarify-body'>{html.escape(t(lang, 'clarify_body'))}</p>"
+        f"</div>"
+    )
+
+
+def institution_gap_html(institution: dict, lang: str = "en") -> str:
+    """Say which body owns the answer, instead of the nearest official page.
+
+    Reached when the question was about a named institution and this corpus —
+    French public administration — had nothing that answered it. Offering the
+    closest public-administration pages here would be offering official
+    documents that were never about the question.
+    """
+    if not institution:
+        return ""
+    name = institution.get("name", "")
+    where = " · ".join(part for part in (institution.get("commune", ""),
+                                         institution.get("departement", ""))
+                       if part)
+    link = institution.get("url", "")
+    tail = (
+        f"<a class='rp-entity-link' href='{html.escape(link)}' target='_blank' "
+        f"rel='noopener noreferrer'>"
+        f"{html.escape(t(lang, 'entity_register', name=name))} &#8599;</a>"
+        if link else ""
+    )
+    return (
+        f"<div class='rp-entity'>"
+        f"<p class='rp-entity-head'>"
+        f"{html.escape(t(lang, 'entity_head', name=name))}</p>"
+        f"<p class='rp-entity-body'>{html.escape(t(lang, 'entity_body'))}</p>"
+        + (f"<p class='rp-entity-where'>{html.escape(where)}</p>" if where else "")
+        + tail
+        + "</div>"
     )
 
 
@@ -616,18 +675,28 @@ def thread_html(turns: list[dict], lang: str, reply_lang: str) -> str:
 
 
 def categories_html(lang: str = "en") -> str:
-    """Entry points that are questions, not filters."""
+    """Entry points that are questions, not filters.
+
+    A row, not a card: icon, what it covers, and the kind of thing it answers.
+    Six identical white rectangles read as a menu of products; a ruled list
+    reads as a contents page, which is what this is.
+    """
     from app.ui.i18n import CATEGORIES
 
     rows = []
-    for index, (key, slug, question) in enumerate(CATEGORIES.get(lang, CATEGORIES["en"])):
+    for index, (key, slug, question) in enumerate(
+            CATEGORIES.get(lang, CATEGORIES["en"])):
         rows.append(
             f"<button type='button' class='rp-cat' style='--i:{index}' "
             f"data-question=\"{html.escape(question, quote=True)}\">"
             f"<span class='rp-cat-icon rp-cat-{slug}' aria-hidden='true'></span>"
+            f"<span class='rp-cat-text'>"
             f"<span class='rp-cat-label'>{html.escape(t(lang, key))}</span>"
+            f"<span class='rp-cat-sub'>{html.escape(t(lang, key + '_sub'))}</span>"
+            f"</span>"
+            f"<span class='rp-cat-go' aria-hidden='true'>&#8594;</span>"
             f"</button>"
         )
-    return (f"<div class='rp-cats'><div class='rp-cats-head'>"
-            f"{html.escape(t(lang, 'cat_head'))}</div>"
-            f"<div class='rp-cats-grid'>{''.join(rows)}</div></div>")
+    return (f"<nav class='rp-cats' aria-label=\"{html.escape(t(lang, 'cat_head'), quote=True)}\">"
+            f"<h2 class='rp-cats-head'>{html.escape(t(lang, 'cat_head'))}</h2>"
+            f"<div class='rp-cats-grid'>{''.join(rows)}</div></nav>")

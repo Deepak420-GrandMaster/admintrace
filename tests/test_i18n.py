@@ -49,7 +49,7 @@ def test_placeholders_are_supplied_everywhere_they_are_used():
     for language in ("en", "fr"):
         for key, value in STRINGS[language].items():
             for field in re.findall(r"\{(\w+)\}", value):
-                assert field in {"provider", "n", "mins", "q"}, \
+                assert field in {"provider", "n", "mins", "q", "name"}, \
                     f"{language}:{key} expects unknown field {field}"
 
 

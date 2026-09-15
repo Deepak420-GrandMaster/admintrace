@@ -122,16 +122,28 @@ class Settings:
     answer_language: str
     debug_panel: bool
 
+    # Bug reports. Delivery is optional: a report is always written to disk
+    # first, and the interface never claims an email was sent unless one was.
+    bug_email_to: str
+    bug_email_from: str
+    smtp_host: str
+    smtp_port: int
+    smtp_username: str
+    smtp_password: str = field(repr=False)  # never shown in logs or tracebacks
+    smtp_starttls: bool
+
     # Derived paths, filled in by __post_init__.
     raw_dir: Path = field(init=False)
     extracted_dir: Path = field(init=False)
     cache_dir: Path = field(init=False)
+    bugs_dir: Path = field(init=False)
 
     def __post_init__(self) -> None:
         # frozen=True blocks normal assignment, so set derived fields directly.
         object.__setattr__(self, "raw_dir", self.data_dir / "raw")
         object.__setattr__(self, "extracted_dir", self.data_dir / "extracted")
         object.__setattr__(self, "cache_dir", self.data_dir / "cache")
+        object.__setattr__(self, "bugs_dir", self.data_dir / "bugs")
 
     def feed_url(self, segment: str) -> str:
         """Download URL for one audience segment of the DILA feed."""
@@ -141,6 +153,15 @@ class Settings:
                 f"{', '.join(self.feed_segments)}"
             )
         return self.feed_url_template.format(version=self.feed_version, segment=segment)
+
+    @property
+    def email_configured(self) -> bool:
+        """Whether a report can actually be delivered anywhere.
+
+        Checked before the interface says anything about email, so it never
+        promises delivery that was never configured.
+        """
+        return bool(self.smtp_host and self.bug_email_to)
 
     @property
     def groq_api_key_masked(self) -> str:
@@ -199,6 +220,13 @@ def get_settings() -> Settings:
         chroma_dir=_as_path("CHROMA_DIR", "./data/chroma"),
         answer_language=_raw("ANSWER_LANGUAGE", "auto").lower(),
         debug_panel=_as_bool("DEBUG_PANEL", "true"),
+        bug_email_to=_raw("BUG_REPORT_EMAIL_TO", ""),
+        bug_email_from=_raw("BUG_REPORT_EMAIL_FROM", ""),
+        smtp_host=_raw("SMTP_HOST", ""),
+        smtp_port=_as_int("SMTP_PORT", "587"),
+        smtp_username=_raw("SMTP_USERNAME", ""),
+        smtp_password=_raw("SMTP_PASSWORD", ""),
+        smtp_starttls=_as_bool("SMTP_STARTTLS", "true"),
     )
 
     _validate(settings)

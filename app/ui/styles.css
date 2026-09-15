@@ -1,104 +1,96 @@
-/* Claré — the thread through the labyrinth.
+/* Claré — French administration, made clear.
    =====================================================================
 
    The design problem: someone anxious, often reading their second or third
    language, usually with a deadline, trying to find one fact inside a system
    built to be exhaustive rather than clear.
 
-   So the system has a FAMILY of colours rather than one accent doing every
-   job. Each part of an answer carries its own hue — what to do, what to
-   bring, what to watch for, what to say out loud — and a reader scanning in
-   a language they are still learning can find the part they need before they
-   have parsed a single word. Colour here is wayfinding, not decoration.
+   The page answers it with a column, not a dashboard. One left edge runs the
+   whole way down — wordmark, headline, composer, topics, conversation — so
+   the eye never has to re-find the start of a line. Rules and type carry the
+   hierarchy; boxes are spent only where something is genuinely a container.
 
-   All accents share a lightness and chroma and vary only in hue, so they sit
-   together as one family and none shouts over the others.
+   Three colours do semantic work and nothing else: blue for what you can act
+   on, green for what is confirmed, amber for what to watch. Everything else
+   is ink on warm paper.
 */
 
 /* ------------------------------------------------------------- tokens -- */
 :root {
   /* Ground: warm paper, not screen white. */
-  --paper:      #fbf9f6;
-  --paper-deep: #f3efe8;
+  --paper:      #faf8f5;
   --surface:    #ffffff;
-  --surface-2:  #f6f3ee;
-  --surface-3:  #efeae1;
+  --surface-2:  #f4f1eb;
+  --surface-3:  #ebe6dd;
 
-  --ink:        #191a1f;
-  --ink-soft:   #41454e;
-  --ink-muted:  #6b707b;
-  --ink-faint:  #9aa0ac;
+  --ink:        #17181c;
+  --ink-soft:   #3d4148;
+  --ink-muted:  #6a6f78;
+  --ink-faint:  #9aa0a9;
 
-  --border:      #e6e0d6;
-  --border-soft: #f0ebe3;
+  --border:      #e5e0d6;
+  --border-soft: #efeae1;
 
-  /* The family. One lightness, one chroma, five hues. */
-  --blue:       oklch(0.52 0.17 262);
-  --blue-deep:  oklch(0.40 0.16 262);
-  --blue-wash:  oklch(0.965 0.022 262);
-  --blue-line:  oklch(0.88 0.055 262);
+  --accent:      oklch(0.48 0.163 264);
+  --accent-deep: oklch(0.37 0.15 264);
+  --accent-wash: oklch(0.968 0.019 264);
+  --accent-line: oklch(0.87 0.06 264);
 
-  --violet:      oklch(0.52 0.17 300);
-  --violet-wash: oklch(0.965 0.022 300);
-  --violet-line: oklch(0.88 0.055 300);
+  --good:      oklch(0.52 0.13 158);
+  --good-wash: oklch(0.968 0.022 158);
+  --good-line: oklch(0.88 0.05 158);
 
-  --green:      oklch(0.52 0.14 158);
-  --green-wash: oklch(0.965 0.022 158);
-  --green-line: oklch(0.88 0.05 158);
+  --warn:      oklch(0.56 0.135 70);
+  --warn-wash: oklch(0.968 0.03 70);
+  --warn-line: oklch(0.88 0.06 70);
 
-  --amber:      oklch(0.56 0.14 70);
-  --amber-wash: oklch(0.965 0.03 70);
-  --amber-line: oklch(0.88 0.06 70);
+  --stop:      oklch(0.54 0.15 22);
+  --stop-wash: oklch(0.968 0.026 22);
 
-  --rose:      oklch(0.54 0.15 20);
-  --rose-wash: oklch(0.965 0.026 20);
-  --rose-line: oklch(0.88 0.055 20);
+  /* Spacing. Every gap on the page is one of these. */
+  --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px; --s5: 24px;
+  --s6: 32px;
+  /* The three large steps carry the page's vertical rhythm, and they are
+     the ones that have to shrink on a phone. They are clamped rather than
+     re-declared in a media query because :root is above .contain and so is
+     unreachable from one — see the note above the breakpoints. */
+  --s7: clamp(36px, 4vw, 48px);
+  --s8: clamp(44px, 5vw, 64px);
+  --s9: clamp(56px, 6vw, 80px);
 
-  /* Primary is the blue; the rest are named by their job below. */
-  --accent:      var(--blue);
-  --accent-deep: var(--blue-deep);
-  --accent-wash: var(--blue-wash);
-  --accent-line: var(--blue-line);
-  --bg:          var(--paper);
-  --good:        var(--green);
-  --good-wash:   var(--green-wash);
-  --warn:        var(--amber);
-  --warn-wash:   var(--amber-wash);
-  --stop:        var(--rose);
-  --stop-wash:   var(--rose-wash);
+  --r-sm: 8px; --r: 12px; --r-lg: 16px; --r-xl: 20px;
 
-  --radius:    16px;
-  --radius-sm: 10px;
-  --radius-xs: 7px;
-
-  /* Layered, warm-tinted shadows: a grey shadow on warm paper looks dirty. */
-  --shadow-sm: 0 1px 2px rgba(61,47,26,.05), 0 1px 3px rgba(61,47,26,.04);
-  --shadow-md: 0 2px 4px rgba(61,47,26,.04), 0 8px 20px rgba(61,47,26,.07);
-  --shadow-lg: 0 4px 8px rgba(61,47,26,.05), 0 20px 48px rgba(61,47,26,.11);
-  --shadow-xl: 0 8px 16px rgba(61,47,26,.06), 0 32px 72px rgba(61,47,26,.14);
+  /* Warm-tinted: a grey shadow on warm paper looks like dirt. */
+  --shadow-sm: 0 1px 2px rgba(60,46,26,.05);
+  --shadow-md: 0 1px 2px rgba(60,46,26,.04), 0 8px 24px rgba(60,46,26,.07);
+  --shadow-lg: 0 2px 6px rgba(60,46,26,.05), 0 24px 56px rgba(60,46,26,.12);
 
   --serif: "Newsreader", "New York", "Iowan Old Style", Georgia, serif;
   --sans: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
+  --fast: 140ms; --normal: 240ms; --slow: 400ms;
   --ease: cubic-bezier(.22,.61,.36,1);
   --ease-out: cubic-bezier(.16,1,.3,1);
-  --swap: 560ms cubic-bezier(.22,.61,.36,1);
-  --measure: 1180px;
+
+  /* The page is a column inside a page. --page carries the masthead and the
+     topic grid; --col carries everything meant to be read as a sentence. */
+  /* The bug glyph, thin and geometric like the rest of the icon set. Used
+     as a mask so it takes its colour from the element. */
+  --rp-bug: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.6%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M8.5%209a3.5%203.5%200%200%201%207%200v5a3.5%203.5%200%200%201-7%200V9Z%27%2F%3E%3Cpath%20d%3D%27M7%2012H3.9M20.1%2012H17M7.7%208.3%205.1%206.4M16.3%208.3l2.6-1.9M7.7%2015.9l-2.6%201.9M16.3%2015.9l2.6%201.9M9.9%206.2%208.9%204.3M14.1%206.2l1-1.9%27%2F%3E%3C%2Fsvg%3E");
+
+  --page: 1080px;
+  --col:  min(748px, 100%);
 }
 
-/* French gets its own light: warmer paper, a deeper blue, the tricolore's
-   red kept for the smallest emphasis. */
+/* French gets its own light: warmer paper, a deeper blue. */
 :root:has(.rp-theme-fr) {
-  --paper:      #fcfaf5;
-  --paper-deep: #f4efe4;
-  --surface-2:  #f6f2e9;
-  --border:     #e8e1d2;
-  --blue:       oklch(0.46 0.16 258);
-  --blue-deep:  oklch(0.35 0.15 258);
-  --rose:       oklch(0.50 0.17 22);
+  --paper:     #fbf9f4;
+  --surface-2: #f5f2ea;
+  --border:    #e7e1d2;
+  --accent:      oklch(0.44 0.155 260);
+  --accent-deep: oklch(0.34 0.14 260);
 }
-:root:has(.rp-theme-fr) .rp-wordmark .rp-accent { color: var(--rose); }
 
 html, body { background: var(--paper); color-scheme: light; margin: 0; }
 
@@ -108,10 +100,11 @@ html, body { background: var(--paper); color-scheme: light; margin: 0; }
   background: transparent !important;
   font-family: var(--sans) !important;
   color: var(--ink) !important;
-  max-width: var(--measure) !important;
+  max-width: var(--page) !important;
   width: 100% !important;
   margin: 0 auto !important;
-  padding: 0 clamp(18px, 4vw, 40px) 120px !important;
+  padding: 0 clamp(18px, 3.4vw, 40px)
+           calc(112px + env(safe-area-inset-bottom, 0px)) !important;
   position: relative;
 
   /* Gradio paints from its own variables; point them at ours once. */
@@ -128,866 +121,1089 @@ html, body { background: var(--paper); color-scheme: light; margin: 0; }
   --block-border-color: transparent;
   --input-border-color: var(--border);
   --input-border-color-focus: var(--accent-line);
-  --body-text-color: var(--ink);
-  --body-text-color-subdued: var(--ink-muted);
-  --block-label-text-color: var(--ink-muted);
-  --block-title-text-color: var(--ink);
-  --input-text-color: var(--ink);
-  --input-placeholder-color: var(--ink-faint);
-  --color-accent: var(--accent);
-  --color-accent-soft: var(--accent-wash);
-  --link-text-color: var(--accent);
-  --neutral-50: var(--paper);   --neutral-100: var(--surface-2);
-  --neutral-200: var(--border); --neutral-700: var(--ink-soft);
-  --neutral-800: var(--ink);    --neutral-900: var(--ink);
-  --panel-background-fill: var(--surface);
-  --table-even-background-fill: var(--surface);
-  --table-odd-background-fill: var(--surface-2);
-}
-.gradio-container > * { position: relative; z-index: 1; }
-footer, .gradio-container > .main > .wrap > .contain > footer { display: none !important; }
-body > gradio-app, gradio-app, .gradio-app,
-.gradio-container > .main, .gradio-container > .wrap {
-  background: transparent !important; width: 100% !important; max-width: none !important;
-}
-.gradio-container .block, .gradio-container .form {
-  background: transparent !important; border: 0 !important; box-shadow: none !important;
+  --block-shadow: none;
+  --block-radius: var(--r);
+  --layout-gap: 0px;
 }
 
-/* Grain and a vignette, at the threshold of noticing: they stop large flat
-   areas reading as dead screen. */
-body::before {
-  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  opacity: .04; mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+/* Gradio wraps every component in a bordered, shadowed block. We want the
+   border where we draw one, not around each thing. */
+.gradio-container .block,
+.gradio-container .form,
+.gradio-container .gr-box,
+.gradio-container .gr-panel {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
 }
-body::after {
-  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background: radial-gradient(128% 92% at 50% 8%, transparent 46%, rgba(61,47,26,.05) 100%);
+.gradio-container .gap { gap: 0 !important; }
+/* Gradio's app wrapper adds its own 32px gutter on top of the container's.
+   One gutter, ours, so the phone layout is not padded twice. */
+.gradio-container .main { padding-left: 0 !important; padding-right: 0 !important; }
+/* Gradio pads every gr.HTML by 12px and native components by 0, so the
+   masthead, hero, topics and footer all sat 12px right of the composer and
+   the section bar. One left edge means one left edge. */
+.gradio-container .html-container {
+  padding-left: 0 !important; padding-right: 0 !important;
 }
-
-/* The wash behind the hero: three hues of the family, drifting. */
-.rp-wash {
-  position: absolute; left: 50%; top: -220px; transform: translateX(-50%);
-  width: min(1600px, 150vw); height: 680px; z-index: 0; pointer-events: none;
-  background:
-    radial-gradient(42% 54% at 42% 36%, color-mix(in oklch, var(--blue) 22%, transparent) 0%, transparent 66%),
-    radial-gradient(40% 48% at 68% 24%, color-mix(in oklch, var(--violet) 17%, transparent) 0%, transparent 68%),
-    radial-gradient(46% 44% at 24% 22%, color-mix(in oklch, var(--amber) 15%, transparent) 0%, transparent 70%),
-    radial-gradient(34% 40% at 78% 52%, color-mix(in oklch, var(--rose) 12%, transparent) 0%, transparent 70%);
-  filter: blur(34px); opacity: .8;
-  animation: rp-drift 26s ease-in-out infinite alternate;
-}
-@keyframes rp-drift {
-  from { transform: translateX(-50%) translateY(0) scale(1) rotate(0deg); }
-  to   { transform: translateX(-50%) translateY(22px) scale(1.06) rotate(2deg); }
-}
-
-.rp-spot {
-  position: fixed; left: 0; top: 0; z-index: 0; pointer-events: none;
-  width: 560px; height: 560px; margin: -280px 0 0 -280px; border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in oklch, var(--blue) 11%, transparent) 0%, transparent 62%);
-  opacity: 0; transition: opacity .55s var(--ease);
-  transform: translate3d(var(--sx, 50vw), var(--sy, 40vh), 0); will-change: transform;
-}
-.rp-spot.rp-lit { opacity: 1; }
+.gradio-container .hide-container > .container { display: none !important; }
+.gradio-container :focus:not(:focus-visible) { outline: none !important; }
 
 /* ---------------------------------------------------------- masthead -- */
-.rp-masthead { padding: 26px 0 4px !important; position: relative; }
-.rp-brand { display: flex; align-items: center; gap: 13px; }
+.gradio-container .rp-topbar {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: var(--s4) !important;
+  padding: var(--s5) 0 var(--s5) !important;
+  margin: 0 !important;
+  min-width: 0 !important;
+}
+/* Left cell takes the slack so the language control is pinned right. */
+.gradio-container .rp-topbar > *:first-child {
+  flex: 1 1 auto !important; min-width: 0 !important; width: auto !important;
+}
+.gradio-container .rp-topbar > *:last-child {
+  flex: 0 0 auto !important; width: auto !important; min-width: 0 !important;
+}
+
+.rp-brand { display: flex; align-items: center; gap: 10px; }
 .rp-mark { flex: 0 0 auto; color: var(--ink); overflow: visible; }
-.rp-mark-arc {
-  stroke-dasharray: 30 102; stroke-dashoffset: 30;
-  animation: rp-draw 1.2s var(--ease-out) .15s both;
-}
-@keyframes rp-draw { to { stroke-dashoffset: 0; } }
-/* On hover the dense side settles and the clear side draws itself: the
-   whole idea of the thing in three-quarters of a second. */
-.rp-mark-clear path {
-  stroke-dasharray: 16; stroke-dashoffset: 0;
-  transition: stroke-dashoffset .5s var(--ease-out);
-}
-.rp-brand:hover .rp-mark-clear path { animation: rp-clear .75s var(--ease-out) both; }
-.rp-brand:hover .rp-mark-clear path:nth-child(2) { animation-delay: .07s; }
-.rp-brand:hover .rp-mark-clear path:nth-child(3) { animation-delay: .14s; }
-@keyframes rp-clear { from { stroke-dashoffset: 16; } to { stroke-dashoffset: 0; } }
-.rp-brand:hover .rp-mark-walls { opacity: .14; transition: opacity .5s var(--ease); }
+.rp-mark-clear, .rp-mark-acute { transition: opacity var(--normal) var(--ease); }
 .rp-wordmark {
-  font-family: var(--serif); font-size: 31px; font-weight: 500;
-  letter-spacing: -.018em; color: var(--ink); line-height: 1.1;
-  animation: rp-arrive .7s var(--ease-out) .18s both;
+  font-family: var(--sans); font-size: 22px; font-weight: 700;
+  letter-spacing: -.025em; color: var(--ink); line-height: 1;
 }
-.rp-wordmark .rp-accent { color: var(--accent); }
+.rp-wordmark .rp-accent, .rp-footer-name .rp-accent { color: var(--accent); }
+.rp-promise {
+  margin: 6px 0 0 38px; font-size: 12.5px; font-weight: 450;
+  color: var(--ink-muted); letter-spacing: -.003em;
+}
 
-/* ------------------------------------------------------------- hero -- */
-.rp-hero { text-align: center; padding: 34px 0 28px; }
-.rp-headline {
-  font-family: var(--serif); margin: 0 auto; max-width: 17ch;
-  font-size: clamp(34px, 5.4vw, 58px); line-height: 1.04;
-  font-weight: 500; letter-spacing: -.03em; color: var(--ink);
-  text-wrap: balance;
+/* ------------------------------------------------------- section nav -- */
+/* Named, not numbered. A contents bar for a publication, not steps in a
+   form: the answer is on the first one and most people never leave it. */
+.gradio-container .tab-nav,
+.gradio-container .tab-container,
+.gradio-container div[role="tablist"] {
+  border: 0 !important;
+  border-top: 1px solid var(--border) !important;
+  gap: var(--s5) !important;
+  margin: 0 0 var(--s7) !important;
+  padding: 0 !important;
+  display: flex !important;
+  justify-content: flex-start !important;
 }
-.rp-tagline {
-  margin: 17px auto 0; max-width: 56ch; text-align: center;
-  font-size: 16px; line-height: 1.62; color: var(--ink-muted);
-  animation: rp-arrive .6s var(--ease-out) .1s both;
-}
-@keyframes rp-arrive {
-  from { opacity: 0; transform: translateY(14px); filter: blur(5px); }
-  to   { opacity: 1; transform: none; filter: blur(0); }
-}
-.rp-stage-in > * { animation: rp-arrive .62s var(--ease-out) both; }
-.rp-stage-in > *:nth-child(1) { animation-delay: .02s; }
-.rp-stage-in > *:nth-child(2) { animation-delay: .10s; }
-.rp-stage-in > *:nth-child(3) { animation-delay: .18s; }
-
-/* -------------------------------------------------------------- tabs -- */
-.gradio-container .tab-nav, .gradio-container div[role="tablist"] {
-  border-bottom: 1px solid var(--border) !important;
-  gap: 2px !important; margin-bottom: 8px !important;
-}
+.gradio-container .tab-container button,
 .gradio-container button[role="tab"] {
   background: transparent !important; border: 0 !important;
-  color: var(--ink-muted) !important; font-family: var(--sans) !important;
-  font-size: 14px !important; font-weight: 500 !important;
-  padding: 12px 16px !important; border-radius: 0 !important;
-  border-bottom: 2px solid transparent !important;
-  transition: color .18s var(--ease), border-color .18s var(--ease);
+  color: var(--ink-faint) !important; font-family: var(--sans) !important;
+  font-size: 13px !important; font-weight: 550 !important;
+  letter-spacing: .005em; white-space: nowrap;
+  padding: var(--s3) 0 !important; border-radius: 0 !important;
+  border-top: 2px solid transparent !important;
+  margin-top: -1px !important;
+  min-height: 0 !important;
+  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
 }
 .gradio-container button[role="tab"]:hover { color: var(--ink) !important; }
 .gradio-container button[role="tab"][aria-selected="true"] {
-  color: var(--accent) !important; border-bottom-color: var(--accent) !important;
+  color: var(--ink) !important; border-top-color: var(--accent) !important;
 }
-.tabitem { animation: rp-arrive .4s var(--ease-out) both; }
+.gradio-container .tabitem { padding: 0 !important; border: 0 !important; }
+/* Gradio 6 keeps a hidden measuring clone of the tab row beside the real
+   one; it must not inherit the rule we draw above the real tab list. */
+.gradio-container .tab-container.visually-hidden { border: 0 !important; }
 
-/* ------------------------------------------------------------- input -- */
-.gradio-container .rp-ask, .gradio-container .rp-ask > .container,
+/* -------------------------------------------------------------- hero -- */
+.rp-hero { max-width: var(--col); padding: 0 0 var(--s6); }
+.rp-eyebrow {
+  display: block;
+  margin: 0 0 var(--s4); font-size: 11px; font-weight: 650;
+  letter-spacing: .13em; text-transform: uppercase; color: var(--ink-faint);
+  line-height: 1.5;
+}
+.rp-eyebrow::before {
+  content: ""; display: inline-block; vertical-align: middle;
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--good); margin-right: var(--s2);
+  position: relative; top: -1px;
+}
+.rp-headline {
+  margin: 0; font-family: var(--serif);
+  font-size: clamp(38px, 5vw, 56px); font-weight: 500;
+  line-height: 1.04; letter-spacing: -.022em; color: var(--ink);
+  max-width: 13ch;
+}
+.rp-tagline {
+  margin: var(--s4) 0 0; font-size: 16px; line-height: 1.6;
+  color: var(--ink-muted); max-width: 46ch;
+}
+.rp-section-intro {
+  margin: 0 0 var(--s5); font-size: 15px; line-height: 1.62;
+  color: var(--ink-muted); max-width: 62ch;
+}
+
+@keyframes rp-arrive {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.rp-stage-in > * { animation: rp-arrive var(--slow) var(--ease-out) both; }
+.rp-stage-in > *:nth-child(1) { animation-delay: 0s; }
+.rp-stage-in > *:nth-child(2) { animation-delay: .05s; }
+.rp-stage-in > *:nth-child(3) { animation-delay: .1s; }
+
+/* ---------------------------------------------------------- composer -- */
+/* The question and the act of asking are one object: the field, the reply
+   language and the send control share a single surface, so there is no gap
+   between writing a question and sending it. */
+.gradio-container .rp-composer {
+  max-width: var(--col);
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--r-xl) !important;
+  box-shadow: var(--shadow-sm) !important;
+  padding: 0 !important;
+  overflow: hidden;
+  transition: border-color var(--fast) var(--ease),
+              box-shadow var(--normal) var(--ease);
+}
+.gradio-container .rp-composer:hover { border-color: var(--surface-3) !important; }
+.gradio-container .rp-composer:focus-within {
+  border-color: var(--accent-line) !important;
+  box-shadow: 0 0 0 3px var(--accent-wash), var(--shadow-md) !important;
+}
+
+.gradio-container .rp-ask,
+.gradio-container .rp-ask > .container,
 .gradio-container .rp-ask .input-container {
   background: transparent !important; border: 0 !important;
   box-shadow: none !important; padding: 0 !important;
 }
 .rp-ask label > span:not(.rp-fr), .rp-ask .head { display: none !important; }
-.gradio-container .rp-ask textarea,
-.gradio-container .rp-ask .input-container textarea {
+.gradio-container .rp-ask textarea {
   font-family: var(--sans) !important; font-size: 17px !important;
   line-height: 1.55 !important; color: var(--ink) !important;
-  background: var(--surface) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 20px !important; padding: 22px 24px !important;
-  min-height: 100px !important; resize: none !important;
-  box-shadow: 0 2px 4px rgba(61,47,26,.04), 0 16px 40px rgba(61,47,26,.08) !important;
-  transition: border-color .18s var(--ease), box-shadow .26s var(--ease);
+  background: transparent !important; border: 0 !important;
+  border-radius: 0 !important;
+  padding: var(--s5) var(--s5) var(--s3) !important;
+  min-height: 92px !important; resize: none !important;
+  box-shadow: none !important; outline: none !important;
 }
 .gradio-container .rp-ask textarea::placeholder { color: var(--ink-faint) !important; }
-.gradio-container .rp-ask textarea:focus {
-  border-color: var(--accent-line) !important; outline: none !important;
-  box-shadow: 0 0 0 4px var(--accent-wash), 0 18px 46px rgba(61,47,26,.10) !important;
-}
 
-.rp-submit-row { justify-content: center !important; margin-top: 18px !important; }
-.gradio-container button.rp-submit {
-  background: linear-gradient(180deg,
-    color-mix(in oklch, var(--accent) 92%, white),
-    var(--accent)) !important;
-  color: #fff !important; border: 0 !important;
-  font-family: var(--sans) !important; font-size: 16px !important;
-  font-weight: 650 !important; letter-spacing: .01em;
-  padding: 16px 54px !important; border-radius: 14px !important;
-  position: relative; overflow: hidden;
-  box-shadow: 0 2px 4px color-mix(in oklch, var(--accent) 24%, transparent),
-              0 10px 24px color-mix(in oklch, var(--accent) 22%, transparent) !important;
-  transition: transform .16s var(--ease), box-shadow .24s var(--ease),
-              filter .18s var(--ease);
+.gradio-container .rp-composer-bar {
+  display: flex !important; flex-direction: row !important;
+  flex-wrap: wrap !important; align-items: center !important;
+  gap: var(--s3) !important;
+  padding: 0 var(--s3) var(--s3) var(--s5) !important;
+  margin: 0 !important; background: transparent !important;
 }
-.gradio-container button.rp-submit:hover {
-  transform: translateY(-2px); filter: brightness(1.06);
-  box-shadow: 0 4px 8px color-mix(in oklch, var(--accent) 26%, transparent),
-              0 16px 36px color-mix(in oklch, var(--accent) 28%, transparent) !important;
-}
-.gradio-container button.rp-submit:active { transform: translateY(0) scale(.985); }
-
-.rp-reply-row {
-  display: flex !important; justify-content: center !important;
-  align-items: center !important; gap: 12px !important;
-  flex-wrap: wrap !important; margin-top: 16px !important;
-}
-.rp-reply-row > *, .rp-lang-bar > * {
+.gradio-container .rp-composer-bar > * {
   flex: 0 0 auto !important; width: auto !important;
   min-width: 0 !important; margin: 0 !important;
 }
+/* The send control is pushed to the far end of the bar. */
+.gradio-container .rp-composer-bar > *:last-child { margin-left: auto !important; }
+
 .rp-lang-label {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-size: 12.5px; color: var(--ink-faint); white-space: nowrap;
+  display: inline-flex; align-items: center; gap: var(--s2);
+  font-size: 12px; color: var(--ink-faint); white-space: nowrap;
 }
 
+.gradio-container button.rp-submit {
+  background: var(--surface-2) !important; color: var(--ink-muted) !important;
+  border: 1px solid var(--border) !important;
+  font-family: var(--sans) !important; font-size: 14px !important;
+  font-weight: 600 !important; letter-spacing: .004em;
+  padding: 0 var(--s4) !important; height: 40px !important; min-height: 40px;
+  border-radius: var(--r) !important; box-shadow: none !important;
+  display: inline-flex !important; align-items: center !important; gap: var(--s2);
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease),
+              border-color var(--fast) var(--ease), transform var(--fast) var(--ease);
+}
+.gradio-container button.rp-submit::after {
+  content: "→"; font-size: 15px; line-height: 1;
+  transition: transform var(--fast) var(--ease);
+}
+/* Quiet until there is something to send, then it is the only blue thing
+   on the page. Never disabled: Enter still works, and a dead button for a
+   reason you cannot see is worse than a quiet one. */
+.gradio-container .rp-composer.rp-ready button.rp-submit {
+  background: var(--accent) !important; color: #fff !important;
+  border-color: var(--accent) !important;
+}
+.gradio-container button.rp-submit:hover {
+  border-color: var(--accent-line) !important; color: var(--accent) !important;
+}
+.gradio-container .rp-composer.rp-ready button.rp-submit:hover {
+  background: var(--accent-deep) !important; color: #fff !important;
+  border-color: var(--accent-deep) !important;
+}
+.gradio-container button.rp-submit:hover::after { transform: translateX(2px); }
+.gradio-container button.rp-submit:active { transform: scale(.98); }
+
+/* ------------------------------------------------------------- trust -- */
+.rp-trust {
+  display: flex; align-items: flex-start; gap: var(--s2);
+  max-width: var(--col); margin: var(--s4) 0 0;
+  font-size: 12.5px; line-height: 1.5; color: var(--ink-faint);
+}
+.rp-trust svg { flex: 0 0 auto; margin-top: 1px; color: var(--good); }
+body.rp-answered .rp-trust,
+body.rp-answered .rp-cats { display: none !important; }
+
+/* --------------------------------------------------------- restart -- */
+/* Secondary by construction: a text control above the conversation, absent
+   until there is a conversation to leave. */
+.gradio-container button.rp-restart {
+  display: none !important;
+  background: transparent !important; border: 0 !important;
+  box-shadow: none !important; color: var(--ink-muted) !important;
+  font-family: var(--sans) !important; font-size: 13px !important;
+  font-weight: 550 !important; padding: var(--s2) 0 !important;
+  width: fit-content !important; min-width: 0 !important; min-height: 44px;
+  align-self: flex-start !important; justify-content: flex-start !important;
+  align-items: center; gap: var(--s2);
+  transition: color var(--fast) var(--ease);
+}
+.gradio-container button.rp-restart::before { content: "←"; font-size: 14px; }
+.gradio-container button.rp-restart:hover { color: var(--accent) !important; }
+body.rp-answered .gradio-container button.rp-restart,
+.rp-answered .gradio-container button.rp-restart { display: inline-flex !important; }
+
+/* ------------------------------------------------------------ topics -- */
+/* A contents page, not six product cards: a ruled grid where the rule and
+   the type do the work a border and a shadow were doing before. */
+.rp-cats { margin: var(--s8) 0 0; }
+.rp-cats-head {
+  margin: 0 0 var(--s1); font-size: 11px; font-weight: 650;
+  letter-spacing: .13em; text-transform: uppercase; color: var(--ink-faint);
+}
+.rp-cats-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  column-gap: var(--s6);
+}
+.rp-cat {
+  display: grid; grid-template-columns: 20px 1fr 14px;
+  align-items: start; gap: var(--s3); text-align: left;
+  padding: var(--s4) var(--s2) var(--s4) 0;
+  background: none; border: 0; border-top: 1px solid var(--border-soft);
+  font-family: var(--sans); cursor: pointer;
+  transition: border-color var(--fast) var(--ease);
+}
+.rp-cat-icon {
+  width: 20px; height: 20px; margin-top: 1px;
+  background-repeat: no-repeat; background-position: center;
+  background-size: 20px 20px; opacity: .4;
+  transition: opacity var(--fast) var(--ease);
+}
+.rp-cat-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.rp-cat-label {
+  font-size: 15px; font-weight: 600; color: var(--ink);
+  line-height: 1.3; letter-spacing: -.008em;
+  transition: color var(--fast) var(--ease);
+}
+.rp-cat-sub {
+  font-size: 12.5px; line-height: 1.45; color: var(--ink-faint);
+}
+.rp-cat-go {
+  font-size: 14px; color: var(--ink-faint); opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity var(--fast) var(--ease), transform var(--fast) var(--ease);
+}
+.rp-cat:hover { border-top-color: var(--accent-line); }
+.rp-cat:hover .rp-cat-icon { opacity: .85; }
+.rp-cat:hover .rp-cat-label { color: var(--accent); }
+.rp-cat:hover .rp-cat-go { opacity: 1; transform: none; color: var(--accent); }
+.rp-cat:active { transform: translateY(1px); }
+
+.rp-cat-permit { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%2317181c%27%20stroke-width%3D%271.6%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M4%207.5A1.5%201.5%200%200%201%205.5%206h13A1.5%201.5%200%200%201%2020%207.5v9a1.5%201.5%200%200%201-1.5%201.5h-13A1.5%201.5%200%200%201%204%2016.5v-9ZM9%2011.5a1.8%201.8%200%201%200%200-3.6%201.8%201.8%200%200%200%200%203.6ZM6%2015.4c.5-1.4%201.7-2.1%203-2.1s2.5.7%203%202.1M14.5%2010h3M14.5%2013.5h3%27%2F%3E%3C%2Fsvg%3E"); }
+.rp-cat-housing { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%2317181c%27%20stroke-width%3D%271.6%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M4%2011%2012%205l8%206M6.5%209.8V19h11V9.8M10%2019v-5h4v5%27%2F%3E%3C%2Fsvg%3E"); }
+.rp-cat-docs { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%2317181c%27%20stroke-width%3D%271.6%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M7%204h6l4%204v12H7V4ZM13%204v4h4M9.5%2012.5h5M9.5%2016h5%27%2F%3E%3C%2Fsvg%3E"); }
+.rp-cat-student { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%2317181c%27%20stroke-width%3D%271.6%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M3%209.5%2012%205.5l9%204-9%204-9-4ZM7%2011.6V16c0%201.4%202.2%202.5%205%202.5s5-1.1%205-2.5v-4.4M20%2010.5V15%27%2F%3E%3C%2Fsvg%3E"); }
+.rp-cat-work { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%2317181c%27%20stroke-width%3D%271.6%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M4%208.5A1.5%201.5%200%200%201%205.5%207h13A1.5%201.5%200%200%201%2020%208.5v9a1.5%201.5%200%200%201-1.5%201.5h-13A1.5%201.5%200%200%201%204%2017.5v-9ZM9%207V5.5A1.5%201.5%200%200%201%2010.5%204h3A1.5%201.5%200%200%201%2015%205.5V7M4%2012h16%27%2F%3E%3C%2Fsvg%3E"); }
+.rp-cat-appt { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%2317181c%27%20stroke-width%3D%271.6%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M4%208.5A1.5%201.5%200%200%201%205.5%207h13A1.5%201.5%200%200%201%2020%208.5v9a1.5%201.5%200%200%201-1.5%201.5h-13A1.5%201.5%200%200%201%204%2017.5v-9ZM8%204.5V8M16%204.5V8M4%2011.5h16M11%2015l1.2%201.2L15%2013.5%27%2F%3E%3C%2Fsvg%3E"); }
+
 /* ----------------------------------------------------- segmented sets -- */
-.gradio-container .rp-switch { border: 0 !important; background: none !important;
-  padding: 0 !important; box-shadow: none !important; min-width: 0 !important; }
+.gradio-container .rp-switch {
+  border: 0 !important; background: none !important;
+  padding: 0 !important; box-shadow: none !important; min-width: 0 !important;
+}
 .gradio-container .rp-switch > .wrap.default { display: none !important; }
 .gradio-container .rp-switch > label:first-child,
 .gradio-container .rp-switch .head { display: none !important; }
 .gradio-container .rp-switch .wrap:not(.default) {
   display: inline-flex !important; flex-direction: row !important;
-  flex-wrap: nowrap !important; gap: 3px !important; padding: 3px !important;
+  flex-wrap: nowrap !important; gap: 2px !important; padding: 2px !important;
   background: var(--surface-2) !important;
   border: 1px solid var(--border) !important;
-  border-radius: 999px !important; box-shadow: none !important; width: auto !important;
+  border-radius: var(--r) !important; box-shadow: none !important;
+  width: auto !important;
 }
 .gradio-container .rp-switch label {
   display: inline-flex !important; align-items: center !important;
-  margin: 0 !important; padding: 7px 15px !important;
-  border: 0 !important; border-radius: 999px !important;
+  justify-content: center !important;
+  margin: 0 !important; padding: 0 var(--s3) !important;
+  height: 30px !important; min-height: 30px !important;
+  border: 0 !important; border-radius: 9px !important;
   background: transparent !important; box-shadow: none !important;
-  font-size: 13px !important; font-weight: 550 !important;
+  font-size: 12.5px !important; font-weight: 550 !important;
   color: var(--ink-muted) !important; cursor: pointer; white-space: nowrap;
-  transition: color .18s var(--ease), background .24s var(--ease),
-              box-shadow .24s var(--ease), transform .16s var(--ease);
+  transition: color var(--fast) var(--ease), background var(--normal) var(--ease);
 }
 .gradio-container .rp-switch label:hover { color: var(--ink) !important; }
-.gradio-container .rp-switch label:active { transform: scale(.97); }
 .gradio-container .rp-switch input { display: none !important; }
 .gradio-container .rp-switch label:has(input:checked),
 .gradio-container .rp-switch label.selected {
-  background: var(--surface) !important; color: var(--accent) !important;
+  background: var(--surface) !important; color: var(--ink) !important;
   box-shadow: var(--shadow-sm) !important;
 }
+/* The site language is the one control that sits on the masthead line. */
+.gradio-container .rp-switch-site label { height: 32px !important; font-size: 13px !important; }
 
 /* ------------------------------------------------------------- chips -- */
-.rp-examples { display: flex !important; flex-wrap: wrap !important;
-  gap: 8px; margin: 14px 0 2px; justify-content: center !important; }
-.rp-examples > * { flex: 0 0 auto !important; width: auto !important; min-width: 0 !important; }
-.rp-chip-label { width: 100%; text-align: center; font-size: 12.5px;
-  color: var(--ink-faint); margin-bottom: 4px; }
 .gradio-container button.rp-chip {
   background: var(--surface) !important; color: var(--ink-soft) !important;
-  border: 1px solid var(--border) !important; border-radius: 999px !important;
-  font-size: 13px !important; font-weight: 500 !important;
-  padding: 9px 16px !important; white-space: nowrap !important;
-  width: auto !important; min-width: 0 !important;
-  box-shadow: var(--shadow-sm) !important; position: relative; overflow: hidden;
-  transition: all .17s var(--ease);
+  border: 1px solid var(--border) !important; border-radius: var(--r) !important;
+  font-size: 13px !important; font-weight: 550 !important;
+  padding: var(--s2) var(--s4) !important; white-space: nowrap !important;
+  width: auto !important; min-width: 0 !important; box-shadow: none !important;
+  transition: border-color var(--fast) var(--ease), color var(--fast) var(--ease);
 }
 .gradio-container button.rp-chip:hover {
   border-color: var(--accent-line) !important; color: var(--accent) !important;
-  background: var(--accent-wash) !important; transform: translateY(-2px);
-  box-shadow: var(--shadow-md) !important;
-}
-.gradio-container button.rp-chip:active { transform: scale(.97); }
-.rp-ripple {
-  position: absolute; border-radius: 50%; pointer-events: none;
-  background: currentColor; opacity: .22; transform: scale(0);
-  animation: rp-ripple .62s var(--ease-out) forwards;
-}
-@keyframes rp-ripple { to { transform: scale(2.6); opacity: 0; } }
-
-/* ==================================================================== */
-/*  The thread through the labyrinth                                     */
-/*  Waiting is the moment a worried person is most alone with the        */
-/*  question, so the wait shows the work: a thread finding its way out.  */
-/* ==================================================================== */
-.rp-loader {
-  display: flex; gap: 22px; align-items: center;
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); box-shadow: var(--shadow-md);
-  padding: 26px 28px; margin-top: 6px;
-  animation: rp-arrive .45s var(--ease-out) both;
-}
-.rp-maze { flex: 0 0 auto; }
-.rp-maze-walls { stroke: var(--border); stroke-width: 2.4; stroke-linecap: round; }
-.rp-maze-thread {
-  stroke: var(--accent); stroke-width: 3; fill: none;
-  stroke-linecap: round; stroke-linejoin: round;
-  stroke-dasharray: 330; stroke-dashoffset: 330;
-  animation: rp-thread 3.6s var(--ease) infinite;
-}
-@keyframes rp-thread {
-  0%   { stroke-dashoffset: 330; }
-  62%  { stroke-dashoffset: 0; }
-  88%  { stroke-dashoffset: 0; opacity: 1; }
-  100% { stroke-dashoffset: 0; opacity: 0; }
-}
-.rp-maze-head {
-  fill: var(--accent); r: 3.4;
-  animation: rp-head 3.6s var(--ease) infinite;
-  offset-path: path("M10 10 L10 34 L26 34 L26 18 L42 18 L42 42 L58 42 L58 10 L74 10 L74 50");
-  offset-distance: 0%;
-}
-@keyframes rp-head {
-  0%   { offset-distance: 0%; opacity: 0; }
-  6%   { opacity: 1; }
-  62%  { offset-distance: 100%; opacity: 1; }
-  100% { offset-distance: 100%; opacity: 0; }
-}
-.rp-stages { display: flex; flex-direction: column; gap: 10px; }
-.rp-stage {
-  display: flex; align-items: center; gap: 11px;
-  font-size: 14px; color: var(--ink-faint);
-  transition: color .35s var(--ease);
-}
-.rp-stage.rp-on { color: var(--ink); font-weight: 500; }
-.rp-stage.rp-done-stage { color: var(--green); }
-.rp-stage-dot {
-  width: 16px; height: 16px; border-radius: 50%; flex: 0 0 auto;
-  border: 2px solid var(--border); position: relative;
-}
-.rp-stage.rp-on .rp-stage-dot {
-  border-color: var(--accent-line); border-top-color: var(--accent);
-  animation: rp-spin .75s linear infinite;
-}
-@keyframes rp-spin { to { transform: rotate(360deg); } }
-.rp-stage.rp-done-stage .rp-stage-dot { border-color: var(--green); background: var(--green); }
-.rp-stage.rp-done-stage .rp-stage-dot::after {
-  content: ""; position: absolute; left: 4px; top: 1.5px;
-  width: 3px; height: 7px; border: solid #fff; border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
 }
 
-/* ==================================================================== */
-/*  The answer                                                           */
-/*  Each part carries its own hue. Someone scanning in a language they   */
-/*  are still learning can find the part they need — the documents, the  */
-/*  deadline, the sentence to say out loud — before parsing a word.      */
-/* ==================================================================== */
-.rp-answer {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); box-shadow: var(--shadow-md);
-  padding: 30px 34px 28px; margin-top: 8px;
-  animation: rp-arrive .45s var(--ease-out) both;
+/* ------------------------------------------------- conversation ------- */
+.rp-thread {
+  max-width: var(--col); margin: 0 0 var(--s7);
+  display: flex; flex-direction: column; gap: var(--s8);
 }
+.rp-turn { animation: rp-arrive var(--normal) var(--ease-out) both;
+  scroll-margin-top: var(--s6); }
+
+/* The question, said back — right-aligned and compact, so the eye can tell
+   at a glance which lines are yours without reading a label over each one. */
+.rp-ask-bubble { display: flex; justify-content: flex-end; margin-bottom: var(--s6); }
+.rp-ask-text {
+  margin: 0; max-width: 84%;
+  padding: var(--s3) var(--s4);
+  background: var(--surface-2); color: var(--ink);
+  border-radius: var(--r-lg) var(--r-lg) var(--r-sm) var(--r-lg);
+  font-size: 15.5px; line-height: 1.5; font-weight: 500;
+}
+
+.rp-reply-head {
+  display: flex; align-items: center; gap: var(--s2); margin-bottom: var(--s4);
+}
+.rp-reply-mark { display: inline-flex; color: var(--ink-faint); }
+.rp-reply-mark .rp-mark { width: 17px; height: 17px; }
+.rp-who {
+  font-size: 11px; font-weight: 650; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--ink-faint);
+}
+.rp-who-assistant { color: var(--ink-muted); }
+
+/* ------------------------------------------------------------ answer -- */
+/* No card. The answer is the page here, not an object sitting on it. */
+.rp-answer { background: none; border: 0; padding: 0; }
 .rp-badge {
-  display: inline-flex; align-items: center; gap: 7px;
-  font-size: 11.5px; font-weight: 650; letter-spacing: .05em;
-  text-transform: uppercase; padding: 6px 12px; border-radius: 999px;
-  margin-bottom: 20px;
-  background: var(--green-wash); color: var(--green);
-  border: 1px solid var(--green-line);
+  display: inline-flex; align-items: center; gap: var(--s2);
+  margin-bottom: var(--s5); font-size: 11.5px; font-weight: 550;
+  color: var(--ink-faint); letter-spacing: .01em;
 }
-.rp-badge .rp-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.rp-badge .rp-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--good); flex: 0 0 auto;
+}
+.rp-refusal .rp-badge { color: var(--warn); }
+.rp-refusal .rp-badge .rp-dot { background: var(--warn); }
 
+/* Section headings are labels, not five different coloured rules. The words
+   already say which part is which; the colours were saying it twice. */
 .rp-answer h2 {
-  font-family: var(--sans); font-size: 11.5px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: .09em;
-  margin: 30px 0 12px; padding: 0 0 8px 0;
-  border-bottom: 1.5px solid currentColor;
-  color: var(--accent); animation: rp-arrive .34s var(--ease-out) both;
+  margin: var(--s7) 0 var(--s4); font-family: var(--sans);
+  font-size: 11px; font-weight: 650; letter-spacing: .13em;
+  text-transform: uppercase; color: var(--ink-faint);
+  border: 0; padding: 0;
 }
 .rp-answer h2:first-child { margin-top: 0; }
-/* Hue by position, matching the order the prompt writes them in. */
-.rp-answer h2:nth-of-type(1) { color: var(--blue); }
-.rp-answer h2:nth-of-type(2) { color: var(--violet); animation-delay: .05s; }
-.rp-answer h2:nth-of-type(3) { color: var(--green); animation-delay: .10s; }
-.rp-answer h2:nth-of-type(4) { color: var(--amber); animation-delay: .15s; }
-.rp-answer h2:nth-of-type(5) { color: var(--rose);  animation-delay: .20s; }
-
-.rp-answer p { max-width: 74ch; font-size: 16px; line-height: 1.68;
-  color: var(--ink-soft); margin: 0 0 13px; }
-.rp-answer li { max-width: 72ch; font-size: 16px; line-height: 1.62;
-  color: var(--ink-soft); margin: 0 0 9px; }
-.rp-answer ul, .rp-answer ol { margin: 0 0 16px; padding-left: 24px; }
+.rp-answer p {
+  max-width: 68ch; font-size: 16.5px; line-height: 1.66;
+  color: var(--ink-soft); margin: 0 0 var(--s4);
+}
+.rp-answer li {
+  max-width: 66ch; font-size: 16.5px; line-height: 1.6;
+  color: var(--ink-soft); margin-bottom: var(--s3);
+}
+.rp-answer ul, .rp-answer ol { margin: 0 0 var(--s4); padding-left: var(--s5); }
+.rp-answer ul > li::marker { color: var(--ink-faint); }
 .rp-answer ol { counter-reset: step; list-style: none; padding-left: 0; }
-.rp-answer ol > li {
-  counter-increment: step; position: relative; padding-left: 42px; min-height: 28px;
-}
+.rp-answer ol > li { counter-increment: step; position: relative; padding-left: 30px; }
 .rp-answer ol > li::before {
-  content: counter(step, decimal-leading-zero);
-  position: absolute; left: 0; top: 1px;
-  font-family: var(--mono); font-size: 12px; font-weight: 600;
-  color: var(--violet); background: var(--violet-wash);
-  border: 1px solid var(--violet-line); border-radius: 7px;
-  padding: 3px 7px; line-height: 1.25;
+  content: counter(step); position: absolute; left: 0; top: .1em;
+  font-size: 12.5px; font-weight: 650; color: var(--accent);
+  font-variant-numeric: tabular-nums;
 }
-.rp-answer ul > li::marker { color: var(--green); }
 .rp-answer strong { color: var(--ink); font-weight: 650; }
-
-/* French vocabulary, carrying its own definition. */
-.rp-fr {
-  position: relative; cursor: help; outline: none;
-  font-weight: 600; color: var(--violet);
-  background: var(--violet-wash); border-radius: 5px; padding: 1px 5px;
-  box-decoration-break: clone; -webkit-box-decoration-break: clone;
-}
-.rp-fr::after {
-  content: attr(data-en) " · " attr(data-gloss);
-  position: absolute; left: 50%; bottom: calc(100% + 11px);
-  transform: translateX(-50%) translateY(5px) scale(.97);
-  transform-origin: bottom center; width: max-content; max-width: 300px;
-  padding: 12px 14px; border-radius: 11px;
-  background: var(--ink); color: #fff;
-  font: 400 12.5px/1.5 var(--sans); box-shadow: var(--shadow-lg);
-  opacity: 0; pointer-events: none; z-index: 40; text-align: left;
-  transition: opacity .17s var(--ease), transform .22s var(--ease);
-}
-.rp-fr::before {
-  content: ""; position: absolute; left: 50%; bottom: calc(100% + 5px);
-  transform: translateX(-50%) translateY(5px);
-  border: 6px solid transparent; border-top-color: var(--ink);
-  opacity: 0; pointer-events: none; z-index: 40;
-  transition: opacity .17s var(--ease), transform .22s var(--ease);
-}
-.rp-fr:hover::after, .rp-fr:focus::after,
-.rp-fr:hover::before, .rp-fr:focus::before {
-  opacity: 1; transform: translateX(-50%) translateY(0) scale(1);
-}
-
-/* The sentence to say out loud: the one thing carried to a counter. */
-.rp-say {
-  position: relative; background: var(--rose-wash);
-  border: 1px solid var(--rose-line); border-left: 3px solid var(--rose);
-  border-radius: var(--radius-sm); padding: 17px 20px; margin: 6px 0 4px;
-}
-.rp-say p { color: var(--ink); font-size: 16.5px; margin-bottom: 0; }
-.rp-say-note { font-size: 12px !important; color: var(--ink-muted) !important;
-  margin-top: 10px !important; font-style: italic; }
-.rp-copy {
-  position: absolute; top: 11px; right: 11px;
-  display: inline-flex; align-items: center; gap: 5px;
-  font: 600 11.5px/1 var(--sans); letter-spacing: .03em;
-  color: var(--rose); background: var(--surface);
-  border: 1px solid var(--rose-line); border-radius: 8px;
-  padding: 7px 11px; cursor: pointer; opacity: 0; transform: translateY(-3px);
-  transition: all .2s var(--ease);
-}
-.rp-say:hover .rp-copy, .rp-copy:focus-visible { opacity: 1; transform: none; }
-.rp-copy:hover { background: var(--rose); color: #fff; border-color: var(--rose); }
-.rp-copy.rp-done { opacity: 1; transform: none; background: var(--green);
-  border-color: var(--green); color: #fff; }
-
-.rp-refusal { border-left: 3px solid var(--ink-faint); background: var(--surface-2); }
-.rp-refusal .rp-badge { background: var(--surface); color: var(--ink-muted);
-  border-color: var(--border); }
 .rp-caret {
-  display: inline-block; width: 2px; height: 1.05em; vertical-align: -.16em;
-  background: var(--accent); margin-left: 2px;
+  display: inline-block; width: 2px; height: 1.05em; margin-left: 2px;
+  background: var(--accent); vertical-align: -.16em;
   animation: rp-blink 1.05s steps(2, start) infinite;
 }
 @keyframes rp-blink { to { visibility: hidden; } }
 
-/* ------------------------------------------------------ do it here -- */
-.rp-services { margin-top: 26px; }
+/* A French term the reader will meet at a counter. Marked, not highlighted:
+   the old chips put a coloured box around the same word eight times in one
+   answer, which is most of what made a page of prose look like a warning. */
+.rp-fr {
+  color: var(--ink); font-weight: 500;
+  border-bottom: 1px dotted var(--ink-faint);
+  cursor: help; position: relative;
+}
+.rp-fr::after {
+  content: attr(data-en); position: absolute; left: 0; bottom: calc(100% + 8px);
+  z-index: 60; padding: var(--s2) var(--s3);
+  background: var(--ink); color: #fff; border-radius: var(--r-sm);
+  font-size: 12.5px; font-weight: 450; line-height: 1.4;
+  white-space: normal; width: max-content; max-width: 260px;
+  opacity: 0; pointer-events: none; transform: translateY(3px);
+  transition: opacity var(--fast) var(--ease), transform var(--fast) var(--ease);
+  box-shadow: var(--shadow-md);
+}
+.rp-fr:hover::after, .rp-fr:focus::after { opacity: 1; transform: none; }
+
+/* What to say out loud, in French, when you get there. */
+.rp-say {
+  position: relative; margin: 0 0 var(--s4);
+  padding: var(--s4) var(--s5); background: var(--surface-2);
+  border-left: 2px solid var(--accent-line); border-radius: 0 var(--r) var(--r) 0;
+}
+.rp-say p { color: var(--ink); font-size: 16px; margin-bottom: 0; max-width: 60ch; }
+.rp-say-note {
+  font-size: 12px !important; color: var(--ink-faint) !important;
+  margin-top: var(--s2) !important;
+}
+.rp-copy {
+  position: absolute; top: var(--s2); right: var(--s2);
+  padding: var(--s1) var(--s2); background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--r-sm);
+  font-size: 11.5px; font-weight: 550; color: var(--ink-muted);
+  cursor: pointer; opacity: 0;
+  transition: opacity var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+.rp-say:hover .rp-copy, .rp-copy:focus-visible { opacity: 1; }
+.rp-copy:hover { color: var(--accent); border-color: var(--accent-line); }
+.rp-copy.rp-done { opacity: 1; color: var(--good); border-color: var(--good-line); }
+
+/* -------------------------------------------- asking, and the gap ------ */
+/* Neither of these is an error, and neither is styled as one. One is a
+   question back; the other says which body actually owns the answer. */
+.rp-clarify { max-width: var(--col); margin: 0 0 var(--s4); }
+/* Follows the refusal it explains, so it needs the air a new section needs. */
+.rp-entity { max-width: var(--col); margin: var(--s7) 0 var(--s4); }
+.rp-clarify-head, .rp-entity-head {
+  margin: 0 0 var(--s2); font-family: var(--serif);
+  font-size: 21px; font-weight: 500; line-height: 1.25;
+  letter-spacing: -.012em; color: var(--ink);
+}
+.rp-clarify-body, .rp-entity-body {
+  margin: 0; font-size: 16px; line-height: 1.62; color: var(--ink-soft);
+  max-width: 62ch;
+}
+.rp-entity-where {
+  margin: var(--s3) 0 0; font-size: 12.5px; color: var(--ink-faint);
+}
+.rp-entity-link {
+  display: inline-flex; align-items: center; gap: var(--s2);
+  margin-top: var(--s4); padding: var(--s3) var(--s4);
+  background: var(--surface-2); color: var(--ink) !important;
+  border-radius: var(--r); font-size: 14px; font-weight: 550;
+  text-decoration: none !important; min-height: 44px;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+.rp-entity-link:hover { background: var(--accent); color: #fff !important; }
+.rp-entity-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ----------------------------------------------------- thinking ------- */
+.rp-thinking {
+  display: flex; align-items: center; gap: var(--s3);
+  padding: var(--s1) 0 var(--s3);
+}
+.rp-think-dots { display: inline-flex; gap: 4px; }
+.rp-think-dots i {
+  width: 5px; height: 5px; border-radius: 50%; background: var(--accent);
+  animation: rp-pulse 1.15s var(--ease) infinite;
+}
+.rp-think-dots i:nth-child(2) { animation-delay: .15s; }
+.rp-think-dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes rp-pulse {
+  0%, 100% { opacity: .25; transform: scale(.8); }
+  50% { opacity: 1; transform: scale(1); }
+}
+.rp-think-label { font-size: 14px; color: var(--ink-muted); }
+
+/* The staged loader, for the slow path. */
+.rp-loader { display: flex; align-items: flex-start; gap: var(--s4); padding: var(--s2) 0; }
+.rp-maze { flex: 0 0 auto; }
+.rp-maze-walls { stroke: var(--border); stroke-width: 2.2; stroke-linecap: round; }
+.rp-maze-thread {
+  stroke: var(--accent); stroke-width: 2.4; stroke-linecap: round;
+  stroke-dasharray: 220; stroke-dashoffset: 220;
+  animation: rp-thread 2.6s var(--ease) infinite;
+}
+@keyframes rp-thread { to { stroke-dashoffset: -220; } }
+.rp-maze-head { fill: var(--accent); animation: rp-head 2.6s var(--ease) infinite; }
+@keyframes rp-head { 0% { opacity: 0; } 20%, 80% { opacity: 1; } 100% { opacity: 0; } }
+.rp-stages { display: flex; flex-direction: column; gap: var(--s2); }
+.rp-stage {
+  display: flex; align-items: center; gap: var(--s2);
+  font-size: 13.5px; color: var(--ink-faint);
+}
+.rp-stage.rp-on { color: var(--ink); font-weight: 500; }
+.rp-stage.rp-done-stage { color: var(--good); }
+.rp-stage-dot {
+  width: 12px; height: 12px; border-radius: 50%;
+  border: 1.6px solid var(--border); flex: 0 0 auto;
+}
+.rp-stage.rp-on .rp-stage-dot {
+  border-color: var(--accent); border-top-color: transparent;
+  animation: rp-spin .8s linear infinite;
+}
+@keyframes rp-spin { to { transform: rotate(360deg); } }
+.rp-stage.rp-done-stage .rp-stage-dot { border-color: var(--good); background: var(--good); }
+
+/* ------------------------------------------------------ do it here ---- */
+/* Rows, not blue cards: these are links, and they behave like a list of
+   links in a well-set document. */
+.rp-services { margin-top: var(--s7); max-width: var(--col); }
 .rp-sources-head {
-  font-size: 11.5px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .09em; color: var(--ink-muted); margin: 0 0 12px;
+  font-size: 11px; font-weight: 650; letter-spacing: .13em;
+  text-transform: uppercase; color: var(--ink-faint); margin-bottom: var(--s1);
 }
 .rp-service {
-  display: flex; align-items: center; gap: 14px;
-  padding: 16px 18px; margin-bottom: 9px;
-  background: linear-gradient(180deg, var(--blue-wash), var(--surface) 88%);
-  border: 1px solid var(--blue-line); border-radius: var(--radius-sm);
-  text-decoration: none !important; color: inherit !important;
-  position: relative; isolation: isolate;
-  animation: rp-arrive .44s var(--ease-out) both;
-  animation-delay: calc(var(--i, 0) * 70ms);
-  transition: transform .2s var(--ease), box-shadow .24s var(--ease),
-              border-color .2s var(--ease);
+  display: flex; align-items: baseline; gap: var(--s3);
+  padding: var(--s3) 0; border-top: 1px solid var(--border-soft);
+  text-decoration: none !important; color: inherit;
+  transition: border-color var(--fast) var(--ease);
 }
-.rp-service:hover { transform: translateY(-2px); box-shadow: var(--shadow-md);
-  border-color: var(--blue); }
+.rp-service:hover { border-top-color: var(--accent-line); }
 .rp-service-icon {
-  flex: 0 0 auto; width: 36px; height: 36px; border-radius: 10px;
-  display: inline-flex; align-items: center; justify-content: center;
-  background: var(--blue); color: #fff; font-size: 17px; line-height: 1;
-  transition: transform .24s var(--ease);
+  flex: 0 0 auto; font-size: 13px; color: var(--ink-faint); line-height: 1;
+  transition: transform var(--fast) var(--ease), color var(--fast) var(--ease);
 }
-.rp-service:hover .rp-service-icon { transform: translate(2px, -2px); }
-.rp-service-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.rp-service-title { font-size: 15px; font-weight: 600; color: var(--ink); line-height: 1.35; }
-.rp-service-host { font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rp-service-note { font-size: 12px; color: var(--ink-faint); margin-top: 8px; }
+.rp-service:hover .rp-service-icon { transform: translate(2px, -2px); color: var(--accent); }
+.rp-service-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rp-service-title {
+  font-size: 15px; font-weight: 550; color: var(--ink); line-height: 1.4;
+  transition: color var(--fast) var(--ease);
+}
+.rp-service:hover .rp-service-title { color: var(--accent); }
+.rp-service-host { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); }
+.rp-service-note { font-size: 12px; color: var(--ink-faint); margin-top: var(--s3); }
 
-/* --------------------------------------------------------- sources -- */
-.rp-sources { margin-top: 22px; }
+/* --------------------------------------------------------- sources ---- */
+/* The licence the corpus ships under requires the source and its update date
+   to be stated, and it is the only way a reader can check an answer — so it
+   is folded away, never dropped. */
+.rp-sources { margin-top: var(--s5); max-width: var(--col); }
 .rp-sources > summary { list-style: none; }
 .rp-sources > summary::-webkit-details-marker { display: none; }
 .rp-sources-toggle {
-  display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: var(--s2);
   font-size: 13px; font-weight: 550; color: var(--ink-muted);
-  padding: 9px 15px 9px 12px; border-radius: 999px;
-  border: 1px solid var(--border); background: var(--surface);
-  user-select: none; transition: all .18s var(--ease);
+  cursor: pointer; min-height: 44px;
+  transition: color var(--fast) var(--ease);
 }
-.rp-sources-toggle:hover { color: var(--accent); border-color: var(--accent-line);
-  background: var(--accent-wash); }
-.rp-chev { transition: transform .24s var(--ease); flex: 0 0 auto; }
+.rp-sources-toggle:hover { color: var(--accent); }
+.rp-chev { transition: transform var(--normal) var(--ease); flex: 0 0 auto; }
 .rp-sources[open] > summary .rp-chev { transform: rotate(90deg); }
-.rp-sources-body { padding-top: 12px; animation: rp-arrive .34s var(--ease-out) both; }
+.rp-sources-body { padding-top: var(--s1); }
+
 .rp-source {
-  display: block; text-align: left; background: var(--surface);
-  border: 1px solid var(--border); border-radius: var(--radius-sm);
-  padding: 16px 18px; margin-bottom: 9px;
-  text-decoration: none !important; color: inherit !important;
-  box-shadow: var(--shadow-sm); position: relative; overflow: hidden;
-  isolation: isolate;
-  animation: rp-arrive .42s var(--ease-out) both;
-  animation-delay: calc(var(--i, 0) * 60ms);
-  transition: all .2s var(--ease);
+  display: block; position: relative;
+  padding: var(--s4) var(--s7) var(--s4) 0;
+  border-top: 1px solid var(--border-soft);
+  text-decoration: none !important; color: inherit;
+  opacity: 0; transform: translateY(6px);
+  transition: opacity var(--normal) var(--ease), transform var(--normal) var(--ease),
+              border-color var(--fast) var(--ease);
 }
-.rp-source::after {
-  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
-  background: var(--accent); transform: scaleY(0); transition: transform .26s var(--ease);
+.rp-source.rp-in, .rp-source:not(.rp-reveal) { opacity: 1; transform: none; }
+.rp-source:hover { border-top-color: var(--accent-line); }
+.rp-source-title {
+  font-size: 15px; font-weight: 550; color: var(--ink); line-height: 1.4;
+  transition: color var(--fast) var(--ease);
 }
-.rp-source:hover { border-color: var(--accent-line); box-shadow: var(--shadow-md);
-  transform: translateY(-2px); }
-.rp-source:hover::after { transform: scaleY(1); }
-.rp-source-title { font-size: 15px; font-weight: 620; color: var(--ink);
-  line-height: 1.4; margin-bottom: 6px; }
 .rp-source:hover .rp-source-title { color: var(--accent); }
-.rp-source-meta { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center;
-  font-size: 12.5px; color: var(--ink-muted); }
-.rp-source-id { font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint); }
-.rp-scope { background: var(--surface-2); border: 1px solid var(--border-soft);
-  border-radius: 5px; padding: 2px 8px; font-size: 11.5px; color: var(--ink-soft); }
-.rp-date-suspect { color: var(--amber); }
+.rp-source-meta {
+  display: flex; flex-wrap: wrap; gap: var(--s1) var(--s3); align-items: center;
+  margin-top: var(--s2); font-size: 12px; color: var(--ink-faint);
+}
+.rp-source-id { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); }
+.rp-scope {
+  background: var(--surface-2); border-radius: var(--r-sm);
+  padding: 2px var(--s2); font-size: 11px; color: var(--ink-muted);
+}
+.rp-date-suspect { color: var(--warn); }
 .rp-source-link {
-  position: absolute; top: 13px; right: 14px; z-index: 3;
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px; border-radius: 8px; color: var(--ink-faint);
-  text-decoration: none !important; font-size: 15px; line-height: 1;
-  opacity: 0; transform: translateY(-2px); transition: all .2s var(--ease);
+  position: absolute; top: var(--s4); right: 0;
+  font-size: 13px; color: var(--ink-faint);
+  transition: color var(--fast) var(--ease), transform var(--fast) var(--ease);
 }
-.rp-source:hover .rp-source-link { opacity: 1; transform: none; }
-.rp-source-link:hover { background: var(--accent-wash); color: var(--accent) !important; }
-.rp-score { display: flex; align-items: center; gap: 8px; margin-left: auto; }
-.rp-score-track { width: 62px; height: 5px; border-radius: 3px;
-  background: var(--surface-3); overflow: hidden; }
-.rp-score-fill {
-  display: block; height: 100%; border-radius: 3px;
-  background: linear-gradient(90deg, var(--blue), var(--violet));
-  width: var(--w, 0%);
-  animation-name: rp-fill; animation-duration: .85s;
-  animation-timing-function: var(--ease-out); animation-fill-mode: both;
-  animation-delay: calc(var(--i, 0) * 60ms + 160ms);
+.rp-source:hover .rp-source-link { color: var(--accent); transform: translate(2px, -2px); }
+.rp-peek {
+  display: inline-block; margin-top: var(--s3); font-size: 12px;
+  color: var(--ink-muted); border-bottom: 1px dotted var(--border);
+  cursor: pointer;
 }
-@keyframes rp-fill { from { width: 0; } to { width: var(--w, 0%); } }
-.rp-score-value { font-family: var(--mono); font-size: 11.5px;
-  color: var(--ink-faint); min-width: 30px; }
-.rp-peek { display: inline-block; margin-top: 11px; font-size: 12px;
-  color: var(--ink-faint); border-bottom: 1px dashed var(--border); cursor: pointer;
-  transition: all .16s var(--ease); }
-.rp-peek:hover { color: var(--accent); border-bottom-color: var(--accent-line); }
+.rp-peek:hover { color: var(--accent); }
 .rp-excerpt {
   display: block; max-height: 0; opacity: 0; overflow: hidden;
-  font-size: 13px; line-height: 1.6; color: var(--ink-muted);
-  border-top: 1px dashed transparent; margin-top: 0; padding-top: 0;
-  transition: max-height .42s var(--ease), opacity .3s var(--ease),
-              margin-top .3s var(--ease), padding-top .3s var(--ease);
+  font-size: 13.5px; line-height: 1.6; color: var(--ink-muted);
+  transition: max-height var(--slow) var(--ease), opacity var(--normal) var(--ease),
+              margin var(--normal) var(--ease);
 }
-.rp-source.rp-open .rp-excerpt { max-height: 320px; opacity: 1;
-  margin-top: 13px; padding-top: 13px; border-top-color: var(--border-soft); }
-.rp-source.rp-open { border-color: var(--accent-line); box-shadow: var(--shadow-md); }
-
-/* Hover lights a card from where the pointer actually is. */
-.rp-source::before, .rp-service::before, .rp-gloss::before {
-  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
-  opacity: 0; transition: opacity .3s var(--ease);
-  background: radial-gradient(220px circle at var(--mx, 50%) var(--my, 50%),
-    color-mix(in oklch, var(--accent) 9%, transparent), transparent 70%);
+.rp-source.rp-open .rp-excerpt {
+  max-height: 320px; opacity: 1; margin-top: var(--s3);
+  padding-left: var(--s3); border-left: 2px solid var(--border);
 }
-.rp-source:hover::before, .rp-service:hover::before, .rp-gloss:hover::before { opacity: 1; }
 
-.rp-pop {
-  position: fixed; z-index: 60; max-width: 360px; pointer-events: none;
-  background: var(--ink); color: #fff; border-radius: 12px; padding: 14px 16px;
-  box-shadow: var(--shadow-xl); font-size: 12.5px; line-height: 1.55;
-  opacity: 0; transform: translateY(6px) scale(.97); transform-origin: top left;
-  transition: opacity .17s var(--ease), transform .2s var(--ease);
+/* ------------------------------------------------- closest pages ------ */
+.rp-near-block { margin-top: var(--s7); max-width: var(--col); }
+.rp-near-note {
+  font-size: 14px; line-height: 1.6; color: var(--ink-muted);
+  margin: var(--s2) 0 var(--s4); max-width: 62ch;
 }
-.rp-pop.rp-pop-on { opacity: 1; transform: translateY(0) scale(1); }
-.rp-pop-label { display: block; font-size: 10px; font-weight: 700;
-  letter-spacing: .12em; text-transform: uppercase;
-  color: color-mix(in oklch, var(--blue) 55%, white); margin-bottom: 7px; }
-.rp-pop-meta { display: block; margin-top: 9px; padding-top: 8px;
-  border-top: 1px solid rgba(255,255,255,.16);
-  font-family: var(--mono); font-size: 10.5px; color: rgba(255,255,255,.6); }
+.rp-near {
+  display: flex; flex-direction: column; gap: var(--s1);
+  padding: var(--s3) 0; border-top: 1px solid var(--border-soft);
+  text-decoration: none !important; color: inherit;
+  transition: border-color var(--fast) var(--ease);
+}
+.rp-near:hover { border-top-color: var(--accent-line); }
+.rp-near-title {
+  font-size: 14.5px; font-weight: 550; color: var(--ink-soft); line-height: 1.4;
+  transition: color var(--fast) var(--ease);
+}
+.rp-near:hover .rp-near-title { color: var(--accent); }
+.rp-near-meta {
+  display: flex; gap: var(--s3); align-items: center;
+  font-size: 11.5px; color: var(--ink-faint);
+}
+.rp-near-search {
+  display: inline-flex; align-items: center; gap: var(--s2);
+  margin-top: var(--s4); padding: var(--s3) var(--s4);
+  background: var(--accent); color: #fff !important;
+  border-radius: var(--r); font-size: 13.5px; font-weight: 600;
+  text-decoration: none !important; min-height: 44px;
+  transition: background var(--fast) var(--ease);
+}
+.rp-near-search:hover { background: var(--accent-deep); }
 
-/* ==================================================================== */
-/*  Words                                                                */
-/* ==================================================================== */
-.gradio-container .rp-gloss-search input {
+/* ----------------------------------------------------------- actions -- */
+.rp-actions {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--s4);
+  margin-top: var(--s6); padding-top: var(--s4);
+  border-top: 1px solid var(--border-soft);
+}
+.rp-action {
+  display: inline-flex; align-items: center; gap: var(--s2);
+  padding: var(--s2) 0; min-height: 44px;
+  background: none; border: 0; cursor: pointer;
+  font-family: var(--sans); font-size: 12.5px; font-weight: 550;
+  color: var(--ink-faint);
+  transition: color var(--fast) var(--ease);
+}
+.rp-action:hover { color: var(--accent); }
+.rp-action:disabled { cursor: default; }
+.rp-action.rp-done { color: var(--good); }
+.rp-action-thanks { font-size: 12.5px; color: var(--good); font-weight: 550; }
+.rp-icon { flex: 0 0 auto; }
+
+/* ---------------------------------------------------------- glossary -- */
+.gradio-container .rp-gloss-search textarea,
+.gradio-container .rp-gloss-search input,
+.gradio-container .rp-study-search textarea,
+.gradio-container .rp-study-search input {
   font-family: var(--sans) !important; font-size: 15px !important;
-  border: 1px solid var(--border) !important; border-radius: var(--radius-sm) !important;
-  background: var(--surface) !important; padding: 13px 16px !important;
-  box-shadow: var(--shadow-sm) !important; color: var(--ink) !important;
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--r) !important; padding: var(--s3) var(--s4) !important;
+  color: var(--ink) !important; box-shadow: none !important;
 }
-.gradio-container .rp-gloss-search input:focus {
-  border-color: var(--accent-line) !important;
-  box-shadow: 0 0 0 4px var(--accent-wash) !important; outline: none !important;
-}
-.rp-gloss-grid { display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
-.rp-gloss {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); padding: 17px 19px; cursor: pointer;
-  box-shadow: var(--shadow-sm); position: relative; isolation: isolate;
-  animation: rp-arrive .4s var(--ease-out) both;
-  animation-delay: calc(var(--i, 0) * 18ms);
-  transition: all .2s var(--ease);
-}
-.rp-gloss:hover { border-color: var(--violet-line); box-shadow: var(--shadow-md);
-  transform: translateY(-2px); }
-.rp-gloss:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--violet-line); }
-.rp-gloss-fr { display: flex; align-items: center; justify-content: space-between;
-  gap: 10px; font-size: 16px; font-weight: 650; color: var(--ink); }
-.rp-gloss-chev { flex: 0 0 auto; color: var(--ink-faint);
-  transition: transform .28s var(--ease), color .18s var(--ease); }
-.rp-gloss:hover .rp-gloss-chev { color: var(--violet); }
-.rp-gloss.rp-open .rp-gloss-chev { transform: rotate(180deg); color: var(--violet); }
-.rp-gloss-en { font-size: 13.5px; color: var(--violet); margin: 3px 0 10px; font-weight: 550; }
-.rp-gloss-def { font-size: 14px; line-height: 1.58; color: var(--ink-soft); }
-.rp-gloss-more { max-height: 0; opacity: 0; overflow: hidden;
-  transition: max-height .4s var(--ease), opacity .3s var(--ease), margin-top .3s var(--ease); }
-.rp-gloss.rp-open .rp-gloss-more { max-height: 460px; opacity: 1; margin-top: 6px; }
-.rp-gloss-def-fr { font-size: 13.5px; line-height: 1.58; color: var(--ink-muted);
-  padding-top: 11px; border-top: 1px dashed var(--border); }
-.rp-gloss-aliases { margin-top: 11px; display: flex; flex-wrap: wrap; gap: 5px; align-items: baseline; }
-.rp-gloss-aliases-label { font-size: 10.5px; font-weight: 700; letter-spacing: .08em;
-  text-transform: uppercase; color: var(--ink-faint); margin-right: 3px; }
-.rp-alias { font-size: 11.5px; color: var(--ink-soft); background: var(--surface-2);
-  border-radius: 5px; padding: 3px 8px; }
-.rp-prov { display: inline-block; font-size: 10.5px; font-weight: 650;
-  letter-spacing: .04em; text-transform: uppercase; padding: 3px 8px;
-  border-radius: 5px; margin-top: 11px; }
-.rp-prov-official { background: var(--green-wash); color: var(--green);
-  border: 1px solid var(--green-line); }
-.rp-prov-authored { background: var(--surface-2); color: var(--ink-muted);
-  border: 1px solid var(--border); }
-
-/* ==================================================================== */
-/*  Sources tab                                                          */
-/* ==================================================================== */
-.rp-stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: 12px; margin-bottom: 24px; }
-.rp-stat { background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); padding: 19px 21px; box-shadow: var(--shadow-sm);
-  position: relative; isolation: isolate;
-  animation: rp-arrive .4s var(--ease-out) both;
-  animation-delay: calc(var(--i, 0) * 55ms); }
-.rp-stat-value { font-family: var(--serif); font-size: 28px; font-weight: 550;
-  color: var(--ink); line-height: 1.08; letter-spacing: -.015em; }
-.rp-stat:nth-child(4n+1) .rp-stat-value { color: var(--blue); }
-.rp-stat:nth-child(4n+2) .rp-stat-value { color: var(--violet); }
-.rp-stat:nth-child(4n+3) .rp-stat-value { color: var(--green); }
-.rp-stat:nth-child(4n+4) .rp-stat-value { color: var(--amber); }
-.rp-stat-label { font-size: 12.5px; color: var(--ink-muted); margin-top: 6px; }
-.rp-note { font-size: 13px; color: var(--ink-muted); line-height: 1.62;
-  background: var(--surface-2); border-radius: var(--radius-sm);
-  padding: 15px 17px; margin-top: 6px; }
-.rp-note a { color: var(--accent); }
-.rp-error { background: var(--rose-wash); border: 1px solid var(--rose-line);
-  border-left: 3px solid var(--rose); border-radius: var(--radius-sm);
-  padding: 15px 17px; font-size: 13.5px; color: var(--rose); line-height: 1.58; }
-
-/* Running out of allowance is not a fault and must not read like one. */
-.rp-limit { display: flex; gap: 17px; align-items: flex-start;
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); box-shadow: var(--shadow-sm);
-  padding: 26px 28px; margin-top: 6px;
-  animation: rp-arrive .45s var(--ease-out) both; }
-.rp-limit-cup { flex: 0 0 auto; color: var(--amber);
-  animation: rp-steam 3.4s ease-in-out infinite; }
-@keyframes rp-steam { 0%,100% { transform: translateY(0) rotate(0); }
-  50% { transform: translateY(-2px) rotate(-2deg); } }
-.rp-limit-title { font-family: var(--serif); font-size: 22px; font-weight: 550;
-  color: var(--ink); letter-spacing: -.015em; }
-.rp-limit-body { margin: 9px 0 0; font-size: 15px; line-height: 1.62;
-  color: var(--ink-soft); max-width: 58ch; }
-.rp-limit-wait { margin: 12px 0 0; font-size: 13px; font-weight: 600; color: var(--amber); }
-.rp-limit-local { margin: 11px 0 0; padding-top: 11px;
-  border-top: 1px dashed var(--border-soft); font-size: 12.5px; color: var(--ink-muted); }
-
-/* ==================================================================== */
-/*  Where you study                                                      */
-/* ==================================================================== */
-.gradio-container .rp-study-ask {
-  background: var(--surface) !important; border: 1px solid var(--violet-line) !important;
-  border-radius: var(--radius) !important; box-shadow: var(--shadow-sm) !important;
-  padding: 19px 21px !important; margin-top: 20px !important; gap: 0 !important;
-}
-.gradio-container .rp-study-ask > * { background: transparent !important; }
-.rp-study-prompt { margin: 0 0 13px; font-size: 14px; line-height: 1.6;
-  color: var(--ink-soft); max-width: 68ch; }
-.gradio-container .rp-study-search input,
-.gradio-container .rp-study-search textarea {
-  font-family: var(--sans) !important; font-size: 15px !important;
-  background: var(--surface) !important; border: 1px solid var(--border) !important;
-  border-radius: var(--radius-sm) !important; padding: 13px 16px !important;
-  color: var(--ink) !important; box-shadow: var(--shadow-sm) !important;
-}
-.gradio-container .rp-study-search input:focus,
+.gradio-container .rp-gloss-search textarea:focus,
 .gradio-container .rp-study-search textarea:focus {
-  border-color: var(--violet-line) !important;
-  box-shadow: 0 0 0 4px var(--violet-wash) !important; outline: none !important;
+  border-color: var(--accent-line) !important; outline: none !important;
+  box-shadow: 0 0 0 3px var(--accent-wash) !important;
 }
-.gradio-container .rp-study-hits { border: 0 !important; background: none !important;
-  padding: 0 !important; box-shadow: none !important; }
-.gradio-container .rp-study-hits > .wrap.default { display: none !important; }
+.rp-gloss-grid {
+  display: grid; gap: 0; margin-top: var(--s5);
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  column-gap: var(--s6);
+}
+.rp-gloss {
+  padding: var(--s4) 0; border-top: 1px solid var(--border-soft);
+  cursor: pointer; opacity: 0; transform: translateY(6px);
+  transition: opacity var(--normal) var(--ease), transform var(--normal) var(--ease),
+              border-color var(--fast) var(--ease);
+}
+.rp-gloss.rp-in, .rp-gloss:not(.rp-reveal) { opacity: 1; transform: none; }
+.rp-gloss:hover { border-top-color: var(--accent-line); }
+.rp-gloss-fr {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--s3); font-size: 15.5px; font-weight: 600; color: var(--ink);
+}
+.rp-gloss-chev {
+  flex: 0 0 auto; color: var(--ink-faint);
+  transition: transform var(--normal) var(--ease);
+}
+.rp-gloss.rp-open .rp-gloss-chev { transform: rotate(180deg); color: var(--accent); }
+.rp-gloss-en { font-size: 13px; color: var(--accent); margin: 3px 0 var(--s2); font-weight: 500; }
+.rp-gloss-def { font-size: 14px; line-height: 1.58; color: var(--ink-soft); }
+.rp-gloss-more {
+  max-height: 0; opacity: 0; overflow: hidden;
+  transition: max-height var(--slow) var(--ease), opacity var(--normal) var(--ease);
+}
+.rp-gloss.rp-open .rp-gloss-more { max-height: 460px; opacity: 1; margin-top: var(--s2); }
+.rp-gloss-def-fr {
+  font-size: 13.5px; line-height: 1.58; color: var(--ink-muted);
+  padding-left: var(--s3); border-left: 2px solid var(--border);
+}
+.rp-gloss-aliases { margin-top: var(--s3); display: flex; flex-wrap: wrap; gap: var(--s1) var(--s2); align-items: baseline; }
+.rp-gloss-aliases-label {
+  font-size: 10.5px; font-weight: 650; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--ink-faint);
+}
+.rp-alias {
+  font-size: 11.5px; color: var(--ink-soft); background: var(--surface-2);
+  padding: 2px var(--s2); border-radius: var(--r-sm);
+}
+.rp-prov {
+  display: inline-block; font-size: 10.5px; font-weight: 650;
+  letter-spacing: .06em; text-transform: uppercase;
+  padding: 2px var(--s2); border-radius: var(--r-sm); margin-top: var(--s2);
+}
+.rp-prov-official { background: var(--good-wash); color: var(--good); }
+.rp-prov-authored { background: var(--surface-2); color: var(--ink-muted); }
+
+/* ------------------------------------------------------------ corpus -- */
+.rp-stat-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--s5) var(--s6); margin: var(--s5) 0;
+}
+.rp-stat { padding-top: var(--s3); border-top: 1px solid var(--border); }
+.rp-stat-value {
+  font-family: var(--serif); font-size: 30px; font-weight: 500;
+  color: var(--ink); line-height: 1.1; letter-spacing: -.02em;
+}
+.rp-stat-label { font-size: 12.5px; color: var(--ink-muted); margin-top: var(--s1); }
+.rp-note {
+  font-size: 13px; color: var(--ink-muted); line-height: 1.62;
+  max-width: 70ch; margin-top: var(--s4);
+}
+.rp-note a { color: var(--accent); }
+
+/* ------------------------------------------------------------ errors -- */
+.rp-error {
+  background: var(--stop-wash); border-left: 2px solid var(--stop);
+  border-radius: 0 var(--r) var(--r) 0; padding: var(--s4) var(--s5);
+  color: var(--ink); font-size: 15px; max-width: var(--col);
+}
+.rp-error-detail {
+  display: block; margin-top: var(--s2); font-size: 12px;
+  font-family: var(--mono); color: var(--ink-muted); word-break: break-word;
+}
+
+/* ------------------------------------------------------------- limit -- */
+.rp-limit {
+  display: flex; gap: var(--s4); align-items: flex-start;
+  padding: var(--s5); background: var(--warn-wash);
+  border-radius: var(--r-lg); max-width: var(--col);
+}
+.rp-limit-cup { flex: 0 0 auto; color: var(--warn); }
+.rp-limit-title {
+  font-family: var(--serif); font-size: 22px; font-weight: 500; color: var(--ink);
+}
+.rp-limit-body { margin: var(--s2) 0 0; font-size: 15px; line-height: 1.62; color: var(--ink-soft); }
+.rp-limit-wait { margin: var(--s3) 0 0; font-size: 13px; font-weight: 600; color: var(--warn); }
+.rp-limit-local {
+  margin: var(--s3) 0 0; padding-top: var(--s3);
+  border-top: 1px solid var(--warn-line); font-size: 13px; color: var(--ink-muted);
+}
+
+/* ----------------------------------------------------- study + place -- */
+.gradio-container .rp-study-ask {
+  max-width: var(--col); margin-top: var(--s5) !important;
+  padding: var(--s5) !important; background: var(--surface-2) !important;
+  border-radius: var(--r-lg) !important;
+}
+.rp-study-prompt { margin: 0 0 var(--s3); font-size: 14px; line-height: 1.6; color: var(--ink-soft); }
 .gradio-container .rp-study-hits .wrap:not(.default) {
   display: flex !important; flex-direction: column !important;
-  gap: 3px !important; margin-top: 11px !important;
-  background: transparent !important; border: 0 !important; padding: 0 !important;
+  gap: var(--s1) !important; background: none !important; border: 0 !important;
+  padding: 0 !important; margin-top: var(--s2);
 }
 .gradio-container .rp-study-hits label {
-  display: flex !important; align-items: center !important; width: 100% !important;
-  margin: 0 !important; padding: 12px 14px !important; min-height: 44px;
-  border: 1px solid transparent !important; border-radius: var(--radius-sm) !important;
-  background: transparent !important; font-size: 14px !important;
-  color: var(--ink-soft) !important; box-shadow: none !important;
-  cursor: pointer; text-align: left !important; transition: all .16s var(--ease);
+  padding: var(--s2) var(--s3) !important; border-radius: var(--r-sm) !important;
+  font-size: 13.5px !important; text-align: left !important;
+  justify-content: flex-start !important; background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
 }
-.gradio-container .rp-study-hits label:hover {
-  background: var(--violet-wash) !important; border-color: var(--violet-line) !important;
-  color: var(--ink) !important;
+.rp-place {
+  margin-top: var(--s3); padding: var(--s4) var(--s5); max-width: var(--col);
+  background: var(--accent-wash); border-radius: var(--r-lg);
 }
-.gradio-container .rp-study-hits label:has(input:checked),
-.gradio-container .rp-study-hits label.selected {
-  background: var(--violet-wash) !important; border-color: var(--violet) !important;
-  color: var(--ink) !important; font-weight: 550 !important;
-}
-.gradio-container .rp-study-hits input { display: none !important; }
-.rp-place { margin-top: 13px; padding: 16px 18px; background: var(--violet-wash);
-  border: 1px solid var(--violet-line); border-radius: var(--radius-sm);
-  animation: rp-arrive .4s var(--ease-out) both; }
-.rp-place-name { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
-  font-size: 15px; font-weight: 650; color: var(--ink); }
-.rp-place-site { margin-left: auto; font-size: 12.5px; font-weight: 550;
-  color: var(--violet) !important; text-decoration: none !important; white-space: nowrap; }
-.rp-place-site:hover { text-decoration: underline !important; }
-.rp-place-grid { display: flex; flex-wrap: wrap; gap: 9px 24px; margin-top: 12px; }
+.rp-place-name { display: flex; align-items: baseline; gap: var(--s3); flex-wrap: wrap; font-weight: 600; }
+.rp-place-site { margin-left: auto; font-size: 12.5px; font-weight: 550; color: var(--accent); }
+.rp-place-grid { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s5); margin-top: var(--s3); }
 .rp-place-cell { font-size: 14px; color: var(--ink-soft); }
-.rp-place-key { display: block; font-size: 10px; font-weight: 700; letter-spacing: .1em;
-  text-transform: uppercase; color: var(--ink-faint); margin-bottom: 3px; }
-.rp-place-why { margin-top: 12px; padding-top: 11px;
-  border-top: 1px dashed var(--violet-line); font-size: 12.5px;
-  line-height: 1.55; color: var(--ink-muted); }
+.rp-place-key {
+  display: block; font-size: 10px; font-weight: 650; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--ink-faint);
+}
+.rp-place-why {
+  margin-top: var(--s3); padding-top: var(--s3);
+  border-top: 1px solid var(--accent-line); font-size: 12.5px; color: var(--ink-muted);
+}
 
-/* ==================================================================== */
-/*  Clean, neat, bolder                                                  */
-/*  The chrome stays quiet and the type carries the weight. Colour is    */
-/*  spent inside the answer, where it helps someone find the part they   */
-/*  need; spending it on the shell as well would leave nothing standing  */
-/*  out anywhere.                                                        */
-/* ==================================================================== */
-:root {
-  --paper:     #fafaf8;
-  --surface-2: #f4f3f0;
-  --surface-3: #eceae6;
-  --border:      #e5e3de;
-  --border-soft: #efedea;
-  --shadow-sm: 0 1px 2px rgba(20,20,25,.04), 0 1px 3px rgba(20,20,25,.03);
-  --shadow-md: 0 2px 4px rgba(20,20,25,.03), 0 8px 20px rgba(20,20,25,.06);
-  --shadow-lg: 0 4px 8px rgba(20,20,25,.04), 0 20px 48px rgba(20,20,25,.09);
+/* ------------------------------------------------------------- debug -- */
+.rp-debug { font-size: 13px; }
+.rp-debug-grid { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s5); margin-bottom: var(--s4); }
+.rp-debug-key {
+  font-size: 10px; font-weight: 650; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--ink-faint); display: block;
 }
-:root:has(.rp-theme-fr) { --paper: #fbfaf7; --surface-2: #f5f3ee; }
+.rp-debug-val { font-family: var(--mono); font-size: 12.5px; color: var(--ink); }
+.rp-chunk { padding: var(--s3) 0; border-top: 1px solid var(--border-soft); }
+.rp-chunk-head { display: flex; gap: var(--s3); align-items: center; flex-wrap: wrap; }
+.rp-chunk-id { font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint); }
+.rp-chunk-text { font-size: 13px; line-height: 1.55; color: var(--ink-muted); margin-top: var(--s1); }
+.rp-dropped { opacity: .55; }
+.rp-gate-pass { color: var(--good); font-weight: 600; font-size: 11.5px; }
+.rp-gate-fail { color: var(--stop); font-weight: 600; font-size: 11.5px; }
+.rp-tag {
+  font-size: 11px; padding: 1px var(--s2); border-radius: var(--r-sm);
+  background: var(--surface-2); color: var(--ink-muted);
+}
+.rp-tag-kw { background: var(--accent-wash); color: var(--accent); }
+.rp-score-value { font-family: var(--mono); font-size: 11.5px; color: var(--ink-muted); }
 
-.rp-headline {
-  font-family: var(--sans); font-weight: 700;
-  letter-spacing: -.035em; max-width: 16ch;
-  font-size: clamp(30px, 5.2vw, 52px); line-height: 1.02;
-}
-.rp-wordmark { font-family: var(--sans); font-weight: 700;
-  font-size: 25px; letter-spacing: -.028em; }
-.rp-wash { opacity: .34; filter: blur(46px); }
-body::after { background: radial-gradient(130% 94% at 50% 6%,
-  transparent 52%, rgba(20,20,25,.035) 100%); }
-
-/* ==================================================================== */
-/*  Footer                                                               */
-/* ==================================================================== */
-.rp-privacy, .rp-footer, .rp-credit {
-  max-width: 76ch; margin-left: auto; margin-right: auto;
-}
-.rp-privacy {
-  display: flex; gap: 11px; align-items: flex-start; margin: 44px auto 0;
-  padding: 16px 18px; background: var(--green-wash);
-  border: 1px solid var(--green-line); border-radius: var(--radius-sm);
-  font-size: 13px; line-height: 1.58; color: var(--green);
-}
-.rp-privacy strong { font-weight: 650; }
-.rp-privacy svg { flex: 0 0 auto; margin-top: 1px; }
-.rp-disclaimer {
-  display: flex; gap: 11px; align-items: flex-start;
-  font-size: 12.5px; line-height: 1.58; color: var(--ink-muted);
-}
+/* ------------------------------------------------------------ footer -- */
 .rp-footer {
-  margin: 18px auto 0 !important; border: 0 !important;
-  border-top: 1px solid var(--border) !important; border-radius: 0 !important;
-  background: transparent !important; padding: 18px 2px 0 !important;
+  max-width: var(--page); margin-top: var(--s9);
+  padding-top: var(--s5); border-top: 1px solid var(--border);
 }
-.rp-footer strong { color: var(--amber); font-weight: 650; }
-.rp-credit { text-align: center; margin-top: 28px; padding-top: 20px;
-  border-top: 1px solid var(--border); }
-.rp-credit-made { display: flex; align-items: center; justify-content: center;
-  gap: 8px; font-size: 13px; font-weight: 550; color: var(--ink-soft); }
-.rp-credit-made svg { color: var(--rose); animation: rp-beat 2.6s ease-in-out infinite; }
-@keyframes rp-beat { 0%,88%,100% { transform: scale(1); }
-  92% { transform: scale(1.22); } 96% { transform: scale(1.05); } }
-.rp-credit-year { color: var(--ink-faint); font-weight: 400; }
-.rp-credit-community { margin: 10px auto 0; font-size: 12.5px; line-height: 1.6;
-  color: var(--ink-muted); max-width: 58ch; text-align: center; }
+.rp-footer-brand { display: flex; align-items: baseline; gap: var(--s3); flex-wrap: wrap; }
+.rp-footer-name { font-size: 15px; font-weight: 700; letter-spacing: -.02em; color: var(--ink); }
+.rp-footer-promise { font-size: 12.5px; color: var(--ink-muted); }
+.rp-footer-notes {
+  display: grid; grid-template-columns: 1fr 1fr; gap: var(--s5) var(--s6);
+  margin-top: var(--s5);
+}
+.rp-privacy, .rp-disclaimer {
+  margin: 0; font-size: 12px; line-height: 1.6; color: var(--ink-faint);
+}
+.rp-privacy strong, .rp-disclaimer strong { color: var(--ink-muted); font-weight: 650; }
+.rp-credit {
+  margin-top: var(--s6); padding-top: var(--s4); border-top: 1px solid var(--border-soft);
+}
+.rp-credit-community { margin: 0; font-size: 12px; line-height: 1.6; color: var(--ink-faint); max-width: 68ch; }
+.rp-credit-made { margin: var(--s3) 0 0; font-size: 12px; color: var(--ink-muted); display: flex; gap: var(--s2); }
+.rp-credit-year { color: var(--ink-faint); }
 
-/* ==================================================================== */
-/*  Reporting a bug                                                      */
-/*  Parked where a help affordance is looked for, on every screen,       */
-/*  never between someone and their question.                            */
-/* ==================================================================== */
+/* ------------------------------------------------------ report a bug -- */
+/* One 44px circle with a bug in it. Nothing else is visible, and nothing
+   else takes up space.
+ *
+ * Two defects lived here, both caused by one selector. Gradio's accordion
+ * renders three children: its status/progress element (.wrap), the header
+ * button (.label-wrap), and an unclassed content panel. Styling "everything
+ * that is not the header" caught the status element too, which gave it a
+ * width, a border and a shadow — the 380x50 grey slab that appeared under
+ * the button — and put a margin on the hidden panel, which stretched the
+ * 44px control to 61px. So: the status element is removed from this control
+ * outright, and the panel is addressed by what it is rather than by what it
+ * is not, and floated out of flow so the control is exactly its own size. */
+
 .gradio-container .rp-report {
-  position: fixed !important; left: 20px; bottom: 20px; z-index: 55;
-  width: auto !important; max-width: min(400px, calc(100vw - 40px));
-  margin: 0 !important; border: 0 !important; background: transparent !important;
-  padding: 0 !important; display: flex !important;
-  flex-direction: column-reverse !important; align-items: flex-start !important;
+  position: fixed !important;
+  left: 24px; bottom: max(24px, env(safe-area-inset-bottom, 0px));
+  z-index: 120;
+  display: block !important;
+  width: 44px !important; height: 44px !important;
+  min-width: 0 !important; min-height: 0 !important;
+  margin: 0 !important; padding: 0 !important;
+  border: 0 !important; background: transparent !important;
+  box-shadow: none !important; overflow: visible !important;
 }
-.gradio-container .rp-report, .gradio-container .rp-report > * {
-  overflow-x: visible !important;
-}
+
+/* Gradio's progress/status element. This control never streams anything —
+   the send button inside the panel does — and in flow it is the grey bar. */
+.gradio-container .rp-report > .wrap { display: none !important; }
+
+/* The control itself. Every inherited button property is set explicitly, so
+   nothing from Gradio's default button can reserve space or paint. */
 .gradio-container .rp-report > .label-wrap,
 .gradio-container .rp-report button.label-wrap {
-  display: inline-flex !important; align-items: center !important;
-  gap: 9px !important; width: auto !important; min-height: 44px;
-  padding: 11px 18px 11px 15px !important;
-  background: var(--surface) !important; border: 1px solid var(--border) !important;
-  border-radius: 999px !important; box-shadow: var(--shadow-md) !important;
-  font-size: 13px !important; font-weight: 560 !important;
-  color: var(--ink-soft) !important; transition: all .2s var(--ease);
+  position: relative;
+  display: flex !important; align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  width: 44px !important; height: 44px !important;
+  min-width: 44px !important; min-height: 44px !important;
+  max-width: 44px !important; max-height: 44px !important;
+  padding: 0 !important; margin: 0 !important; gap: 0 !important;
+  font-size: 0 !important; line-height: 0 !important;
+  overflow: visible !important;
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 50% !important;
+  box-shadow: var(--shadow-sm) !important;
+  color: var(--ink-soft) !important;
+  cursor: pointer;
+  transition: border-color var(--fast) var(--ease),
+              box-shadow var(--normal) var(--ease),
+              transform var(--fast) var(--ease);
 }
-.gradio-container .rp-report > .label-wrap:hover {
-  transform: translateY(-2px); border-color: var(--rose-line) !important;
-  color: var(--rose) !important; box-shadow: var(--shadow-lg) !important;
+
+/* The glyph is a mask rather than a background image, so it takes its colour
+   from the token above and would follow a future dark palette. */
+.gradio-container .rp-report > .label-wrap::before {
+  content: ""; display: block; flex: 0 0 auto;
+  width: 19px; height: 19px;
+  background-color: currentColor;
+  -webkit-mask: var(--rp-bug) center / 19px 19px no-repeat;
+  mask: var(--rp-bug) center / 19px 19px no-repeat;
 }
+
+/* Gradio's caret, and the accessible label. The label keeps its text for a
+   screen reader and is clipped to a single pixel, so it announces but never
+   reserves layout. */
 .gradio-container .rp-report > .label-wrap .icon,
 .gradio-container .rp-report > .label-wrap svg { display: none !important; }
-.gradio-container .rp-report > :not(.label-wrap) {
-  background: var(--surface) !important; border: 1px solid var(--border) !important;
-  border-radius: var(--radius) !important; box-shadow: var(--shadow-xl) !important;
-  padding: 20px 22px !important; margin-bottom: 10px !important;
-  animation: rp-pop-up .34s var(--ease-out) both;
+.gradio-container .rp-report > .label-wrap > span:not(.icon) {
+  position: absolute !important; width: 1px !important; height: 1px !important;
+  padding: 0 !important; margin: -1px !important; overflow: hidden !important;
+  clip: rect(0 0 0 0) !important; clip-path: inset(50%) !important;
+  white-space: nowrap !important; border: 0 !important;
+  font-size: 0 !important;
 }
-@keyframes rp-pop-up { from { opacity: 0; transform: translateY(10px) scale(.98); }
-  to { opacity: 1; transform: none; } }
-.rp-report-intro { font-size: 13.5px; line-height: 1.6; color: var(--ink-soft);
-  margin: 2px 0 12px; }
-.gradio-container .rp-report-text textarea {
-  font-family: var(--sans) !important; font-size: 14.5px !important;
+
+.gradio-container .rp-report > .label-wrap:hover {
+  border-color: var(--accent-line) !important;
+  box-shadow: var(--shadow-md) !important;
+  transform: translateY(-1px);
+}
+.gradio-container .rp-report > .label-wrap:active { transform: scale(.97); }
+.gradio-container .rp-report > .label-wrap:focus-visible {
+  outline: 2px solid var(--accent) !important; outline-offset: 3px;
+  border-radius: 50% !important;
+}
+
+/* The tooltip: hover and keyboard focus only, never resident. */
+.gradio-container .rp-report > .label-wrap::after {
+  content: attr(data-tip);
+  position: absolute; left: calc(100% + 10px); top: 50%;
+  transform: translateY(-50%) translateX(-3px);
+  padding: var(--s2) var(--s3);
+  background: var(--ink); color: var(--surface); border-radius: var(--r-sm);
+  font-size: 12.5px; font-weight: 500; line-height: 1.2; white-space: nowrap;
+  opacity: 0; pointer-events: none;
+  box-shadow: var(--shadow-md);
+  transition: opacity var(--fast) var(--ease), transform var(--fast) var(--ease);
+}
+.gradio-container .rp-report > .label-wrap:hover::after,
+.gradio-container .rp-report > .label-wrap:focus-visible::after {
+  opacity: 1; transform: translateY(-50%);
+}
+
+/* The panel, addressed as "the child that is neither header nor status", and
+   taken out of flow so the control keeps its 44px footprint whether the
+   panel is open or shut. */
+.gradio-container .rp-report > :not(.label-wrap):not(.wrap) {
+  position: absolute; left: 0; bottom: calc(100% + 10px);
+  width: min(380px, calc(100vw - 48px));
   background: var(--surface) !important; border: 1px solid var(--border) !important;
-  border-radius: var(--radius-sm) !important; padding: 13px 15px !important;
-  color: var(--ink) !important;
+  border-radius: var(--r-lg) !important; box-shadow: var(--shadow-lg) !important;
+  padding: var(--s5) !important; margin: 0 !important;
+  animation: rp-pop-up var(--normal) var(--ease-out) both;
+}
+@keyframes rp-pop-up {
+  from { opacity: 0; transform: translateY(8px) scale(.985); }
+  to { opacity: 1; transform: none; }
+}
+
+.rp-report-intro { font-size: 13px; line-height: 1.6; color: var(--ink-soft); margin: 0 0 var(--s3); }
+.rp-report-field {
+  margin: var(--s3) 0 var(--s2); font-size: 11px; font-weight: 650;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--ink-faint);
+}
+.gradio-container .rp-report-text textarea {
+  font-family: var(--sans) !important; font-size: 14px !important;
+  background: var(--surface) !important; border: 1px solid var(--border) !important;
+  border-radius: var(--r) !important; padding: var(--s3) var(--s4) !important;
+  color: var(--ink) !important; box-shadow: none !important;
 }
 .gradio-container .rp-report-text textarea:focus {
-  border-color: var(--rose-line) !important;
-  box-shadow: 0 0 0 4px var(--rose-wash) !important; outline: none !important;
+  border-color: var(--accent-line) !important;
+  box-shadow: 0 0 0 3px var(--accent-wash) !important; outline: none !important;
 }
-.rp-report-keeps { font-size: 12px; line-height: 1.55; color: var(--ink-faint);
-  margin: 10px 0 12px; }
-.rp-report-done { margin-top: 14px; padding: 15px 17px; background: var(--green-wash);
-  border: 1px solid var(--green-line); border-radius: var(--radius-sm);
-  animation: rp-arrive .4s var(--ease-out) both; }
-.rp-report-thanks { font-size: 14px; font-weight: 650; color: var(--green); }
-.rp-report-headline { margin-top: 7px; font-size: 13.5px; color: var(--ink-soft); line-height: 1.5; }
-.rp-report-note { margin-top: 8px; font-size: 12.5px; line-height: 1.55;
-  color: var(--amber); background: var(--amber-wash); border-radius: 7px; padding: 9px 11px; }
-.rp-report-path { margin-top: 9px; font-size: 11.5px; color: var(--ink-muted); }
-.rp-report-path code { font-family: var(--mono); font-size: 11px;
-  background: var(--surface-2); padding: 2px 6px; border-radius: 4px; }
+.rp-report-keeps { font-size: 11.5px; line-height: 1.55; color: var(--ink-faint); margin: var(--s3) 0; }
+.gradio-container .rp-report-actions {
+  display: flex !important; flex-direction: row !important;
+  align-items: center !important; gap: var(--s2) !important; margin: 0 !important;
+}
+.gradio-container .rp-report-actions > * {
+  flex: 0 0 auto !important; width: auto !important; min-width: 0 !important;
+}
+.gradio-container button.rp-report-cancel {
+  background: transparent !important; border: 0 !important;
+  box-shadow: none !important; color: var(--ink-muted) !important;
+  font-size: 13px !important; font-weight: 550 !important;
+  padding: var(--s2) var(--s3) !important; width: auto !important;
+  transition: color var(--fast) var(--ease);
+}
+.gradio-container button.rp-report-cancel:hover { color: var(--ink) !important; }
+.gradio-container button.rp-report-send {
+  margin-left: auto !important;
+  background: var(--accent) !important; color: #fff !important;
+  border-color: var(--accent) !important;
+}
+.gradio-container button.rp-report-send:hover {
+  background: var(--accent-deep) !important; border-color: var(--accent-deep) !important;
+  color: #fff !important;
+}
+.rp-report-done {
+  margin-top: var(--s3); padding: var(--s3) var(--s4);
+  background: var(--good-wash); border-radius: var(--r);
+}
+.rp-report-thanks { font-size: 14px; font-weight: 650; color: var(--good); }
+.rp-report-headline { margin-top: var(--s1); font-size: 13px; color: var(--ink-soft); line-height: 1.5; }
+.rp-report-note {
+  margin-top: var(--s2); font-size: 12px; line-height: 1.55;
+  color: var(--warn); background: var(--warn-wash);
+  border-radius: var(--r-sm); padding: var(--s2) var(--s3);
+}
+.rp-report-path { margin-top: var(--s2); font-size: 11px; color: var(--ink-muted); }
+.rp-report-path code {
+  font-family: var(--mono); font-size: 10.5px;
+  background: var(--surface-2); padding: 1px var(--s1); border-radius: 4px;
+}
+
+/* Gradio's own footer. Matched by the link inside it, because the class
+   beside it is a generated svelte hash that changes every release. The
+   second rule is the fallback where :has() is unavailable. */
+footer:has(a[href*="gradio.app"]) { display: none !important; }
+.gradio-container .wrap.generating,
+.gradio-container .generating {
+  border: 0 !important; box-shadow: none !important; animation: none !important;
+}
+.built-with, .run-history, .show-api { display: none !important; }
 
 /* Gradio's own progress chrome: our staged lines already say what is
    happening, in words. */
@@ -995,388 +1211,172 @@ body::after { background: radial-gradient(130% 94% at 50% 6%,
 .gradio-container .progress-level, .gradio-container .progress-level-inner,
 .gradio-container .eta-bar { display: none !important; }
 .gradio-container .wrap.default { opacity: 1 !important; background: transparent !important; }
-.gradio-container .gr-accordion, .gradio-container [class*="accordion"] {
-  overflow-x: visible !important;
-}
+.gradio-container [class*="accordion"] { overflow-x: visible !important; }
+.rp-notice { font-size: 13px; }
+
+/* Accordion label for the debug panel. */
+.gradio-container .label-wrap span { font-size: 13px !important; color: var(--ink-muted) !important; }
 
 /* ==================================================================== */
-/*  Every screen                                                         */
+/*  Smaller screens                                                      */
+/*                                                                       */
+/*  Read this before adding a rule below.                                */
+/*                                                                       */
+/*  Gradio re-scopes every rule we hand it to                            */
+/*      .gradio-container.gradio-container-N .contain <our selector>     */
+/*  so a rule written as ".gradio-container .rp-thing" arrives as        */
+/*      … .contain .gradio-container .rp-thing                           */
+/*  and matches nothing: there is no second .gradio-container inside     */
+/*  .contain. Outside a media query Gradio also emits the unscoped       */
+/*  original, which hides the mistake. Inside one it does not, so every  */
+/*  such rule is silently dead — which is how the 16px phone font size   */
+/*  on the question field, and the whole floating-report layout, were    */
+/*  being dropped.                                                       */
+/*                                                                       */
+/*  Two rules follow from that:                                          */
+/*   1. No ".gradio-container" prefix anywhere below. The scope adds two  */
+/*      classes of specificity on its own, so a bare ".rp-thing" here    */
+/*      still beats a ".gradio-container .rp-thing" in the base layer.   */
+/*   2. Anything at or above .contain — the container itself, Gradio's   */
+/*      .main — cannot be reached from here at all, so it is made        */
+/*      responsive with clamp() and env() in the base rules instead.     */
+/*                                                                       */
 /*  Most people meeting this are on a phone, often on a bad connection,  */
-/*  often standing in a queue. The phone layout is the real one.         */
+/*  often standing in a queue. The phone layout is a layout, not a       */
+/*  narrower copy of the desktop one.                                    */
 /* ==================================================================== */
 
-/* Touch targets never below 44px, whatever the viewport. */
-.gradio-container button, .gradio-container [role="tab"],
-.gradio-container .rp-switch label, .rp-sources-toggle {
-  min-height: 44px;
+@media (max-width: 1024px) {
+  .rp-cats-grid { grid-template-columns: repeat(2, 1fr); column-gap: var(--s5); }
 }
 
-@media (max-width: 1024px) {           /* tablet */
-  .gradio-container { padding: 0 24px 110px !important; }
-  .rp-hero { padding: 26px 0 22px; }
-  .rp-answer { padding: 26px 24px 24px; }
-  .rp-gloss-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
-}
+@media (max-width: 720px) {
+  /* The masthead stays one row: wordmark left, language right. The
+     positioning line is a desktop luxury — beside the language control at
+     this width it wrapped to three lines. */
+  .rp-topbar { align-items: center !important; padding: var(--s4) 0 var(--s4) !important; }
+  .rp-promise { display: none; }
+  .rp-wordmark { font-size: 19px; }
+  .rp-switch-site label { padding: 0 var(--s3) !important; font-size: 12px !important; }
 
-@media (max-width: 720px) {            /* phone */
-  .gradio-container { padding: 0 16px 104px !important; }
+  .rp-sections div[role="tablist"] { gap: var(--s5) !important; margin-bottom: var(--s6) !important; }
 
-  .rp-topbar { flex-wrap: wrap !important; gap: 12px !important; }
-  .rp-topbar > *:first-child { order: 1; flex: 1 1 auto !important; }
-  .rp-topbar > *:last-child { order: 0; width: 100% !important;
-    padding-top: 0 !important; justify-content: flex-end !important; }
-
-  .rp-masthead { padding: 16px 0 0 !important; }
-  .rp-wordmark { font-size: 22px; }
-  .rp-hero { padding: 20px 0 18px; }
-  .rp-headline { font-size: clamp(27px, 8vw, 34px); max-width: 14ch; }
+  .rp-hero { padding-bottom: var(--s5); }
+  .rp-headline { font-size: clamp(32px, 9vw, 40px); max-width: 100%; }
   .rp-tagline { font-size: 15px; }
 
-  /* Tabs scroll rather than wrap into an unreadable stack. */
-  .gradio-container .tab-nav, .gradio-container div[role="tablist"] {
-    overflow-x: auto !important; flex-wrap: nowrap !important;
-    scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  /* 16px minimum, or iOS zooms the page on focus and never zooms back. */
+  .rp-ask textarea {
+    font-size: 16px !important; padding: var(--s4) var(--s4) var(--s2) !important;
+    min-height: 84px !important;
   }
-  .gradio-container .tab-nav::-webkit-scrollbar { display: none; }
-  .gradio-container button[role="tab"] { white-space: nowrap !important;
-    padding: 12px 13px !important; font-size: 13.5px !important; }
+  .rp-composer { border-radius: var(--r-lg) !important; }
+  .rp-composer-bar { padding: 0 var(--s2) var(--s2) var(--s4) !important; }
 
-  .gradio-container .rp-ask textarea { font-size: 16px !important;  /* no iOS zoom */
-    padding: 17px 18px !important; min-height: 88px !important; border-radius: 16px !important; }
-  .gradio-container button.rp-submit { width: 100% !important; padding: 16px 32px !important; }
-  .rp-submit-row { width: 100%; }
-  .rp-reply-row { gap: 8px !important; }
-  .gradio-container .rp-switch label { padding: 9px 13px !important; font-size: 12.5px !important; }
+  .rp-cats-grid { grid-template-columns: 1fr; }
+  .rp-thread { gap: var(--s7); }
+  .rp-ask-text { max-width: 92%; font-size: 15px; }
+  .rp-answer p, .rp-answer li { font-size: 16px; }
+  .rp-footer-notes { grid-template-columns: 1fr; gap: var(--s4); }
+  .rp-actions { gap: var(--s5); }
 
-  .rp-examples { justify-content: flex-start !important; }
-  .gradio-container button.rp-chip { white-space: normal !important;
-    text-align: left !important; font-size: 13px !important; }
-
-  .rp-answer { padding: 22px 18px 20px; border-radius: 14px; }
-  .rp-answer p, .rp-answer li { font-size: 15.5px; }
-  .rp-answer ol > li { padding-left: 38px; }
-  .rp-loader { flex-direction: column; align-items: flex-start; gap: 16px;
-    padding: 22px 20px; }
-  .rp-source-meta { gap: 5px 10px; }
-  .rp-score { margin-left: 0; width: 100%; }
-  .rp-gloss-grid { grid-template-columns: 1fr; }
-  .rp-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .rp-place-site { margin-left: 0; }
-
-  /* A tooltip that runs off a phone screen is worse than none. */
-  .rp-fr::after { max-width: min(280px, calc(100vw - 40px)); }
-
-  .gradio-container .rp-report { left: 12px; right: 12px; bottom: 12px;
-    max-width: none !important; }
-  .gradio-container .rp-report > .label-wrap { width: auto !important; }
-}
-
-@media (max-width: 380px) {
-  .rp-headline { font-size: 25px; }
-  .rp-stat-grid { grid-template-columns: 1fr; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: .001ms !important; animation-iteration-count: 1 !important;
-    transition-duration: .001ms !important;
+  /* Same circle, moved in, with the tooltip flipped above it because there
+     is no room to its right. */
+  .rp-report {
+    left: 16px !important;
+    bottom: max(16px, env(safe-area-inset-bottom, 0px)) !important;
   }
-  .rp-wash, .rp-spot { animation: none !important; }
-  .rp-spot { display: none; }
-  body::before { display: none; }
-  .rp-score-fill { width: var(--w, 0%) !important; }
-  .rp-say .rp-copy { opacity: 1; transform: none; }
-}
-
-
-/* Flags on the site-language switcher. Gradio escapes HTML inside a radio
-   label, so the flag is painted by CSS; option order fixes nth-child. */
-.gradio-container .rp-switch-site label::before {
-  content: ""; width: 17px; height: 17px; margin-right: 8px; flex: 0 0 auto;
-  border-radius: 50%; background-size: cover; background-position: center;
-  box-shadow: 0 0 0 1px rgba(0,0,0,.13) inset;
-  transition: transform .3s var(--ease), box-shadow .2s var(--ease);
-}
-.gradio-container .rp-switch-site label:nth-child(1)::before {
-  background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cdefs%3E%3CclipPath%20id%3D%27c%27%3E%3Ccircle%20cx%3D%2712%27%20cy%3D%2712%27%20r%3D%2711.5%27%2F%3E%3C%2FclipPath%3E%3C%2Fdefs%3E%3Cg%20clip-path%3D%27url%28%23c%29%27%3E%3Crect%20width%3D%2724%27%20height%3D%2724%27%20fill%3D%27%230b2d6b%27%2F%3E%3Cpath%20d%3D%27M0%200%20L24%2024%20M24%200%20L0%2024%27%20stroke%3D%27%23fff%27%20stroke-width%3D%275.2%27%2F%3E%3Cpath%20d%3D%27M0%200%20L24%2024%20M24%200%20L0%2024%27%20stroke%3D%27%23c8102e%27%20stroke-width%3D%272.6%27%2F%3E%3Cpath%20d%3D%27M12%200%20V24%20M0%2012%20H24%27%20stroke%3D%27%23fff%27%20stroke-width%3D%277.6%27%2F%3E%3Cpath%20d%3D%27M12%200%20V24%20M0%2012%20H24%27%20stroke%3D%27%23c8102e%27%20stroke-width%3D%274.4%27%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
-}
-.gradio-container .rp-switch-site label:nth-child(2)::before {
-  background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cdefs%3E%3CclipPath%20id%3D%27c%27%3E%3Ccircle%20cx%3D%2712%27%20cy%3D%2712%27%20r%3D%2711.5%27%2F%3E%3C%2FclipPath%3E%3C%2Fdefs%3E%3Cg%20clip-path%3D%27url%28%23c%29%27%3E%3Crect%20width%3D%278%27%20height%3D%2724%27%20fill%3D%27%230b2d6b%27%2F%3E%3Crect%20x%3D%278%27%20width%3D%278%27%20height%3D%2724%27%20fill%3D%27%23fff%27%2F%3E%3Crect%20x%3D%2716%27%20width%3D%278%27%20height%3D%2724%27%20fill%3D%27%23c8102e%27%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
-}
-.gradio-container .rp-switch-site label:hover::before { transform: scale(1.1); }
-.gradio-container .rp-switch-site label:has(input:checked)::before,
-.gradio-container .rp-switch-site label.selected::before {
-  transform: scale(1.14);
-  box-shadow: 0 0 0 1px rgba(0,0,0,.13) inset, 0 0 0 2px var(--accent-line);
-}
-
-/* The field should invite a sentence, not a paragraph. Gradio sizes a
-   textarea from its line count; ours was growing past the fold. */
-.gradio-container .rp-ask textarea,
-.gradio-container .rp-ask .input-container textarea {
-  min-height: 0 !important; height: auto !important;
-  max-height: 220px !important; overflow-y: auto !important;
-}
-.gradio-container .rp-ask .input-container,
-.gradio-container .rp-ask > .container { min-height: 0 !important; }
-
-
-/* A refusal that ends the conversation is only half honest. */
-.rp-near-block { margin-top: 26px; }
-.rp-near-note { font-size: 13px; line-height: 1.6; color: var(--ink-muted);
-  margin: 0 0 13px; max-width: 64ch; }
-.rp-near {
-  display: flex; flex-direction: column; gap: 5px;
-  padding: 14px 17px; margin-bottom: 8px;
-  background: var(--surface); border: 1px dashed var(--border);
-  border-radius: var(--radius-sm); text-decoration: none !important;
-  color: inherit !important;
-  animation: rp-arrive .42s var(--ease-out) both;
-  animation-delay: calc(var(--i, 0) * 60ms);
-  transition: all .2s var(--ease);
-}
-.rp-near:hover { border-style: solid; border-color: var(--accent-line);
-  background: var(--accent-wash); transform: translateY(-1px); }
-.rp-near-title { font-size: 14.5px; font-weight: 580; color: var(--ink-soft); line-height: 1.4; }
-.rp-near:hover .rp-near-title { color: var(--accent-deep); }
-.rp-near-meta { display: flex; gap: 12px; align-items: center;
-  font-size: 12px; color: var(--ink-faint); }
-.rp-near-search {
-  display: inline-flex; align-items: center; gap: 7px; margin-top: 6px;
-  padding: 11px 17px; min-height: 44px;
-  background: var(--accent); color: #fff !important;
-  border-radius: var(--radius-sm); text-decoration: none !important;
-  font-size: 13.5px; font-weight: 600;
-  box-shadow: 0 2px 6px color-mix(in oklch, var(--accent) 26%, transparent);
-  transition: all .2s var(--ease);
-}
-.rp-near-search:hover { filter: brightness(1.07); transform: translateY(-2px);
-  box-shadow: 0 6px 16px color-mix(in oklch, var(--accent) 30%, transparent); }
-
-
-/* ==================================================================== */
-/*  The conversation                                                     */
-/*  A question and its answer belong together. Asking does not take you  */
-/*  anywhere: the landing copy steps aside and the thread takes its      */
-/*  place on the same surface.                                           */
-/* ==================================================================== */
-.rp-thread { margin-top: 26px; display: flex; flex-direction: column; gap: 34px; }
-.rp-turn { animation: rp-arrive .5s var(--ease-out) both; }
-
-.rp-who {
-  display: block; font-size: 11px; font-weight: 700; letter-spacing: .1em;
-  text-transform: uppercase; color: var(--ink-faint); margin-bottom: 8px;
-}
-.rp-who-assistant { color: var(--accent); }
-
-.rp-ask-bubble { margin-bottom: 22px; }
-.rp-ask-text {
-  margin: 0; font-size: 19px; line-height: 1.45; font-weight: 600;
-  color: var(--ink); letter-spacing: -.012em; max-width: 60ch;
-}
-.rp-reply { border-left: 2px solid var(--border); padding-left: 20px; }
-
-/* Thinking: three dots, no cleverness. */
-.rp-thinking { display: flex; align-items: center; gap: 12px; padding: 6px 0 10px; }
-.rp-think-dots { display: inline-flex; gap: 5px; }
-.rp-think-dots i {
-  width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
-  opacity: .3; animation: rp-pulse 1.25s var(--ease) infinite;
-}
-.rp-think-dots i:nth-child(2) { animation-delay: .16s; }
-.rp-think-dots i:nth-child(3) { animation-delay: .32s; }
-@keyframes rp-pulse { 0%,100% { opacity: .28; transform: scale(.86); }
-  40% { opacity: 1; transform: scale(1); } }
-.rp-think-label { font-size: 14px; color: var(--ink-muted); }
-
-/* Controls, only once the answer has finished arriving. */
-.rp-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
-  margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-soft); }
-.rp-action {
-  display: inline-flex; align-items: center; gap: 7px; min-height: 36px;
-  padding: 8px 13px; border-radius: 999px; cursor: pointer;
-  background: transparent; border: 1px solid var(--border);
-  font: 500 12.5px/1 var(--sans); color: var(--ink-muted);
-  transition: all .17s var(--ease);
-}
-.rp-action:hover { color: var(--accent); border-color: var(--accent-line);
-  background: var(--accent-wash); }
-.rp-action:active { transform: scale(.97); }
-.rp-action:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.rp-action.rp-done { color: var(--green); border-color: var(--green-line);
-  background: var(--green-wash); }
-.rp-action-thanks { font-size: 12.5px; color: var(--green); font-weight: 550; }
-.rp-icon { flex: 0 0 auto; }
-
-.rp-error-detail { display: block; margin-top: 7px; font-size: 12px;
-  color: var(--ink-muted); font-family: var(--mono); word-break: break-word; }
-
-.gradio-container button.rp-restart { display: none !important; }
-.rp-answered .gradio-container button.rp-restart,
-body.rp-answered .gradio-container button.rp-restart { display: inline-flex !important; }
-
-/* ==================================================================== */
-/*  Categories: entry points that are questions                          */
-/* ==================================================================== */
-.rp-cats { margin-top: 30px; }
-.rp-cats-head { font-size: 12px; font-weight: 700; letter-spacing: .09em;
-  text-transform: uppercase; color: var(--ink-faint); text-align: center;
-  margin-bottom: 14px; }
-.rp-cats-grid { display: grid; gap: 10px;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
-.rp-cat {
-  display: flex; align-items: center; gap: 12px; text-align: left;
-  min-height: 56px; padding: 14px 16px; cursor: pointer;
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); box-shadow: var(--shadow-sm);
-  font: 550 14px/1.35 var(--sans); color: var(--ink-soft);
-  animation: rp-arrive .44s var(--ease-out) both;
-  animation-delay: calc(var(--i, 0) * 45ms);
-  transition: transform .18s var(--ease), box-shadow .22s var(--ease),
-              border-color .18s var(--ease), color .18s var(--ease);
-}
-.rp-cat:hover { transform: translateY(-2px); box-shadow: var(--shadow-md);
-  border-color: var(--accent-line); color: var(--ink); }
-.rp-cat:active { transform: translateY(0) scale(.985); }
-.rp-cat:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.rp-cat-icon { flex: 0 0 auto; width: 22px; height: 22px;
-  background-size: contain; background-repeat: no-repeat; background-position: center;
-  opacity: .85; transition: transform .22s var(--ease); }
-.rp-cat:hover .rp-cat-icon { transform: scale(1.08); }
-.rp-cat-permit { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%232743c4%27%20stroke-width%3D%271.7%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M4%207.5A1.5%201.5%200%200%201%205.5%206h13A1.5%201.5%200%200%201%2020%207.5v9a1.5%201.5%200%200%201-1.5%201.5h-13A1.5%201.5%200%200%201%204%2016.5v-9ZM9%2011.5a1.8%201.8%200%201%200%200-3.6%201.8%201.8%200%200%200%200%203.6ZM6%2015.4c.5-1.4%201.7-2.1%203-2.1s2.5.7%203%202.1M14.5%2010h3M14.5%2013.5h3%27%2F%3E%3C%2Fsvg%3E"); }
-.rp-cat-housing { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%232743c4%27%20stroke-width%3D%271.7%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M4%2011%2012%205l8%206M6.5%209.8V19h11V9.8M10%2019v-5h4v5%27%2F%3E%3C%2Fsvg%3E"); }
-.rp-cat-docs { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%232743c4%27%20stroke-width%3D%271.7%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M7%204h6l4%204v12H7V4ZM13%204v4h4M9.5%2012.5h5M9.5%2016h5%27%2F%3E%3C%2Fsvg%3E"); }
-.rp-cat-student { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%232743c4%27%20stroke-width%3D%271.7%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M3%209.5%2012%205.5l9%204-9%204-9-4ZM7%2011.6V16c0%201.4%202.2%202.5%205%202.5s5-1.1%205-2.5v-4.4M20%2010.5V15%27%2F%3E%3C%2Fsvg%3E"); }
-.rp-cat-work { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%232743c4%27%20stroke-width%3D%271.7%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M4%208.5A1.5%201.5%200%200%201%205.5%207h13A1.5%201.5%200%200%201%2020%208.5v9a1.5%201.5%200%200%201-1.5%201.5h-13A1.5%201.5%200%200%201%204%2017.5v-9ZM9%207V5.5A1.5%201.5%200%200%201%2010.5%204h3A1.5%201.5%200%200%201%2015%205.5V7M4%2012h16%27%2F%3E%3C%2Fsvg%3E"); }
-.rp-cat-appt { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%232743c4%27%20stroke-width%3D%271.7%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M4%208.5A1.5%201.5%200%200%201%205.5%207h13A1.5%201.5%200%200%201%2020%208.5v9a1.5%201.5%200%200%201-1.5%201.5h-13A1.5%201.5%200%200%201%204%2017.5v-9ZM8%204.5V8M16%204.5V8M4%2011.5h16M11%2015l1.2%201.2L15%2013.5%27%2F%3E%3C%2Fsvg%3E"); }
-
-@media (max-width: 720px) {
-  .rp-cats-grid { grid-template-columns: 1fr 1fr; }
-  .rp-cat { font-size: 13px; padding: 12px 13px; min-height: 52px; }
-  .rp-ask-text { font-size: 17px; }
-  .rp-reply { padding-left: 14px; }
-  .rp-thread { gap: 26px; }
-}
-@media (max-width: 380px) { .rp-cats-grid { grid-template-columns: 1fr; } }
-
-
-/* The bug reporter carries a bug, from the same icon family as the rest. */
-.gradio-container .rp-report > .label-wrap::before {
-  content: ""; flex: 0 0 auto; width: 19px; height: 19px;
-  background: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%25232743c4%27%20stroke-width%3D%271.7%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M8.5%208.5a3.5%203.5%200%200%201%207%200%27%2F%3E%3Crect%20x%3D%277%27%20y%3D%278.5%27%20width%3D%2710%27%20height%3D%2711%27%20rx%3D%275%27%2F%3E%3Cpath%20d%3D%27M7%2013H3.5M20.5%2013H17M7.6%209.4%204.8%207.2M16.4%209.4l2.8-2.2M7.6%2017.2%204.8%2019.4M16.4%2017.2l2.8%202.2M9.8%206%208.6%204M14.2%206l1.2-2%27%2F%3E%3Cpath%20d%3D%27M12%2011v6%27%2F%3E%3C%2Fsvg%3E") center/contain no-repeat;
-  transition: transform .3s var(--ease);
-}
-.gradio-container .rp-report > .label-wrap:hover::before {
-  transform: rotate(-12deg) scale(1.08);
-}
-@media (max-width: 720px) {
-  /* On a phone the label would crowd the thumb zone; the icon carries it. */
-  .gradio-container .rp-report { left: auto; right: 14px; bottom: 14px;
-    max-width: none !important; }
-  .gradio-container .rp-report > .label-wrap {
-    width: 52px !important; height: 52px; padding: 0 !important;
-    justify-content: center !important; border-radius: 50% !important;
-    font-size: 0 !important;
+  .rp-report > .label-wrap::after {
+    left: 0; top: auto; bottom: calc(100% + 8px);
+    transform: translateY(3px);
   }
-  .gradio-container .rp-report > .label-wrap::before { width: 22px; height: 22px; }
-  .gradio-container .rp-report[open] > .label-wrap,
-  .gradio-container .rp-report > .label-wrap[aria-expanded="true"] {
-    width: auto !important; border-radius: 999px !important;
-    padding: 11px 18px 11px 15px !important; font-size: 13px !important;
+  .rp-report > .label-wrap:hover::after,
+  .rp-report > .label-wrap:focus-visible::after { transform: none; }
+  .rp-report > :not(.label-wrap):not(.wrap) { width: calc(100vw - 32px); }
+}
+
+@media (max-width: 560px) {
+  /* The reply control and the send button have to share one line, or the
+     button drops to a row of its own and reads as unrelated to the field. */
+  .rp-composer-bar { flex-wrap: nowrap !important; gap: var(--s2) !important; }
+  .rp-switch-reply label {
+    padding: 0 10px !important; font-size: 11.5px !important; height: 28px !important;
   }
+  .rp-switch-reply .wrap:not(.default) { flex-wrap: nowrap !important; }
 }
 
-
-/* A flex parent will happily crush a button to its padding. Chips and the
-   primary action state the width they need so nothing squeezes them. */
-.gradio-container button.rp-chip,
-.gradio-container button.rp-submit,
-.gradio-container .rp-restart {
-  min-width: max-content !important; flex: 0 0 auto !important;
-}
-.rp-submit-row > *, .rp-submit-row > * > * {
-  flex: 0 0 auto !important; width: auto !important; min-width: 0 !important;
-}
-.gradio-container .rp-restart {
-  background: transparent !important; box-shadow: none !important;
-  color: var(--ink-muted) !important;
-}
-.gradio-container .rp-restart:hover {
-  background: var(--surface) !important; color: var(--accent) !important;
-}
-@media (max-width: 720px) {
-  .gradio-container button.rp-submit { width: 100% !important; }
-  .rp-submit-row { flex-direction: column !important; width: 100%; }
-  .rp-submit-row > * { width: 100% !important; }
-  .gradio-container .rp-restart { width: 100% !important; }
+@media (max-width: 420px) {
+  .rp-switch label { padding: 0 var(--s2) !important; font-size: 11.5px !important; }
+  .rp-switch-site label { font-size: 11.5px !important; padding: 0 var(--s2) !important; }
+  .rp-wordmark { font-size: 18px; }
+  .rp-headline { font-size: 31px; }
+  /* "Reply in" is carried by the control itself at this width. The whole
+     Gradio block goes, not just the text inside it, or it keeps its slot. */
+  .rp-composer-bar > *:first-child { display: none !important; }
+  /* Below this the reply control and the send button genuinely do not fit
+     on one line: forced onto it they overflowed the composer and were
+     clipped by its rounded corner. Two rows, and the send action takes the
+     full width — which is what it should be on a phone anyway. */
+  .rp-composer-bar { flex-wrap: wrap !important; row-gap: var(--s2) !important; }
+  .rp-composer-bar > *:last-child { margin-left: 0 !important; width: 100% !important; }
+  button.rp-submit { width: 100% !important; justify-content: center !important; }
+  .rp-sections div[role="tablist"] { gap: var(--s4) !important; }
+  /* Three section labels have to fit before Gradio decides to collapse them
+     into an overflow menu, which is what put a "…" in the header. */
+  .rp-sections .tab-container button,
+  .rp-sections button[role="tab"] { font-size: 12px !important; }
+  .rp-ask-text { max-width: 100%; }
 }
 
+/* ------------------------------------------------------ accessibility -- */
+/* Touch targets never below 44px, whatever the viewport. */
+.gradio-container button, .gradio-container [role="tab"] { min-height: 44px; }
 
-/* ==================================================================== */
-/*  Accessibility                                                        */
-/* ==================================================================== */
-
-/* Cards inherit the hero's centring; their content is left-read. */
-.rp-near, .rp-near-title, .rp-near-meta, .rp-source, .rp-service, .rp-gloss,
-.rp-turn, .rp-answer, .rp-actions { text-align: left; }
-
-/* One visible focus ring everywhere, on the keyboard only. */
-.gradio-container :focus-visible,
 .rp-cat:focus-visible, .rp-action:focus-visible, .rp-source:focus-visible,
 .rp-service:focus-visible, .rp-near:focus-visible, .rp-sources-toggle:focus-visible,
-.rp-copy:focus-visible, .rp-fr:focus-visible {
-  outline: 2px solid var(--accent) !important;
-  outline-offset: 2px !important; border-radius: var(--radius-xs);
+.rp-copy:focus-visible, .rp-gloss:focus-visible, .rp-fr:focus-visible,
+.gradio-container button:focus-visible,
+.gradio-container .rp-switch label:has(input:focus-visible) {
+  outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px;
 }
-.gradio-container :focus:not(:focus-visible) { outline: none !important; }
 
-/* Reachable by keyboard, invisible until it is needed. */
+/* Reachable by keyboard, genuinely out of the way until it is needed. The
+   old rule parked it at a fixed -60px and the element grew taller than that,
+   so a blue tab hung permanently off the top-left corner. */
 .rp-skip {
-  position: absolute; left: 12px; top: -60px; z-index: 200;
-  padding: 12px 18px; border-radius: var(--radius-sm);
-  background: var(--accent); color: #fff; font: 600 14px/1 var(--sans);
-  text-decoration: none; transition: top .18s var(--ease);
+  position: fixed; left: var(--s3); top: var(--s3); z-index: 300;
+  padding: var(--s3) var(--s4); border-radius: var(--r);
+  background: var(--accent); color: #fff; font: 600 14px/1.2 var(--sans);
+  text-decoration: none; min-height: 44px;
+  display: inline-flex; align-items: center;
+  transform: translateY(calc(-100% - var(--s5)));
+  transition: transform var(--fast) var(--ease);
 }
-.rp-skip:focus { top: 12px; }
+.rp-skip:focus { transform: none; }
+
+.gradio-container .rp-offscreen {
+  position: absolute !important; width: 1px !important; height: 1px !important;
+  overflow: hidden !important; clip: rect(0 0 0 0) !important;
+  white-space: nowrap !important; pointer-events: none !important;
+  opacity: 0 !important;
+}
 
 .rp-sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
 
-/* iOS: keep the floating control clear of the home indicator. */
-@supports (padding: env(safe-area-inset-bottom)) {
-  .gradio-container .rp-report {
-    bottom: calc(20px + env(safe-area-inset-bottom));
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
   }
-  @media (max-width: 720px) {
-    .gradio-container .rp-report {
-      bottom: calc(14px + env(safe-area-inset-bottom));
-    }
-    .gradio-container { padding-bottom: calc(104px + env(safe-area-inset-bottom)) !important; }
-  }
+  .rp-source, .rp-gloss { opacity: 1 !important; transform: none !important; }
+  .rp-cat-go { opacity: 1; transform: none; }
+  /* The tooltip still appears; it simply stops travelling to get there. */
+  .gradio-container .rp-report > .label-wrap:hover,
+  .gradio-container .rp-report > .label-wrap:active { transform: none; }
+  .gradio-container .rp-report > .label-wrap::after { transform: translateY(-50%); }
 }
-
-
-/* Smallest phones: the language control has to fit before it has to be
-   pretty, and the skip link is a touch target like any other. */
-.rp-skip { min-height: 44px; display: inline-flex; align-items: center; }
-
-@media (max-width: 400px) {
-  .gradio-container .rp-switch label { padding: 8px 10px !important;
-    font-size: 12px !important; }
-  .gradio-container .rp-switch-site label::before {
-    width: 15px; height: 15px; margin-right: 6px;
-  }
-  .gradio-container .rp-switch .wrap:not(.default) { padding: 2px !important; }
-  .rp-reply-row .rp-lang-label { display: none; }
-}
-
-
-/* The positioning line, where a first-time visitor actually reads it. */
-.rp-promise {
-  margin: 4px 0 0 51px; font-size: 13px; font-weight: 500;
-  color: var(--ink-muted); letter-spacing: -.005em;
-  animation: rp-arrive .6s var(--ease-out) .22s both;
-}
-@media (max-width: 720px) { .rp-promise { margin-left: 0; font-size: 12.5px; } }

@@ -21,25 +21,42 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from app.config import Settings, get_settings
+from app.feedback import mail, store
 from app.llm import ChatMessage, ProviderError, get_chat_provider
 
+APP_VERSION = "0.1.0"
+
 TRIAGE_SYSTEM = """\
-You turn a bug report into something a maintainer can act on.
+You turn a bug report into something a maintainer can act on. You analyse and
+recommend. You never modify anything, and you never answer the reporter.
 
 The reporter may write in any language and may not be technical. Take them
 seriously and read generously: they are describing something real that
 happened to them.
 
 Reply as JSON with exactly these keys, and nothing else:
-  "title"       a one-line summary in English, under 80 characters
-  "translation" their report in English, faithful, nothing added or softened
-  "category"    one of: wrong-answer, missing-answer, wrong-language,
-                broken-link, slow, interface, privacy, other
-  "severity"    one of: low, medium, high — high only if someone could act on
-                wrong information about their legal status, money, or a deadline
-  "expected"    what they expected to happen, in English
-  "actual"      what actually happened, in English
-  "notes"       anything a maintainer should know, or "" if nothing
+  "title"        a one-line summary in English, under 80 characters
+  "translation"  their report in English, faithful, nothing added or softened
+  "category"     one of: ui, ux, retrieval, source, conversation, translation,
+                 accessibility, performance, runtime, security, other
+  "severity"     one of: critical, high, medium, low. Use critical or high only
+                 where someone could act on wrong information about their legal
+                 status, their money or a deadline, or where the system is
+                 unusable.
+  "expected"     what they expected to happen, in English
+  "actual"       what actually happened, in English
+  "likely_cause" your best reading of what is going wrong underneath, or
+                 "unclear" if the report does not support a guess
+  "suggested_fix" what a maintainer should look at first. A recommendation,
+                 never an instruction to change something automatically.
+  "reproduction_steps" a JSON array of short steps, [] if they cannot be
+                 inferred from what was written
+  "affected_feature" the part of the product involved: asking, answering,
+                 sources, glossary, language, reporting, or other
+  "confidence"   one of: high, medium, low — how far this analysis is
+                 supported by what they actually wrote
+  "needs_more_info" true if a maintainer would have to go back to the reporter
+  "notes"        anything else a maintainer should know, or "" if nothing
 
 Invent nothing. If they did not say what they expected, write "not stated".
 """
@@ -64,9 +81,26 @@ class Report:
     severity: str = ""
     expected: str = ""
     actual: str = ""
+    likely_cause: str = ""
+    suggested_fix: str = ""
+    reproduction_steps: list[str] = field(default_factory=list)
+    affected_feature: str = ""
+    confidence: str = ""
+    needs_more_info: bool = False
     notes: str = ""
     triage_error: str = ""
     app: dict = field(default_factory=dict)
+    # Filled in by submit(): identity, where it went, and whether anyone was
+    # told about it.
+    bug_id: str = ""
+    status: str = "open"
+    directory: str = ""
+    context_summary: str = ""
+    what_doing: str = ""
+    browser: str = ""
+    viewport: str = ""
+    emailed: bool = False
+    email_error: str = ""
 
     @property
     def is_triaged(self) -> bool:
@@ -117,27 +151,91 @@ def triage(report: Report, settings: Settings | None = None) -> Report:
         report.notes = text[:500]
         return report
 
-    for key in ("title", "translation", "category", "severity",
-                "expected", "actual", "notes"):
+    for key in ("title", "translation", "category", "severity", "expected",
+                "actual", "likely_cause", "suggested_fix", "affected_feature",
+                "confidence", "notes"):
         value = parsed.get(key)
         if isinstance(value, str):
             setattr(report, key, value.strip())
+
+    steps = parsed.get("reproduction_steps")
+    if isinstance(steps, list):
+        report.reproduction_steps = [str(step).strip() for step in steps
+                                     if str(step).strip()]
+    report.needs_more_info = bool(parsed.get("needs_more_info"))
     return report
 
 
+def as_record(report: Report) -> dict:
+    """The report as it is written to disk and read by a maintainer.
+
+    Deliberately flat and deliberately boring: this file is the thing that
+    survives, and it has to be readable by someone who has never seen this
+    module. Nothing secret reaches it — see the note at the top of store.py.
+    """
+    return {
+        "id": report.bug_id,
+        "created_at": report.reported_at,
+        "status": report.status,
+        "severity": report.severity or "untriaged",
+        "category": report.category or "untriaged",
+        "language": report.reporter_language,
+        "user_report": report.raw_text,
+        "what_doing": report.what_doing,
+        "user_question": report.question,
+        "answer_language": report.answer_language,
+        "refused": report.refused,
+        "institution": report.institution,
+        "title": report.title,
+        "translation": report.translation,
+        "ai_summary": report.title,
+        "ai_analysis": report.notes,
+        "expected": report.expected,
+        "actual": report.actual,
+        "likely_cause": report.likely_cause,
+        "suggested_fix": report.suggested_fix,
+        "reproduction_steps": report.reproduction_steps,
+        "affected_feature": report.affected_feature,
+        "confidence": report.confidence,
+        "needs_more_info": report.needs_more_info,
+        "triage_error": report.triage_error,
+        "browser": report.browser,
+        "viewport": report.viewport,
+        "app_version": APP_VERSION,
+        "conversation_context": report.context_summary,
+        "sources": report.sources,
+        "environment": report.app,
+        "emailed": report.emailed,
+        "email_error": report.email_error,
+        "resolution": None,
+    }
+
+
 def save_report(report: Report, settings: Settings | None = None) -> Path:
-    """Append to a log, and keep a readable file per report."""
+    """Write the report into its own directory under ``data/bugs/open``.
+
+    Both files are written: ``report.json`` for anything that reads the queue,
+    and ``report.md`` for a person opening the folder. A jsonl line is still
+    appended to the old log so an existing pipeline over it keeps working.
+    """
     settings = settings or get_settings()
-    directory = settings.data_dir / "reports"
-    directory.mkdir(parents=True, exist_ok=True)
+    if not report.bug_id:
+        report.bug_id, directory = store.claim_id(settings)
+    else:
+        located = store.find(report.bug_id, settings)
+        directory = (located[1] if located
+                     else store.status_dir("open", settings) / report.bug_id)
+        directory.mkdir(parents=True, exist_ok=True)
+    report.directory = str(directory)
 
-    with (directory / "reports.jsonl").open("a", encoding="utf-8") as log:
+    store.write(as_record(report), directory)
+    (directory / "report.md").write_text(_as_markdown(report), encoding="utf-8")
+
+    legacy = settings.data_dir / "reports"
+    legacy.mkdir(parents=True, exist_ok=True)
+    with (legacy / "reports.jsonl").open("a", encoding="utf-8") as log:
         log.write(json.dumps(asdict(report), ensure_ascii=False) + "\n")
-
-    stamp = report.reported_at.replace(":", "").replace("-", "")[:15]
-    path = directory / f"{stamp}-{report.category or 'report'}.md"
-    path.write_text(_as_markdown(report), encoding="utf-8")
-    return path
+    return directory
 
 
 def _as_markdown(report: Report) -> str:
@@ -176,7 +274,15 @@ def _as_markdown(report: Report) -> str:
 def submit(raw_text: str, *, reporter_language: str = "", question: str = "",
            answer_language: str = "", refused: bool | None = None,
            sources: list[str] | None = None, institution: str = "",
+           what_doing: str = "", browser: str = "", viewport: str = "",
+           conversation_context: str = "",
            settings: Settings | None = None) -> tuple[Report, Path]:
+    """Take a report, triage it, store it, and try to tell someone.
+
+    The order matters and is the whole design: the report is on disk before
+    delivery is attempted, and the delivery result is recorded on the report
+    rather than assumed. A failed email leaves a stored report that says so.
+    """
     settings = settings or get_settings()
     report = Report(
         reported_at=datetime.now(tz=timezone.utc).isoformat(timespec="seconds"),
@@ -187,7 +293,19 @@ def submit(raw_text: str, *, reporter_language: str = "", question: str = "",
         refused=refused,
         sources=sources or [],
         institution=institution,
+        what_doing=what_doing.strip(),
+        browser=browser,
+        viewport=viewport,
+        context_summary=conversation_context,
         app=_environment(settings),
     )
     report = triage(report, settings)
-    return report, save_report(report, settings)
+    directory = save_report(report, settings)
+
+    if settings.email_configured:
+        report.emailed, report.email_error = mail.send(
+            as_record(report), str(directory), settings)
+        # Re-write with the delivery outcome, so the stored report never
+        # claims more than actually happened.
+        store.write(as_record(report), directory)
+    return report, directory

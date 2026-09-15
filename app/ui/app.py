@@ -23,6 +23,8 @@ from app.ingest.embed import fetch_all, get_collection
 from app.ingest.fetch import read_manifest
 from app.llm import get_chat_provider
 from app.query.detect import detect
+from app.query import entity
+from app.retrieval.answerability import Answerability, classify
 from app.ui import brand, render
 from app.directory import universities
 from app.feedback import submit as submit_report
@@ -34,11 +36,15 @@ STYLES = (Path(__file__).resolve().parent / "styles.css").read_text(encoding="ut
 # clipboard, and give the page its icon.
 # Gradio writes the title client-side, so a crawler or a link preview that
 # does not run JavaScript sees nothing. These are served with the document.
-HEAD = f"""
+# Runs once in the page. Written as a plain template with __TOKENS__ rather
+# than an f-string: the body is mostly JavaScript and CSS braces, and doubling
+# every one of them to survive f-string interpolation is how this file grows
+# bugs that only appear in the browser.
+_HEAD_TEMPLATE = r"""
 <title>Claré — French administration, made clear</title>
 <meta name="description" content="Understand French administrative
  procedures in plain English or French. Every answer comes from an official
- government page, with the link and the date it was last checked.">
+ government page, with the link and the date it was last updated.">
 <meta name="robots" content="index, follow">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Claré — French administration, made clear">
@@ -47,281 +53,248 @@ HEAD = f"""
 <meta property="og:locale" content="en_GB">
 <meta property="og:locale:alternate" content="fr_FR">
 <meta name="twitter:card" content="summary">
-<meta name="theme-color" content="#fafaf8">
-<link rel="icon" type="image/svg+xml" href="{brand.FAVICON}">
+<meta name="theme-color" content="#faf8f5">
+<link rel="icon" type="image/svg+xml" href="__FAVICON__">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- Public Sans is drawn for government use and stays legible at small sizes
-     for someone reading their second language; Newsreader carries the few
-     places that want warmth. -->
+     for someone reading their second language; Newsreader carries the
+     headline and nothing else. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=JetBrains+Mono:wght@400;600&display=swap">
 <script>
-(() => {{
+(() => {
   // --- metadata ------------------------------------------------------------
   // Gradio writes its own og:title of "Gradio" into the document. Ours is
   // served too, but two of the same tag is ambiguous to a link preview, so
   // the placeholder is removed once the page is up.
-  ["og:title", "og:description"].forEach((property) => {{
-    const tags = [...document.querySelectorAll(`meta[property="${{property}}"]`)];
-    // Drop Gradio's placeholder, then any repeat of what is left: two of the
-    // same tag is ambiguous to a link preview, whatever they say.
+  ["og:title", "og:description"].forEach((property) => {
+    const tags = [...document.querySelectorAll(`meta[property="${property}"]`)];
     const real = tags.filter((tag) =>
       (tag.getAttribute("content") || "").trim() !== "Gradio");
-    tags.forEach((tag) => {{ if (!real.includes(tag)) tag.remove(); }});
+    tags.forEach((tag) => { if (!real.includes(tag)) tag.remove(); });
     real.slice(1).forEach((tag) => tag.remove());
-  }});
+  });
 
-  // --- document language -------------------------------------------------
+  // --- document language ---------------------------------------------------
   // Screen readers pronounce from the document's lang; leaving it as the
   // page's default makes a French interface read in an English voice.
-  const syncLang = () => {{
-    const french = !!document.querySelector(".rp-theme-fr");
-    document.documentElement.lang = french ? "fr" : "en";
-  }};
+  const isFrench = () => !!document.querySelector(".rp-theme-fr");
+  const syncLang = () => {
+    const want = isFrench() ? "fr" : "en";
+    if (document.documentElement.lang !== want)
+      document.documentElement.lang = want;
+  };
 
   // --- skip link -----------------------------------------------------------
-  const addSkip = () => {{
-    if (document.querySelector(".rp-skip")) return;
-    const field = document.querySelector("#rp-question textarea");
-    if (!field) return;
-    const link = document.createElement("a");
-    link.className = "rp-skip";
-    link.href = "#rp-question";
-    link.textContent = document.documentElement.lang === "fr"
-      ? "Aller à la question" : "Skip to the question";
-    link.addEventListener("click", (event) => {{
-      event.preventDefault(); field.focus();
-    }});
-    document.body.prepend(link);
-  }};
+  // Both labels come from the translation table; the old version chose
+  // between two hard-coded English/French strings here.
+  const SKIP = { en: "__SKIP_EN__", fr: "__SKIP_FR__" };
+  const addSkip = () => {
+    let link = document.querySelector(".rp-skip");
+    if (!link) {
+      if (!document.querySelector("#rp-question textarea")) return;
+      link = document.createElement("a");
+      link.className = "rp-skip";
+      link.href = "#rp-question";
+      link.addEventListener("click", (event) => {
+        event.preventDefault();
+        const field = document.querySelector("#rp-question textarea");
+        if (field) field.focus();
+      });
+      document.body.prepend(link);
+    }
+    const label = isFrench() ? SKIP.fr : SKIP.en;
+    if (link.textContent !== label) link.textContent = label;
+  };
 
   // Everything here is delegated from the document, because Gradio replaces
   // chunks of the page on every interaction and anything bound to an element
   // directly would be lost the first time an answer arrives.
 
-  const copyLabelFallback = "Copied";
+  const writeClipboard = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (error) {
+      const area = document.createElement("textarea");
+      area.value = text;
+      document.body.appendChild(area);
+      area.select();
+      document.execCommand("copy");
+      area.remove();
+    }
+  };
 
-  document.addEventListener("click", async (event) => {{
-    // --- copy the suggested French phrasing -------------------------------
+  const flash = (node, label, done) => {
+    const original = label.textContent;
+    label.textContent = node.dataset.done || "Copied";
+    node.classList.add("rp-done");
+    setTimeout(() => {
+      label.textContent = original;
+      node.classList.remove("rp-done");
+    }, 1600);
+  };
+
+  document.addEventListener("click", async (event) => {
+    // --- copy the suggested French phrasing --------------------------------
     const copy = event.target.closest("[data-copy]");
-    if (copy) {{
+    if (copy) {
       const block = copy.closest(".rp-say");
-      if (block) {{
-        const text = [...block.querySelectorAll("p")]
+      if (block) {
+        await writeClipboard([...block.querySelectorAll("p")]
           .filter((p) => !p.classList.contains("rp-say-note"))
           .map((p) => p.innerText.trim())
-          .join("\\n");
-        try {{
-          await navigator.clipboard.writeText(text);
-        }} catch (error) {{
-          const area = document.createElement("textarea");
-          area.value = text;
-          document.body.appendChild(area);
-          area.select();
-          document.execCommand("copy");
-          area.remove();
-        }}
-        const original = copy.textContent;
-        copy.textContent = copy.dataset.done || copyLabelFallback;
-        copy.classList.add("rp-done");
-        setTimeout(() => {{
-          copy.textContent = original;
-          copy.classList.remove("rp-done");
-        }}, 1600);
-      }}
+          .join("\n"));
+        flash(copy, copy);
+      }
       return;
-    }}
+    }
 
-    // --- open a source card in place --------------------------------------
+    // --- copy the whole answer ---------------------------------------------
+    const copyAnswer = event.target.closest("[data-copy-answer]");
+    if (copyAnswer) {
+      const answer = copyAnswer.closest(".rp-reply").querySelector(".rp-answer");
+      if (answer) {
+        await writeClipboard(answer.innerText.trim());
+        flash(copyAnswer, copyAnswer.querySelector("span"));
+      }
+      return;
+    }
+
+    // --- was it any use ----------------------------------------------------
+    const vote = event.target.closest("[data-vote]");
+    if (vote) {
+      const row = vote.closest(".rp-actions");
+      row.querySelectorAll("[data-vote]").forEach((button) => {
+        button.classList.remove("rp-done");
+        button.disabled = true;
+      });
+      vote.classList.add("rp-done");
+      const thanks = row.querySelector(".rp-action-thanks");
+      if (thanks) thanks.hidden = false;
+      return;
+    }
+
+    // --- open a source in place --------------------------------------------
     // The arrow opens the official page; anywhere else shows the passage the
     // answer actually drew on, so the reader can check it without leaving.
     if (event.target.closest(".rp-source-link")) return;
     const card = event.target.closest("[data-expandable]");
     if (card) card.classList.toggle("rp-open");
-  }});
+  });
 
-  // --- press feedback on the primary actions ------------------------------
-  document.addEventListener("pointerdown", (event) => {{
-    const button = event.target.closest("button.rp-submit, button.rp-chip");
-    if (!button) return;
-    const box = button.getBoundingClientRect();
-    const size = Math.max(box.width, box.height);
-    const ripple = document.createElement("span");
-    ripple.className = "rp-ripple";
-    ripple.style.width = ripple.style.height = size + "px";
-    ripple.style.left = event.clientX - box.left - size / 2 + "px";
-    ripple.style.top = event.clientY - box.top - size / 2 + "px";
-    button.appendChild(ripple);
-    setTimeout(() => ripple.remove(), 640);
-  }});
-
-  // --- keyboard ------------------------------------------------------------
-  document.addEventListener("keydown", (event) => {{
-    const field = document.querySelector(".rp-ask textarea");
-    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {{
-      event.preventDefault();
-      if (field) {{ field.focus(); field.select(); }}
-    }}
-    if (event.key === "Escape" && document.activeElement === field) field.blur();
-  }});
-
-  // --- a category is a question ------------------------------------------
+  // --- a category is a question --------------------------------------------
   // Svelte binds the field, so setting .value alone is invisible to it; the
   // input event is what makes the change real.
-  const askField = () => document.querySelector("#rp-question textarea");
-  const askButton = () => document.querySelector("button.rp-submit");
-
-  document.addEventListener("click", (event) => {{
-    const cat = event.target.closest("[data-question]");
-    if (!cat) return;
-    const field = askField();
+  document.addEventListener("click", (event) => {
+    const category = event.target.closest("[data-question]");
+    if (!category) return;
+    const field = document.querySelector("#rp-question textarea");
+    const button = document.querySelector("button.rp-submit");
     if (!field) return;
-    field.value = cat.dataset.question;
-    field.dispatchEvent(new Event("input", {{ bubbles: true }}));
-    requestAnimationFrame(() => askButton() && askButton().click());
-  }});
+    field.value = category.dataset.question;
+    field.dispatchEvent(new Event("input", { bubbles: true }));
+    requestAnimationFrame(() => button && button.click());
+  });
 
-  // --- answer controls -----------------------------------------------------
-  document.addEventListener("click", async (event) => {{
-    const copy = event.target.closest("[data-copy-answer]");
-    if (copy) {{
-      const answer = copy.closest(".rp-reply").querySelector(".rp-answer");
-      if (answer) {{
-        const text = answer.innerText.trim();
-        try {{ await navigator.clipboard.writeText(text); }}
-        catch (error) {{
-          const area = document.createElement("textarea");
-          area.value = text; document.body.appendChild(area);
-          area.select(); document.execCommand("copy"); area.remove();
-        }}
-        const label = copy.querySelector("span");
-        const original = label.textContent;
-        label.textContent = copy.dataset.done || "Copied";
-        copy.classList.add("rp-done");
-        setTimeout(() => {{
-          label.textContent = original; copy.classList.remove("rp-done");
-        }}, 1600);
-      }}
-      return;
-    }}
-    const vote = event.target.closest("[data-vote]");
-    if (vote) {{
-      const row = vote.closest(".rp-actions");
-      row.querySelectorAll("[data-vote]").forEach((b) => {{
-        b.classList.remove("rp-done"); b.disabled = true;
-      }});
-      vote.classList.add("rp-done");
-      const thanks = row.querySelector(".rp-action-thanks");
-      if (thanks) thanks.hidden = false;
-    }}
-  }});
+  // --- the composer knows whether it has anything to send -------------------
+  const syncComposer = () => {
+    const field = document.querySelector("#rp-question textarea");
+    const composer = document.querySelector(".rp-composer");
+    if (field && composer)
+      composer.classList.toggle("rp-ready", field.value.trim().length > 0);
+  };
+  document.addEventListener("input", (event) => {
+    if (event.target.closest("#rp-question")) syncComposer();
+  });
 
-  // Once there is a conversation, offer the way back to a blank page.
-  const answeredWatcher = new MutationObserver(() => {{
-    document.body.classList.toggle("rp-answered",
-      !!document.querySelector(".rp-thread .rp-turn"));
-  }});
-  answeredWatcher.observe(document.documentElement,
-    {{ childList: true, subtree: true }});
+  // --- keyboard ------------------------------------------------------------
+  // Enter sends, Shift+Enter breaks the line. Gradio only wires Enter on a
+  // single-line box, and the composer is deliberately several lines tall.
+  document.addEventListener("keydown", (event) => {
+    const field = document.querySelector("#rp-question textarea");
+    if (event.target === field && event.key === "Enter" && !event.shiftKey
+        && !event.metaKey && !event.ctrlKey && !event.altKey
+        && !event.isComposing) {
+      const button = document.querySelector("button.rp-submit");
+      if (field.value.trim() && button) {
+        event.preventDefault();
+        button.click();
+        return;
+      }
+    }
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+      event.preventDefault();
+      if (field) { field.focus(); field.select(); }
+    }
+    if (event.key === "Escape") {
+      if (document.activeElement === field) { field.blur(); return; }
+      // Escape closes the report panel, the way a dialog would.
+      const report = document.querySelector(".rp-report > .label-wrap.open");
+      if (report) report.click();
+    }
+  });
 
-  // --- the light follows the hand -----------------------------------------
-  // The reference swings a clock hand toward the cursor; the same idea, far
-  // quieter: the page warms where the pointer is, so it feels answered before
-  // it has answered anything.
-  const spot = document.createElement("div");
-  spot.className = "rp-spot";
-  document.body.appendChild(spot);
+  // --- the report control --------------------------------------------------
+  // The button carries only the bug glyph. The label Gradio renders stays in
+  // the DOM, clipped, so a screen reader still has it; the tooltip and the
+  // accessible name are set from the same translation table the rest of the
+  // interface uses, rather than being written twice in here.
+  const REPORT = { en: "__REPORT_EN__", fr: "__REPORT_FR__" };
+  const dressReport = () => {
+    const label = document.querySelector(".rp-report > .label-wrap");
+    if (!label) return;
+    const text = isFrench() ? REPORT.fr : REPORT.en;
+    if (label.getAttribute("aria-label") !== text) {
+      label.setAttribute("aria-label", text);
+      label.setAttribute("data-tip", text);
+    }
+  };
 
-  let frame = 0;
-  document.addEventListener("pointermove", (event) => {{
-    if (event.pointerType === "touch") return;
-    if (frame) return;
-    frame = requestAnimationFrame(() => {{
-      frame = 0;
-      spot.style.setProperty("--sx", event.clientX + "px");
-      spot.style.setProperty("--sy", event.clientY + "px");
-      spot.classList.add("rp-lit");
+  // Cancel closes the sheet by pressing the control that opened it, so there
+  // is one open/close path rather than two that can disagree.
+  document.addEventListener("click", (event) => {
+    if (!event.target.closest(".rp-report-cancel")) return;
+    const label = document.querySelector(".rp-report > .label-wrap");
+    if (label) label.click();
+  });
 
-      // Cards light from where the pointer actually is, not from their middle.
-      const card = event.target.closest(
-        ".rp-source, .rp-service, .rp-gloss, .rp-stat");
-      if (card) {{
-        const box = card.getBoundingClientRect();
-        card.style.setProperty("--mx", ((event.clientX - box.left) / box.width * 100) + "%");
-        card.style.setProperty("--my", ((event.clientY - box.top) / box.height * 100) + "%");
-      }}
-    }});
-  }}, {{ passive: true }});
-  document.addEventListener("pointerleave", () => spot.classList.remove("rp-lit"));
+  // --- the conditions a report happened under ------------------------------
+  // A user-agent string and a window size. No cookies, no storage, nothing
+  // that identifies a person — and only ever read when a report is sent.
+  const setHidden = (id, value) => {
+    const field = document.querySelector("#" + id + " textarea, #" + id + " input");
+    if (!field || field.value === value) return;
+    field.value = value;
+    field.dispatchEvent(new Event("input", { bubbles: true }));
+  };
+  const captureContext = () => {
+    setHidden("rp-browser", navigator.userAgent || "");
+    setHidden("rp-viewport", window.innerWidth + "x" + window.innerHeight);
+  };
+  window.addEventListener("resize", captureContext, { passive: true });
 
-  // --- popovers -------------------------------------------------------------
-  // A hover should answer the question it raises: what does this source
-  // actually say, and where will this link take me.
-  const pop = document.createElement("div");
-  pop.className = "rp-pop";
-  document.body.appendChild(pop);
-  let popTimer = 0;
+  // --- landing or conversation ---------------------------------------------
+  // One class on the body; the whole layout change hangs off it in CSS
+  // rather than off a second set of Python-side visibility flags.
+  let turnCount = 0;
+  const answered = () => {
+    const turns = document.querySelectorAll(".rp-thread .rp-turn");
+    document.body.classList.toggle("rp-answered", turns.length > 0);
+    if (turns.length > turnCount) {
+      turnCount = turns.length;
+      const latest = turns[turns.length - 1];
+      if (latest) requestAnimationFrame(() =>
+        latest.scrollIntoView({ behavior: "smooth", block: "start" }));
+    } else if (turns.length < turnCount) {
+      turnCount = turns.length;
+    }
+  };
 
-  const showPop = (target, label, body, meta) => {{
-    pop.innerHTML = "";
-    const tag = document.createElement("span");
-    tag.className = "rp-pop-label";
-    tag.textContent = label;
-    pop.appendChild(tag);
-    pop.appendChild(document.createTextNode(body));
-    if (meta) {{
-      const m = document.createElement("span");
-      m.className = "rp-pop-meta";
-      m.textContent = meta;
-      pop.appendChild(m);
-    }}
-    const box = target.getBoundingClientRect();
-    const width = Math.min(360, window.innerWidth - 32);
-    pop.style.width = width + "px";
-    pop.style.left = Math.max(16, Math.min(box.left, window.innerWidth - width - 16)) + "px";
-    const below = box.bottom + 12;
-    pop.style.top = (below + 170 > window.innerHeight
-      ? Math.max(16, box.top - 12 - 170) : below) + "px";
-    pop.classList.add("rp-pop-on");
-  }};
-
-  const hidePop = () => {{
-    clearTimeout(popTimer);
-    pop.classList.remove("rp-pop-on");
-  }};
-
-  document.addEventListener("pointerover", (event) => {{
-    const source = event.target.closest(".rp-source");
-    const service = event.target.closest(".rp-service");
-    const target = source || service;
-    if (!target) return;
-    clearTimeout(popTimer);
-    popTimer = setTimeout(() => {{
-      if (source) {{
-        const excerpt = source.querySelector(".rp-excerpt");
-        const title = source.querySelector(".rp-source-title");
-        if (!excerpt || !excerpt.textContent.trim()) return;
-        showPop(source, source.dataset.popLabel || "",
-                excerpt.textContent.trim().slice(0, 300),
-                title ? title.textContent.trim() : "");
-      }} else {{
-        const host = service.querySelector(".rp-service-host");
-        showPop(service, service.dataset.popLabel || "",
-                service.querySelector(".rp-service-title").textContent.trim(),
-                host ? host.textContent.trim() : "");
-      }}
-    }}, 320);
-  }});
-  document.addEventListener("pointerout", (event) => {{
-    if (event.target.closest(".rp-source, .rp-service")) hidePop();
-  }});
-  document.addEventListener("scroll", hidePop, {{ passive: true }});
-
-  // --- the connection notice ----------------------------------------------
+  // --- the connection notice -----------------------------------------------
   // Gradio's stock wording ("Connection to the server was lost") reads like
   // something has gone badly wrong, to an audience already braced for bad
   // news. Same information, said the way a person would.
-  const NOTICES = {{
+  const NOTICES = {
     en: [
       "We've been put on hold. Reconnecting — no ticket number needed.",
       "Lost you for a second. Getting back in the queue…",
@@ -332,7 +305,7 @@ HEAD = f"""
       "On s'est perdus une seconde. On se remet dans la file…",
       "La connexion est partie prendre un café. Elle revient."
     ]
-  }};
+  };
   const STOCK = [
     "connection to the server was lost",
     "attempting reconnection",
@@ -340,11 +313,11 @@ HEAD = f"""
     "reconnecting"
   ];
 
-  const softenNotices = () => {{
-    const french = !!document.querySelector(".rp-theme-fr");
+  const softenNotices = () => {
+    const french = isFrench();
     const lines = french ? NOTICES.fr : NOTICES.en;
     document.querySelectorAll(".toast-body, .toast-text, [class*='toast']")
-      .forEach((node) => {{
+      .forEach((node) => {
         if (node.dataset.rpSoftened) return;
         const said = (node.textContent || "").toLowerCase();
         if (!STOCK.some((phrase) => said.includes(phrase))) return;
@@ -354,36 +327,57 @@ HEAD = f"""
         body.textContent = lines[Math.floor(Math.random() * lines.length)];
         node.dataset.rpSoftened = "1";
         node.classList.add("rp-notice");
-      }});
-  }};
+      });
+  };
 
   // --- reveal sources as they come into view -------------------------------
-  const watcher = new IntersectionObserver((entries) => {{
-    entries.forEach((entry) => {{
-      if (entry.isIntersecting) {{
+  const watcher = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
         entry.target.classList.add("rp-in");
         watcher.unobserve(entry.target);
-      }}
-    }});
-  }}, {{ rootMargin: "0px 0px -40px 0px", threshold: 0.05 }});
+      }
+    });
+  }, { rootMargin: "0px 0px -40px 0px", threshold: 0.05 });
 
-  const watch = () => (syncLang(), addSkip(), softenNotices(), document
-    .querySelectorAll(".rp-source:not(.rp-reveal), .rp-gloss:not(.rp-reveal)")
-    .forEach((node) => {{ node.classList.add("rp-reveal"); watcher.observe(node); }}));
+  const watch = () => {
+    syncLang();
+    addSkip();
+    dressReport();
+    captureContext();
+    softenNotices();
+    syncComposer();
+    answered();
+    document.querySelectorAll(".rp-source:not(.rp-reveal), .rp-gloss:not(.rp-reveal)")
+      .forEach((node) => { node.classList.add("rp-reveal"); watcher.observe(node); });
+  };
 
   new MutationObserver(watch).observe(document.documentElement,
-    {{ childList: true, subtree: true }});
+    { childList: true, subtree: true });
   watch();
-}})();
+})();
 </script>
 """
 
+HEAD = (
+    _HEAD_TEMPLATE
+    .replace("__FAVICON__", brand.FAVICON)
+    .replace("__SKIP_EN__", t("en", "skip"))
+    .replace("__SKIP_FR__", t("fr", "skip"))
+    .replace("__REPORT_EN__", t("en", "report_open"))
+    .replace("__REPORT_FR__", t("fr", "report_open"))
+)
+
 
 def brand_block(lang: str) -> str:
-    """Wordmark, tagline, and the marker the palette keys off."""
+    """Wordmark, positioning line, and the marker the palette keys off.
+
+    Left edge of the container, and nothing else on this side. The language
+    control is a separate component pinned to the right of the same row, so
+    the two sit on one line and the header has an actual left and right.
+    """
     return f"""
 <span class="rp-theme rp-theme-{lang}"></span>
-<div class="rp-wash"></div>
 <div class="rp-masthead">
   {brand.wordmark()}
   <p class="rp-promise">{html.escape(t(lang, 'promise'))}</p>
@@ -408,17 +402,9 @@ def privacy_block(lang: str) -> str:
         # the model. "openai/gpt-oss-120b" runs ON Groq; naming OpenAI here
         # would be a false statement about where someone's words go.
         body = t(lang, "privacy_hosted", provider=settings.llm_provider.title())
-    return f"""
-<div class="rp-privacy">
-  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-    <path d="M8 1.6 2.9 3.8v3.5c0 3 2.2 5.8 5.1 6.8 2.9-1 5.1-3.8 5.1-6.8V3.8L8 1.6Z"
-          stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
-    <path d="M5.9 8.1 7.3 9.6 10.3 6.4" stroke="currentColor" stroke-width="1.5"
-          stroke-linecap="round" stroke-linejoin="round"/>
-  </svg>
-  <div><strong>{html.escape(t(lang, 'privacy_lead'))}</strong> {html.escape(body)}</div>
-</div>
-"""
+    return (f'<p class="rp-privacy">'
+            f'<strong>{html.escape(t(lang, "privacy_lead"))}</strong> '
+            f'{html.escape(body)}</p>')
 
 
 def credit_block(lang: str) -> str:
@@ -431,53 +417,83 @@ def credit_block(lang: str) -> str:
     """
     return f"""
 <div class="rp-credit">
-  <div class="rp-credit-made">
-    <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true">
-      <path d="M8 14S1.8 10.3 1.8 6.1A3.3 3.3 0 0 1 8 4.3a3.3 3.3 0 0 1 6.2 1.8
-               C14.2 10.3 8 14 8 14Z" fill="currentColor"/>
-    </svg>
+  <p class="rp-credit-community">{html.escape(t(lang, 'community'))}</p>
+  <p class="rp-credit-made">
     <span>{html.escape(t(lang, 'made_by'))}</span>
     <span class="rp-credit-year">{html.escape(t(lang, 'made_year'))}</span>
-  </div>
-  <p class="rp-credit-community">{html.escape(t(lang, 'community'))}</p>
+  </p>
 </div>
 """
 
 
 def disclaimer_block(lang: str) -> str:
+    """The two things a reader is owed, and who made it.
+
+    These were three separate bordered notices stacked down the page, each
+    shouting at the same volume as the answer above them. They are footnotes.
+    They are now set as footnotes.
+    """
     return f"""
-{privacy_block(lang)}
-<div class="rp-disclaimer rp-footer">
-  <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-    <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M8 4.6v4.2M8 11.2h.01" stroke="currentColor" stroke-width="1.6"
-          stroke-linecap="round"/>
-  </svg>
-  <div><strong>{html.escape(t(lang, 'disclaimer_lead'))}</strong>
-  {html.escape(t(lang, 'disclaimer_body'))}</div>
-</div>
-{credit_block(lang)}
+<footer class="rp-footer">
+  <div class="rp-footer-brand">
+    <span class="rp-footer-name">Clar<span class="rp-accent">&#233;</span></span>
+    <span class="rp-footer-promise">{html.escape(t(lang, 'promise'))}</span>
+  </div>
+  <div class="rp-footer-notes">
+    {privacy_block(lang)}
+    <p class="rp-disclaimer">
+      <strong>{html.escape(t(lang, 'disclaimer_lead'))}</strong>
+      {html.escape(t(lang, 'disclaimer_body'))}
+    </p>
+  </div>
+  {credit_block(lang)}
+</footer>
 """
 
 
 def hero_block(lang: str) -> str:
-    """The question, asked of the person, in the middle of the page.
+    """The question, asked of the person, on the left edge of the page.
 
     A landing page that opens with a statement about itself asks the reader to
     care about the product first. Opening with their question puts the cursor
     where their attention already is.
+
+    Left-aligned, not centred: the masthead, the headline, the composer and
+    the topic list then share one left edge, and the page reads as a column
+    someone set rather than as a stack of independently centred blocks.
     """
     return f"""
-<div class="rp-hero rp-stage-in">
+<header class="rp-hero rp-stage-in">
+  <p class="rp-eyebrow">{html.escape(t(lang, 'eyebrow'))}</p>
   <h1 class="rp-headline">{html.escape(t(lang, 'headline'))}</h1>
   <p class="rp-tagline">{html.escape(t(lang, 'subhead'))}</p>
-</div>
+</header>
+"""
+
+
+def trust_block(lang: str) -> str:
+    """One quiet line under the composer, where the doubt actually lands.
+
+    Not a badge and not a seal: this claims nothing about who we are, only
+    what every answer carries with it.
+    """
+    return f"""
+<p class="rp-trust">
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+    <path d="M8 1.7 3 3.8v3.4c0 2.9 2.1 5.6 5 6.6 2.9-1 5-3.7 5-6.6V3.8L8 1.7Z"
+          stroke="currentColor" stroke-width="1.35" stroke-linejoin="round"/>
+    <path d="M5.9 8.1 7.3 9.5 10.2 6.5" stroke="currentColor"
+          stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  <span>{html.escape(t(lang, 'trust'))}</span>
+</p>
 """
 
 
 def lang_caption(lang: str, key: str) -> str:
-    return (f"<div class='rp-lang-label'>{brand.GLOBE}"
-            f"{html.escape(t(lang, key))}</div>")
+    return (f"<div class='rp-lang-label' title=\""
+            f"{html.escape(t(lang, 'lang_auto_help'), quote=True)}\">"
+            f"{brand.GLOBE}{html.escape(t(lang, key))}</div>")
 
 
 @lru_cache(maxsize=4)
@@ -678,18 +694,45 @@ def ask(question: str, ui_lang: str, answer_lang: str, uai: str = "",
 
     if not question:
         yield (gr.update(), gr.update(), gr.update(), gr.update(),
-               hidden, turns, {}, gr.update())
+               hidden, hidden, turns, {}, gr.update())
         return
 
     previous = turns[-1]["question"] if turns else None
+
+    # Who is this about? A question leaning on "this school" is not answerable
+    # until something has named one, and retrieving on the words that are left
+    # returns official pages that were never about it.
+    history = [turn.get("question", "") for turn in turns]
+    who = entity.resolve(question, history)
+    if classify(who, refused=False, citations=0) is Answerability.NEEDS_CLARIFICATION:
+        turns.append({"question": question, "state": "clarify",
+                      "result": None, "streaming": False,
+                      "surface": who.surface})
+        yield (gr.update(value=render.thread_html(turns, ui_lang, ui_lang),
+                         visible=True),
+               hidden, hidden, gr.update(), gr.update(), hidden, turns, {},
+               gr.update(value="", placeholder=t(ui_lang, "followup_ph")))
+        return
+
+    # Carried into the turn so a refusal can name the body that owns the
+    # answer instead of offering the nearest public-administration page.
+    about = None
+    if who.institution is not None:
+        about = {"name": who.institution.name,
+                 "commune": who.institution.commune,
+                 "departement": who.institution.departement,
+                 "url": who.institution.url}
 
     # Where someone studies narrows the question in a way the corpus can use:
     # a number of fiches branch per departement.
     place = universities.by_uai(uai) if uai else None
     asked = f"{question} ({place.departement})" if place and place.departement else question
+    if who.from_context and who.institution is not None:
+        # "this school" carries nothing into a search; the name does.
+        asked = f"{asked} ({who.institution.name})"
 
     turns.append({"question": question, "state": "thinking",
-                  "result": None, "streaming": False})
+                  "result": None, "streaming": False, "institution": about})
 
     def thread():
         return gr.update(value=render.thread_html(turns, ui_lang, reply_lang),
@@ -697,8 +740,9 @@ def ask(question: str, ui_lang: str, answer_lang: str, uai: str = "",
 
     offer_study = gr.update(visible=looks_like_study(question) and not uai)
     # The landing copy steps aside once there is a conversation to read.
-    yield (thread(), hidden, hidden, gr.update(), offer_study, turns, {},
-           gr.update(value=""))
+    yield (thread(), hidden, hidden, gr.update(), gr.update(), offer_study,
+           turns, {},
+           gr.update(value="", placeholder=t(ui_lang, "followup_ph")))
 
     final = None
     for result in answer_stream(asked, language=None if answer_lang == "auto"
@@ -707,24 +751,29 @@ def ask(question: str, ui_lang: str, answer_lang: str, uai: str = "",
         turns[-1] = {"question": question,
                      "state": "answering" if result.text else "thinking",
                      "result": result if result.text else None,
-                     "streaming": True}
+                     "streaming": True, "institution": about}
         yield (thread(), hidden, hidden, render.debug_html(result, ui_lang),
-               offer_study, turns, _context_of(result, question, uai),
-               gr.update())
+               gr.update(), offer_study, turns,
+               _context_of(result, question, uai), gr.update())
 
     if final is not None:
         turns[-1] = {"question": question, "state": "done",
-                     "result": final, "streaming": False}
+                     "result": final, "streaming": False, "institution": about}
         yield (thread(), hidden, hidden, render.debug_html(final, ui_lang),
-               gr.update(visible=get_settings().debug_panel), turns,
-               _context_of(final, question, uai), gr.update())
+               gr.update(visible=get_settings().debug_panel), offer_study,
+               turns, _context_of(final, question, uai), gr.update())
 
 
 def reset_thread(ui_lang: str):
-    """Back to the landing state, with nothing left over."""
+    """Back to the landing state, with nothing left over.
+
+    "Nothing left over" now includes the institution panel and the study
+    prompt, which used to survive a restart and sit under a blank page.
+    """
+    hidden = gr.update(visible=False)
     return (gr.update(value="", visible=False), gr.update(visible=True),
-            gr.update(visible=True), [], gr.update(visible=False),
-            gr.update(value=""))
+            gr.update(visible=True), [], hidden, hidden, hidden,
+            gr.update(value="", placeholder=t(ui_lang, "placeholder")))
 
 
 def build() -> gr.Blocks:
@@ -733,6 +782,7 @@ def build() -> gr.Blocks:
 
     with gr.Blocks(title="Claré — French administration, made clear",
                    analytics_enabled=False) as demo:
+        # Masthead: brand hard left, language hard right, one row.
         with gr.Row(elem_classes="rp-topbar"):
             head = gr.HTML(brand_block(start))
             site_lang = gr.Radio(
@@ -741,28 +791,44 @@ def build() -> gr.Blocks:
                 elem_classes="rp-switch rp-switch-site",
             )
 
-
-        with gr.Tabs():
-            with gr.Tab("01 · " + t(start, "tab_ask")) as tab_ask:
+        # Three sections, named rather than numbered. They were "01 · Ask",
+        # "02 · Words", "03 · Sources", which framed a conversation as a form
+        # to be completed in order. Words and Sources are real pages with real
+        # content, so they stay — as a contents bar, not as steps.
+        with gr.Tabs(elem_classes="rp-sections"):
+            with gr.Tab(t(start, "tab_ask")) as tab_ask:
+                # Source order is the layout in both states: the landing
+                # hides the thread, the conversation hides the hero and the
+                # topic list, and the composer sits under whichever is showing
+                # — a headline on arrival, the last answer afterwards.
                 hero = gr.HTML(hero_block(start))
-                question = gr.Textbox(
-                    placeholder=t(start, "placeholder"), lines=2, max_lines=6,
-                    elem_classes="rp-ask", show_label=False,
-                    elem_id="rp-question",
-                )
-                with gr.Row(elem_classes="rp-submit-row"):
-                    submit = gr.Button(t(start, "submit"), variant="primary",
-                                       elem_classes="rp-submit", scale=0)
-                    restart = gr.Button(t(start, "new_question"),
-                                        elem_classes="rp-chip rp-restart", scale=0)
-                with gr.Row(elem_classes="rp-reply-row"):
-                    reply_caption = gr.HTML(lang_caption(start, "answer_lang"))
-                    reply_lang = gr.Radio(
-                        choices=[(t(start, "lang_auto"), "auto"),
-                                 ("English", "en"), ("Français", "fr")],
-                        value="auto", show_label=False, container=False,
-                        elem_classes="rp-switch",
+
+                restart = gr.Button(t(start, "new_question"),
+                                    elem_classes="rp-restart", scale=0)
+
+                thread_box = gr.HTML(visible=False)
+
+                with gr.Column(elem_classes="rp-composer"):
+                    question = gr.Textbox(
+                        placeholder=t(start, "placeholder"), lines=3,
+                        max_lines=8, elem_classes="rp-ask", show_label=False,
+                        elem_id="rp-question",
                     )
+                    # The send control lives inside the composer's own footer
+                    # row rather than as a separate block underneath it, so
+                    # the question and the act of asking are one object.
+                    with gr.Row(elem_classes="rp-composer-bar"):
+                        reply_caption = gr.HTML(lang_caption(start, "answer_lang"))
+                        reply_lang = gr.Radio(
+                            choices=[(t(start, "lang_auto"), "auto"),
+                                     ("English", "en"), ("Français", "fr")],
+                            value="auto", show_label=False, container=False,
+                            elem_classes="rp-switch rp-switch-reply",
+                        )
+                        submit = gr.Button(t(start, "submit"), variant="primary",
+                                           elem_classes="rp-submit", scale=0)
+
+                trust = gr.HTML(trust_block(start))
 
                 cats = gr.HTML(render.categories_html(start))
 
@@ -779,24 +845,22 @@ def build() -> gr.Blocks:
                         container=False, elem_classes="rp-study-hits")
                 place_box = gr.HTML(visible=False)
 
-                thread_box = gr.HTML(visible=False)
-
                 # A developer's view of retrieval, off unless switched on.
                 with gr.Accordion(t(start, "debug_title"), open=False,
                                   visible=False) as debug_acc:
                     debug_box = gr.HTML()
 
-            with gr.Tab("02 · " + t(start, "tab_glossary")) as tab_gloss:
+            with gr.Tab(t(start, "tab_glossary")) as tab_gloss:
                 gloss_intro = gr.HTML(
-                    f"<p class='rp-tagline' style='margin:2px 0 14px'>"
+                    f"<p class='rp-section-intro'>"
                     f"{html.escape(t(start, 'glossary_intro'))}</p>")
                 search = gr.Textbox(placeholder=t(start, "glossary_search"),
                                     show_label=False, elem_classes="rp-gloss-search")
                 gloss_box = gr.HTML(render.glossary_html("", start))
 
-            with gr.Tab("03 · " + t(start, "tab_corpus")) as tab_corpus:
+            with gr.Tab(t(start, "tab_corpus")) as tab_corpus:
                 corpus_intro = gr.HTML(
-                    f"<p class='rp-tagline' style='margin:2px 0 14px'>"
+                    f"<p class='rp-section-intro'>"
                     f"{html.escape(t(start, 'corpus_intro'))}</p>")
                 corpus_box = gr.HTML()
                 refresh = gr.Button(t(start, "refresh"),
@@ -809,18 +873,34 @@ def build() -> gr.Blocks:
             report_text = gr.Textbox(
                 placeholder=t(start, "report_placeholder"), lines=4,
                 show_label=False, elem_classes="rp-report-text")
+            report_doing_label = gr.HTML(
+                f"<p class='rp-report-field'>{html.escape(t(start, 'report_doing'))}</p>")
+            report_doing = gr.Textbox(
+                placeholder=t(start, "report_doing_placeholder"), lines=2,
+                show_label=False, elem_classes="rp-report-text")
             report_keeps = gr.HTML(
                 f"<p class='rp-report-keeps'>{html.escape(t(start, 'report_keeps'))}</p>")
-            report_send = gr.Button(t(start, "report_send"),
-                                    elem_classes="rp-chip", scale=0)
+            with gr.Row(elem_classes="rp-report-actions"):
+                report_cancel = gr.Button(t(start, "report_cancel"),
+                                          elem_classes="rp-report-cancel", scale=0)
+                report_send = gr.Button(t(start, "report_send"),
+                                        elem_classes="rp-chip rp-report-send", scale=0)
             report_result = gr.HTML(visible=False)
 
-        def send_report(text: str, lang: str, context: dict):
+        def send_report(text: str, doing: str, lang: str, context: dict,
+                        browser: str, viewport: str):
+            """Store the report, then say exactly what happened to it.
+
+            Three outcomes, three different sentences: stored and sent, stored
+            but the notification failed, or simply stored because no mail is
+            configured. Saying "sent" for the last two would be the easiest
+            lie in the product and the one that costs a reporter the most.
+            """
             text = (text or "").strip()
             if not text:
                 return (gr.update(
                     value=f"<div class='rp-note'>{html.escape(t(lang, 'report_empty'))}</div>",
-                    visible=True), gr.update())
+                    visible=True), gr.update(), gr.update())
             context = context or {}
             report, path = submit_report(
                 text,
@@ -830,7 +910,23 @@ def build() -> gr.Blocks:
                 refused=context.get("refused"),
                 sources=context.get("sources") or [],
                 institution=context.get("institution", ""),
+                what_doing=doing or "",
+                browser=(browser or "")[:300],
+                viewport=(viewport or "")[:40],
+                conversation_context=context.get("conversation", ""),
             )
+
+            if report.emailed:
+                thanks = t(lang, "report_emailed")
+                delivery = ""
+            elif report.email_error:
+                thanks = t(lang, "report_thanks")
+                delivery = (f"<div class='rp-report-note'>"
+                            f"{html.escape(t(lang, 'report_email_failed'))}</div>")
+            else:
+                thanks = t(lang, "report_thanks")
+                delivery = ""
+
             note = "" if report.is_triaged else (
                 f"<div class='rp-report-note'>"
                 f"{html.escape(t(lang, 'report_untriaged'))}</div>")
@@ -839,14 +935,27 @@ def build() -> gr.Blocks:
                         if report.is_triaged else "")
             body = (
                 f"<div class='rp-report-done'>"
-                f"<div class='rp-report-thanks'>"
-                f"{html.escape(t(lang, 'report_thanks'))}</div>"
-                f"{headline}{note}"
+                f"<div class='rp-report-thanks'>{html.escape(thanks)}</div>"
+                f"{headline}{note}{delivery}"
                 f"<div class='rp-report-path'>"
                 f"{html.escape(t(lang, 'report_saved_as'))} "
-                f"<code>{html.escape(path.name)}</code></div></div>"
+                f"<code>{html.escape(report.bug_id or path.name)}</code></div></div>"
             )
-            return gr.update(value=body, visible=True), gr.update(value="")
+            return (gr.update(value=body, visible=True),
+                    gr.update(value=""), gr.update(value=""))
+
+        # Filled by the page so a report carries the conditions it happened
+        # under. A user-agent string and a window size — no cookies, no
+        # storage, nothing that identifies a person. These are hidden in CSS
+        # rather than with visible=False, because Gradio does not render an
+        # invisible component into the DOM at all and the page could not
+        # reach it.
+        report_browser = gr.Textbox(show_label=False, container=False,
+                                    elem_id="rp-browser",
+                                    elem_classes="rp-offscreen")
+        report_viewport = gr.Textbox(show_label=False, container=False,
+                                     elem_id="rp-viewport",
+                                     elem_classes="rp-offscreen")
 
         # The disclaimer closes the page rather than interrupting it. It sits
         # below every tab and is never dismissible, so it stays permanently
@@ -856,15 +965,19 @@ def build() -> gr.Blocks:
 
         last_context = gr.State({})
         turns_state = gr.State([])
-        outputs = [thread_box, hero, cats, debug_box, debug_acc,
+        outputs = [thread_box, hero, cats, debug_box, debug_acc, study_ask,
                    turns_state, last_context, question]
-        report_send.click(send_report, [report_text, site_lang, last_context],
-                          [report_result, report_text])
+        report_send.click(
+            send_report,
+            [report_text, report_doing, site_lang, last_context,
+             report_browser, report_viewport],
+            [report_result, report_text, report_doing])
         inputs = [question, site_lang, reply_lang, study, turns_state]
         submit.click(ask, inputs, outputs)
         question.submit(ask, inputs, outputs)
         restart.click(reset_thread, site_lang,
-                      [thread_box, hero, cats, turns_state, debug_acc, question])
+                      [thread_box, hero, cats, turns_state, debug_acc,
+                       study_ask, place_box, question])
 
         def suggest(query: str):
             """Live matches, previewed in place.
@@ -911,23 +1024,27 @@ def build() -> gr.Blocks:
                 gr.update(value=t(lang, "submit")),
                 gr.update(value=t(lang, "new_question")),
                 render.categories_html(lang),
+                trust_block(lang),
                 gr.update(label=t(lang, "debug_title")),
-                gr.update(label="01 · " + t(lang, "tab_ask")),
-                gr.update(label="02 · " + t(lang, "tab_glossary")),
-                gr.update(label="03 · " + t(lang, "tab_corpus")),
+                gr.update(label=t(lang, "tab_ask")),
+                gr.update(label=t(lang, "tab_glossary")),
+                gr.update(label=t(lang, "tab_corpus")),
                 f"<p class='rp-study-prompt'>"
                 f"{html.escape(t(lang, 'study_prompt'))}</p>",
                 gr.update(placeholder=t(lang, "study_placeholder")),
                 gr.update(label=t(lang, "report_open")),
                 f"<p class='rp-report-intro'>{html.escape(t(lang, 'report_intro'))}</p>",
                 gr.update(placeholder=t(lang, "report_placeholder")),
+                f"<p class='rp-report-field'>{html.escape(t(lang, 'report_doing'))}</p>",
+                gr.update(placeholder=t(lang, "report_doing_placeholder")),
                 f"<p class='rp-report-keeps'>{html.escape(t(lang, 'report_keeps'))}</p>",
+                gr.update(value=t(lang, "report_cancel")),
                 gr.update(value=t(lang, "report_send")),
-                f"<p class='rp-tagline' style='margin:2px 0 14px'>"
+                f"<p class='rp-section-intro'>"
                 f"{html.escape(t(lang, 'glossary_intro'))}</p>",
                 gr.update(placeholder=t(lang, "glossary_search")),
                 render.glossary_html(current_search or "", lang),
-                f"<p class='rp-tagline' style='margin:2px 0 14px'>"
+                f"<p class='rp-section-intro'>"
                 f"{html.escape(t(lang, 'corpus_intro'))}</p>",
                 gr.update(value=t(lang, "refresh")),
             ]
@@ -936,10 +1053,11 @@ def build() -> gr.Blocks:
             switch_language,
             [site_lang, search],
             [head, hero, disclaimer, reply_caption, reply_lang, question,
-             submit, restart, cats, debug_acc, tab_ask, tab_gloss, tab_corpus,
-             study_why, study_search, report_panel, report_intro, report_text,
-             report_keeps, report_send, gloss_intro, search, gloss_box,
-             corpus_intro, refresh],
+             submit, restart, cats, trust, debug_acc, tab_ask, tab_gloss,
+             tab_corpus, study_why, study_search, report_panel, report_intro,
+             report_text, report_doing_label, report_doing, report_keeps,
+             report_cancel, report_send, gloss_intro, search,
+             gloss_box, corpus_intro, refresh],
         )
 
     return demo

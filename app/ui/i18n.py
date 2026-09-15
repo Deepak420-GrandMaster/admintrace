@@ -16,10 +16,14 @@ STRINGS: dict[str, dict[str, str]] = {
     "en": {
         "headline": "What do you need help with?",
         "promise": "French administration, made clear.",
-        "subhead": "Ask a question and get a clear answer, backed by official "
-                   "sources. English or French — every answer links the "
-                   "government page it came from, and the date that page was "
-                   "last updated.",
+        "subhead": "Ask in English or French. Every answer comes from an "
+                   "official government page.",
+        "eyebrow": "Official sources only",
+        "trust": "Every answer cites the page it came from, and the date that "
+                 "page was last updated.",
+        "send": "Send",
+        "skip": "Skip to the question",
+        "sections": "Sections",
         "study_prompt": "Studying in France? Tell me where and I can be more "
                         "precise — your institution decides which préfecture "
                         "and which CROUS you deal with.",
@@ -34,13 +38,13 @@ STRINGS: dict[str, dict[str, str]] = {
         "tab_ask": "Ask",
         "tab_glossary": "Words",
         "tab_corpus": "Sources",
-        "placeholder": "Ask anything — how to renew a permit, what a landlord "
-                       "can ask for, which papers you need…",
+        "placeholder": "Residence permit, housing, documents, appointments…",
         "submit": "Ask",
         "try": "Not sure where to start?",
         "site_lang": "Language",
-        "answer_lang": "Answer in",
-        "lang_auto": "Whatever I ask in",
+        "answer_lang": "Reply in",
+        "lang_auto": "Auto",
+        "lang_auto_help": "Same language as my question",
         "debug_title": "How this answer was found",
         "glossary_intro": "The French words you'll meet at a counter or in a "
                           "letter. The ones marked official are defined by the "
@@ -72,7 +76,8 @@ STRINGS: dict[str, dict[str, str]] = {
         "limit_wait_soon": "Back in under a minute.",
         "limit_local": "In a hurry? Point it at a local model and there is no "
                        "meter at all.",
-        "report_open": "Something wrong here?",
+        "report_open": "Report a problem",
+        "report_cancel": "Cancel",
         "report_title": "Tell us what went wrong",
         "report_intro": "Write in any language — yours is fine. We'll translate "
                         "it. If an answer was wrong, saying what you were "
@@ -84,6 +89,12 @@ STRINGS: dict[str, dict[str, str]] = {
                         "question you asked and which pages the answer used. "
                         "Nothing else, and nothing about who you are.",
         "report_thanks": "Thank you — saved on this computer.",
+        "report_emailed": "Thank you — your report has been recorded and sent.",
+        "report_email_failed": "Saved on this computer. The email notification "
+                               "couldn't be delivered, so nothing was lost but "
+                               "no one has been paged.",
+        "report_doing": "What were you trying to do? (optional)",
+        "report_doing_placeholder": "I was checking which papers I needed…",
         "report_saved_as": "Filed as",
         "report_empty": "Write a line or two first, and I'll take it from there.",
         "report_untriaged": "Saved in your own words. The translation step "
@@ -117,13 +128,19 @@ STRINGS: dict[str, dict[str, str]] = {
         "not_helpful": "This didn't help",
         "thanks_feedback": "Noted — thank you.",
         "followup_ph": "Ask a follow-up…",
-        "cat_head": "What can I help you with?",
+        "cat_head": "Start with a topic",
         "cat_permit": "Residence permits",
-        "cat_housing": "Housing and landlords",
-        "cat_docs": "Documents and proof",
+        "cat_permit_sub": "Renewals, first applications, changes",
+        "cat_housing": "Housing",
+        "cat_housing_sub": "Deposits, leases, what a landlord may ask",
+        "cat_docs": "Documents",
+        "cat_docs_sub": "Proof of address, civil status, translations",
         "cat_student": "Studying in France",
-        "cat_work": "Work and contracts",
+        "cat_student_sub": "Student work, CROUS, enrolment",
+        "cat_work": "Work",
+        "cat_work_sub": "CDI, CDD, trial period, payslips",
         "cat_appt": "Appointments",
+        "cat_appt_sub": "Prefecture slots, and what to do without one",
         "err_network": "We couldn't reach the service. Try again in a moment.",
         "err_unknown": "Something went wrong while preparing the answer.",
         "err_retry": "Try again",
@@ -145,16 +162,30 @@ STRINGS: dict[str, dict[str, str]] = {
         "grounded_one": "Based on 1 official page",
         "grounded_many": "Based on {n} official pages",
         "refused": "The sources don't cover this",
+        "clarify_head": "Which one do you mean?",
+        "clarify_body": "Name the school or university and I'll look it up. I "
+                        "won't guess — an answer about the wrong institution "
+                        "is worse than no answer.",
+        "entity_head": "That's {name}'s own procedure",
+        "entity_body": "What I've read covers French public administration. An "
+                       "institution sets and publishes its own admission and "
+                       "enrolment rules, so that answer comes from them, not "
+                       "from here.",
+        "entity_register": "{name} in the official register",
         "say_note": "Suggested wording — not an official text.",
         "no_match": "No word matches “{q}”.",
     },
     "fr": {
         "headline": "De quoi avez-vous besoin ?",
         "promise": "L'administration française, en clair.",
-        "subhead": "Posez votre question, obtenez une réponse claire, appuyée "
-                   "sur des sources officielles. En français ou en anglais — "
-                   "chaque réponse renvoie à la page officielle dont elle vient, "
-                   "avec la date de sa dernière mise à jour.",
+        "subhead": "Posez votre question en français ou en anglais. Chaque "
+                   "réponse vient d'une page officielle.",
+        "eyebrow": "Uniquement des sources officielles",
+        "trust": "Chaque réponse cite la page dont elle vient, et la date de "
+                 "sa dernière mise à jour.",
+        "send": "Envoyer",
+        "skip": "Aller à la question",
+        "sections": "Rubriques",
         "study_prompt": "Vous étudiez en France ? Dites-moi où et je serai plus "
                         "précis : votre établissement détermine la préfecture "
                         "et le CROUS dont vous dépendez.",
@@ -167,16 +198,16 @@ STRINGS: dict[str, dict[str, str]] = {
                            "pas vous conseiller sur un refus, un recours ou "
                            "votre situation personnelle — pour cela, adressez-"
                            "vous à l'administration concernée.",
-        "tab_ask": "Poser une question",
+        "tab_ask": "Ma question",
         "tab_glossary": "Les mots",
         "tab_corpus": "Les sources",
-        "placeholder": "Posez votre question — renouveler un titre, ce qu'un "
-                       "propriétaire peut demander, quels papiers fournir…",
+        "placeholder": "Titre de séjour, logement, papiers, rendez-vous…",
         "submit": "Demander",
         "try": "Vous ne savez pas par où commencer ?",
         "site_lang": "Langue du site",
         "answer_lang": "Répondre en",
-        "lang_auto": "La langue de ma question",
+        "lang_auto": "Auto",
+        "lang_auto_help": "La langue de ma question",
         "debug_title": "Comment cette réponse a été trouvée",
         "glossary_intro": "Les mots français que vous croiserez à un guichet ou "
                           "dans un courrier. Ceux marqués officiel sont définis "
@@ -212,7 +243,8 @@ STRINGS: dict[str, dict[str, str]] = {
         "limit_wait_soon": "De retour dans moins d'une minute.",
         "limit_local": "Pressé ? Branchez un modèle local et il n'y a plus de "
                        "compteur du tout.",
-        "report_open": "Quelque chose ne va pas ?",
+        "report_open": "Signaler un problème",
+        "report_cancel": "Annuler",
         "report_title": "Dites-nous ce qui s'est passé",
         "report_intro": "Écrivez dans la langue que vous voulez — la vôtre "
                         "convient très bien, nous traduirons. Si une réponse "
@@ -225,6 +257,12 @@ STRINGS: dict[str, dict[str, str]] = {
                         "ce que vous écrivez, la question posée et les pages "
                         "utilisées. Rien d'autre, et rien sur qui vous êtes.",
         "report_thanks": "Merci — enregistré sur cet ordinateur.",
+        "report_emailed": "Merci — votre signalement a été enregistré et envoyé.",
+        "report_email_failed": "Enregistré sur cet ordinateur. La notification "
+                               "par e-mail n'a pas pu être envoyée : rien n'est "
+                               "perdu, mais personne n'a encore été prévenu.",
+        "report_doing": "Que cherchiez-vous à faire ? (facultatif)",
+        "report_doing_placeholder": "Je vérifiais quels papiers il me fallait…",
         "report_saved_as": "Enregistré sous",
         "report_empty": "Écrivez une ou deux lignes, et je m'occupe du reste.",
         "report_untriaged": "Enregistré dans vos mots. La traduction n'a pas pu "
@@ -258,13 +296,19 @@ STRINGS: dict[str, dict[str, str]] = {
         "not_helpful": "Ça ne m'a pas aidé",
         "thanks_feedback": "C'est noté — merci.",
         "followup_ph": "Poser une question complémentaire…",
-        "cat_head": "Sur quoi puis-je vous aider ?",
+        "cat_head": "Commencer par un sujet",
         "cat_permit": "Titres de séjour",
-        "cat_housing": "Logement et propriétaires",
-        "cat_docs": "Papiers et justificatifs",
+        "cat_permit_sub": "Renouvellement, première demande, changement",
+        "cat_housing": "Logement",
+        "cat_housing_sub": "Dépôt de garantie, bail, ce qu'un propriétaire exige",
+        "cat_docs": "Papiers",
+        "cat_docs_sub": "Justificatif de domicile, état civil, traductions",
         "cat_student": "Études en France",
-        "cat_work": "Travail et contrats",
+        "cat_student_sub": "Travail étudiant, CROUS, inscription",
+        "cat_work": "Travail",
+        "cat_work_sub": "CDI, CDD, période d'essai, bulletin de paie",
         "cat_appt": "Rendez-vous",
+        "cat_appt_sub": "Créneaux en préfecture, et que faire sans",
         "err_network": "Le service est injoignable. Réessayez dans un instant.",
         "err_unknown": "Un problème est survenu pendant la préparation de la réponse.",
         "err_retry": "Réessayer",
@@ -287,6 +331,16 @@ STRINGS: dict[str, dict[str, str]] = {
         "grounded_one": "D'après 1 page officielle",
         "grounded_many": "D'après {n} pages officielles",
         "refused": "Les sources ne couvrent pas cette question",
+        "clarify_head": "Duquel s'agit-il ?",
+        "clarify_body": "Donnez-moi le nom de l'école ou de l'université et je "
+                        "la retrouve. Je ne devine pas : une réponse sur le "
+                        "mauvais établissement est pire que pas de réponse.",
+        "entity_head": "C'est la procédure propre à {name}",
+        "entity_body": "Ce que j'ai lu couvre l'administration publique "
+                       "française. Un établissement fixe et publie lui-même ses "
+                       "règles d'admission et d'inscription : cette réponse "
+                       "vient de lui, pas d'ici.",
+        "entity_register": "{name} dans l'annuaire officiel",
         "say_note": "Formulation suggérée — ce n'est pas un texte officiel.",
         "no_match": "Aucun mot ne correspond à « {q} ».",
     },
