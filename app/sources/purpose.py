@@ -42,8 +42,16 @@ UNKNOWN_TYPE = "unknown"
 
 
 def _fold(text: str) -> str:
+    """Lowercase, unaccented, and hyphen-free.
+
+    Hyphens matter: the table writes "residence-permit" and a reader writes
+    "residence permit". Folding both to spaces is what makes the two the same
+    string — without it the phrase never matched and the question fell through
+    to whichever single word happened to hit first.
+    """
     folded = unicodedata.normalize("NFD", (text or "").lower())
-    return "".join(c for c in folded if unicodedata.category(c) != "Mn")
+    folded = "".join(c for c in folded if unicodedata.category(c) != "Mn")
+    return " ".join(folded.replace("-", " ").replace("_", " ").split())
 
 
 @dataclass(frozen=True)
@@ -97,12 +105,19 @@ def detect(question: str) -> tuple[Purpose, ...]:
     both tuition and admission, and pages for either are worth reading.
     """
     folded = _fold(question)
-    words = set(re.findall(r"[a-z0-9]{3,}", folded.replace("-", " ")))
+    words = set(re.findall(r"[a-z0-9]{3,}", folded))
     scored: list[tuple[int, Purpose]] = []
     for purpose in purposes():
-        hits = sum(1 for keyword in purpose.keywords
-                   if keyword in words or (" " in keyword and keyword in folded)
-                   or (len(keyword) > 6 and keyword in folded))
+        hits = 0
+        for keyword in purpose.keywords:
+            if " " in keyword:
+                # A phrase is a far stronger signal than any one of its words:
+                # "residence permit" means the permit, while "residence" alone
+                # is equally at home in student housing.
+                if keyword in folded:
+                    hits += 3
+            elif keyword in words:
+                hits += 1
         if hits:
             scored.append((hits, purpose))
     scored.sort(key=lambda pair: (-pair[0], pair[1].id))
@@ -128,10 +143,16 @@ def is_editorial(page_type: str) -> bool:
 
 def keyword_hits(text: str, found: tuple[Purpose, ...]) -> int:
     """How many purpose keywords this text carries."""
-    folded = _fold(text).replace("-", " ").replace("/", " ").replace("_", " ")
+    folded = _fold(text.replace("/", " "))
     words = set(re.findall(r"[a-z0-9]{3,}", folded))
-    return sum(1 for purpose in found for keyword in purpose.keywords
-               if keyword in words)
+    total = 0
+    for purpose in found:
+        for keyword in purpose.keywords:
+            if " " in keyword:
+                total += 2 if keyword in folded else 0
+            elif keyword in words:
+                total += 1
+    return total
 
 
 def serves(page_type: str, found: tuple[Purpose, ...]) -> bool:

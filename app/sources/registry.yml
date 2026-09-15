@@ -37,8 +37,13 @@ sources:
     notes: >
       The corpus this system is built on, ingested locally from the DILA open
       data publication. Explains procedure across government; rarely the body
-      that decides it. Live querying stays off because the local index is the
-      whole point.
+      that decides it.
+
+      It passes the live-query gate and is deliberately left off. Reading it
+      over the web would re-fetch, one page at a time, material that is
+      already indexed here as 43,794 passages — slower, and no more current,
+      since the feed is the same publication. Live querying is for bodies the
+      corpus cannot speak for.
 
   - id: interieur
     name: Ministère de l'Intérieur
@@ -69,7 +74,7 @@ sources:
     portal_url: https://administration-etrangers-en-france.interieur.gouv.fr/
     verified: true
     verified_at: 2026-09-15
-    live_query_enabled: false
+    live_query_enabled: true
     notes: >
       Checked 2026-09-15: ANEF renders its content in the browser, so the fetched page parses to nothing. Not usable as a text source without executing its scripts, which this fetcher deliberately does not do.
 
@@ -87,7 +92,7 @@ sources:
     health: healthy_rendered
     verified: true
     verified_at: 2026-09-15
-    live_query_enabled: false
+    live_query_enabled: true
     notes: >
       Checked 2026-09-15: Same as ANEF: the page arrives as an application shell with no readable text.
 
@@ -104,7 +109,7 @@ sources:
     health: healthy
     verified: true
     verified_at: 2026-09-15
-    live_query_enabled: false
+    live_query_enabled: true
 
   # --------------------------------------------------------- public bodies --
   - id: caf
@@ -141,7 +146,7 @@ sources:
     health: healthy
     verified: true
     verified_at: 2026-09-15
-    live_query_enabled: false
+    live_query_enabled: true
 
   - id: france-travail
     name: France Travail
@@ -159,7 +164,7 @@ sources:
     health: healthy_rendered
     verified: true
     verified_at: 2026-09-15
-    live_query_enabled: false
+    live_query_enabled: true
     notes: Renamed from Pôle emploi; the former domain is kept as an alias.
 
   - id: etudiant-gouv
@@ -177,7 +182,7 @@ sources:
     health: healthy
     verified: true
     verified_at: 2026-09-15
-    live_query_enabled: false
+    live_query_enabled: true
 
   - id: campus-france
     name: Campus France
@@ -192,7 +197,7 @@ sources:
     health: healthy
     verified: true
     verified_at: 2026-09-15
-    live_query_enabled: false
+    live_query_enabled: true
 
   # ---------------------------------------------------------- institutions --
   - id: mbs
@@ -220,3 +225,96 @@ sources:
       Formerly Montpellier Business School; montpellier-bs.com now redirects
       to mbs-education.com. Both are registered, so following that redirect is
       recognised as the same institution rather than refused as a hijack.
+
+  # ------------------------------------------------------- local authority --
+  # Immigration procedure is national law applied at a préfecture counter, and
+  # what that counter wants is not always what the national page says. Every
+  # domain below was fetched before it was written down — note that Paris has
+  # no paris.gouv.fr at all.
+  - id: prefecture-herault
+    name: Préfecture de l'Hérault
+    domain: herault.gouv.fr
+    base_url: https://www.herault.gouv.fr/
+    source_type: local_authority
+    authority_level: 1
+    refresh_priority: high
+    jurisdiction: department
+    jurisdiction_area: Hérault
+    health: healthy
+    supported_topics: [residence-permit, prefecture, identity, documents]
+    language: fr
+    verified: true
+    verified_at: 2026-09-15
+    live_query_enabled: true
+    entry_points:
+      - https://www.herault.gouv.fr/
+
+  - id: prefecture-rhone
+    name: Préfecture du Rhône
+    domain: rhone.gouv.fr
+    base_url: https://www.rhone.gouv.fr/
+    source_type: local_authority
+    authority_level: 1
+    refresh_priority: high
+    jurisdiction: department
+    jurisdiction_area: Rhône
+    health: healthy
+    supported_topics: [residence-permit, prefecture, identity, documents]
+    language: fr
+    verified: true
+    verified_at: 2026-09-15
+    live_query_enabled: true
+
+  - id: prefecture-bouches-du-rhone
+    name: Préfecture des Bouches-du-Rhône
+    domain: bouches-du-rhone.gouv.fr
+    base_url: https://www.bouches-du-rhone.gouv.fr/
+    source_type: local_authority
+    authority_level: 1
+    refresh_priority: high
+    jurisdiction: department
+    jurisdiction_area: Bouches-du-Rhône
+    health: healthy
+    supported_topics: [residence-permit, prefecture, identity, documents]
+    language: fr
+    verified: true
+    verified_at: 2026-09-15
+    live_query_enabled: true
+
+  - id: prefecture-nord
+    name: Préfecture du Nord
+    domain: nord.gouv.fr
+    base_url: https://www.nord.gouv.fr/
+    source_type: local_authority
+    authority_level: 1
+    refresh_priority: high
+    jurisdiction: department
+    jurisdiction_area: Nord
+    health: healthy
+    supported_topics: [residence-permit, prefecture, identity, documents]
+    language: fr
+    verified: true
+    verified_at: 2026-09-15
+    live_query_enabled: true
+
+  - id: prefecture-police-paris
+    name: Préfecture de police de Paris
+    domain: prefecturedepolice.interieur.gouv.fr
+    base_url: https://www.prefecturedepolice.interieur.gouv.fr/
+    source_type: local_authority
+    authority_level: 1
+    refresh_priority: high
+    jurisdiction: department
+    jurisdiction_area: Paris
+    health: healthy_rendered
+    render_enabled: true
+    supported_topics: [residence-permit, prefecture, identity, documents]
+    language: fr
+    verified: true
+    verified_at: 2026-09-15
+    live_query_enabled: true
+    notes: >
+      Paris has no paris.gouv.fr — that host does not resolve. Foreign-national
+      procedures in Paris are handled by the Préfecture de police, which is a
+      different arrangement from every other département and is exactly what a
+      "{department}.gouv.fr" rule would have got wrong.

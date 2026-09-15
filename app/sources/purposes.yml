@@ -45,9 +45,10 @@ purposes:
 
   residence_permit:
     keywords: [titre-de-sejour, titre-de-séjour, sejour, séjour, residence-permit,
-               visa, etranger, étranger, etrangers, étrangers, immigration,
-               prefecture, préfecture, renouvellement, naturalisation, anef,
-               recepisse, récépissé]
+               residence-card, permit, visa, etranger, étranger, etrangers,
+               étrangers, immigration, prefecture, préfecture, renouvellement,
+               renouveler, renew, naturalisation, anef, recepisse, récépissé,
+               vls-ts]
     page_types: [official_procedure, requirements, application_portal]
 
   documents:
@@ -68,8 +69,11 @@ purposes:
     page_types: [official_procedure, requirements]
 
   taxes:
+    # Both languages: the reader is often thinking in English about a French
+    # form, and "declare my income" never contained a French keyword.
     keywords: [impot, impôt, impots, impôts, tax, taxes, declaration, déclaration,
-               fiscal, fiscale, revenus]
+               fiscal, fiscale, revenus, declare, income, earnings, tax-return,
+               salary, payslip, avis-d-imposition]
     page_types: [official_procedure, requirements]
 
   contact:

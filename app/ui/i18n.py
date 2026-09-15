@@ -179,6 +179,15 @@ STRINGS: dict[str, dict[str, str]] = {
         "fresh_unavailable": "I couldn't reach the official site just now.",
         "live_source_head": "Official source",
         "source_is": "Source: {name}",
+        "clarify_place_head": "Where in France are you?",
+        "clarify_place_body": "This one depends on your préfecture, and they "
+                              "don't all ask for the same things. Tell me the "
+                              "town or the département and I'll use theirs.",
+        "authority_down_head": "I couldn't reach {name} just now",
+        "authority_down_body": "Rather than give you a requirement that may "
+                               "have changed, I'd rather say so. Try again in "
+                               "a little while, or check their site directly.",
+        "local_authority_is": "Local authority: {name}",
         "say_note": "Suggested wording — not an official text.",
         "no_match": "No word matches “{q}”.",
     },
@@ -355,6 +364,17 @@ STRINGS: dict[str, dict[str, str]] = {
         "fresh_unavailable": "Le site officiel est injoignable pour le moment.",
         "live_source_head": "Source officielle",
         "source_is": "Source : {name}",
+        "clarify_place_head": "Où êtes-vous en France ?",
+        "clarify_place_body": "Cela dépend de votre préfecture, et elles ne "
+                              "demandent pas toutes la même chose. Dites-moi "
+                              "la ville ou le département et j'utiliserai la "
+                              "bonne.",
+        "authority_down_head": "Je n'ai pas pu joindre {name} à l'instant",
+        "authority_down_body": "Plutôt que de vous donner une exigence qui a "
+                               "peut-être changé, je préfère vous le dire. "
+                               "Réessayez un peu plus tard, ou consultez "
+                               "directement leur site.",
+        "local_authority_is": "Autorité locale : {name}",
         "say_note": "Formulation suggérée — ce n'est pas un texte officiel.",
         "no_match": "Aucun mot ne correspond à « {q} ».",
     },

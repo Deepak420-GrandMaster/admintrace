@@ -544,7 +544,11 @@ def turn_html(turn: dict, lang: str, reply_lang: str, index: int) -> str:
     body_parts: list[str] = []
 
     result = turn.get("result")
-    if turn.get("state") == "clarify":
+    if turn.get("state") == "clarify_place":
+        body_parts.append(clarify_place_html(lang))
+    elif turn.get("state") == "authority_down":
+        body_parts.append(authority_down_html(turn.get("authority", ""), lang))
+    elif turn.get("state") == "clarify":
         body_parts.append(clarification_html(turn.get("surface", ""), lang))
     elif turn.get("state") == "thinking" or result is None:
         body_parts.append(thinking_html(lang))
@@ -571,6 +575,11 @@ def turn_html(turn: dict, lang: str, reply_lang: str, index: int) -> str:
                 body_parts.append(services_html(result.services, lang))
                 body_parts.append(sources_html(result.citations, lang))
             # Stored as a translation key, so it follows a language switch.
+            local = turn.get("local_authority")
+            if local:
+                body_parts.append(
+                    f"<p class='rp-authority'>"
+                    f"{html.escape(t(lang, 'local_authority_is', name=local))}</p>")
             note = turn.get("freshness")
             if note:
                 body_parts.append(
@@ -609,6 +618,32 @@ def clarification_html(surface: str, lang: str = "en") -> str:
         f"<p class='rp-clarify-head'>{html.escape(t(lang, 'clarify_head'))}</p>"
         f"<p class='rp-clarify-body'>{html.escape(t(lang, 'clarify_body'))}</p>"
         f"</div>"
+    )
+
+
+def clarify_place_html(lang: str = "en") -> str:
+    """Ask where, when the answer genuinely depends on where.
+
+    A préfecture question answered from the national page alone is how someone
+    turns up at a counter with the wrong folder, so this asks rather than
+    averaging the country.
+    """
+    return (
+        f"<div class='rp-clarify' role='status'>"
+        f"<p class='rp-clarify-head'>{html.escape(t(lang, 'clarify_place_head'))}</p>"
+        f"<p class='rp-clarify-body'>{html.escape(t(lang, 'clarify_place_body'))}</p>"
+        f"</div>"
+    )
+
+
+def authority_down_html(name: str, lang: str = "en") -> str:
+    """Say the authority is unreachable, rather than answering around it."""
+    return (
+        f"<div class='rp-clarify' role='status'>"
+        f"<p class='rp-clarify-head'>"
+        f"{html.escape(t(lang, 'authority_down_head', name=name))}</p>"
+        f"<p class='rp-clarify-body'>"
+        f"{html.escape(t(lang, 'authority_down_body'))}</p></div>"
     )
 
 

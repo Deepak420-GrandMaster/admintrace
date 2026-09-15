@@ -90,11 +90,29 @@ class LiveResult:
     freshness: Freshness = Freshness.UNKNOWN
     attempted_live: bool = False
     purposes: tuple[str, ...] = field(default_factory=tuple)
+    #: Every source that contributed, in the order the plan asked them.
+    sources: list[Source] = field(default_factory=list)
+    #: Authorities that should have answered and could not be reached. Named,
+    #: because "the préfecture is down" and "there is no answer" are different
+    #: things to tell a reader.
+    unreachable: list[str] = field(default_factory=list)
     error: str = ""
 
     @property
     def ok(self) -> bool:
         return bool(self.evidence)
+
+    @property
+    def local_source(self) -> Source | None:
+        from app.sources.registry import JurisdictionLevel
+        return next((s for s in self.sources
+                     if s.jurisdiction is not JurisdictionLevel.NATIONAL), None)
+
+    @property
+    def source_versions(self) -> dict[str, str]:
+        """What this answer rests on, for deciding later whether it still holds."""
+        return {f"{e.source_id}|{e.url}": e.version_id
+                for e in self.evidence if e.version_id}
 
 
 # ------------------------------------------------------------ discovery ----
@@ -270,18 +288,23 @@ def _evidence_from_version(version, source: Source, url: str,
 
 def gather(entity_id: str, question: str, *, limit: int = 3,
            force_live: bool | None = None,
+           source_override: Source | None = None,
            settings: Settings | None = None) -> LiveResult:
-    """Evidence for this question from the entity's own official source."""
+    """Evidence for this question from one source's own official pages."""
     settings = settings or get_settings()
-    sources = [s for s in for_entity(entity_id)
-               if s.live_query_enabled and s.verified]
-    if not sources:
-        return LiveResult(entity_id=entity_id,
-                          error="no verified live source is registered for this entity")
-
-    source = sources[0]
+    if source_override is not None:
+        source = source_override
+    else:
+        sources = [s for s in for_entity(entity_id)
+                   if s.live_query_enabled and s.verified]
+        if not sources:
+            return LiveResult(
+                entity_id=entity_id,
+                error="no verified live source is registered for this entity")
+        source = sources[0]
     found = purpose_model.detect(question)
     result = LiveResult(entity_id=entity_id, source=source,
+                        sources=[source],
                         purposes=tuple(p.id for p in found))
     live_wanted = wants_current_information(question) if force_live is None else force_live
 
@@ -332,3 +355,53 @@ def gather(entity_id: str, question: str, *, limit: int = 3,
     if not result.evidence and not result.error:
         result.error = "the official site could not be read just now"
     return result
+
+
+def gather_plan(routing_plan, question: str, *, per_source: int = 2,
+                settings: Settings | None = None) -> LiveResult:
+    """Walk a route, asking each authority in turn.
+
+    The order is the plan's, and the plan's order is the point: a local
+    authority is asked before the national one for a locally administered
+    procedure, and an institution before either for its own rules. Evidence
+    keeps that order, so the answer is written from the most specific source
+    first rather than from whichever page happened to be longest.
+
+    A source that cannot be reached is named rather than silently dropped.
+    """
+    settings = settings or get_settings()
+    found = purpose_model.detect(question)
+    result = LiveResult(purposes=tuple(p.id for p in found))
+    result.unreachable.extend(routing_plan.unreachable)
+
+    steps = routing_plan.live_steps
+    if not steps:
+        result.error = ("no authority for this question can be queried live "
+                        "just now")
+        result.freshness = Freshness.UNAVAILABLE
+        return result
+
+    worst = Freshness.LIVE_VERIFIED
+    for step in steps:
+        source = step.source
+        single = gather(_entity_for(source), question, limit=per_source,
+                        settings=settings, source_override=source)
+        if not single.ok:
+            result.unreachable.append(source.name)
+            continue
+        result.sources.append(source)
+        result.evidence.extend(single.evidence)
+        if single.freshness is Freshness.STALE:
+            worst = Freshness.STALE
+        elif single.freshness is Freshness.FRESH and worst is Freshness.LIVE_VERIFIED:
+            worst = Freshness.FRESH
+
+    result.source = result.sources[0] if result.sources else None
+    result.freshness = worst if result.evidence else Freshness.UNAVAILABLE
+    if not result.evidence and not result.error:
+        result.error = "none of the authorities for this question could be read"
+    return result
+
+
+def _entity_for(source: Source) -> str:
+    return source.supported_entities[0] if source.supported_entities else source.id

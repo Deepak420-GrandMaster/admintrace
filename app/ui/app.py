@@ -27,6 +27,8 @@ from app.query import entity
 from app.retrieval.answerability import Answerability, classify
 from app.answer.from_source import answer_from_source, freshness_key
 from app.sources import live as live_sources
+from app.sources import route as source_route
+from app.sources.jurisdiction import resolve as resolve_place
 from app.sources.registry import for_entity
 from app.ui import brand, render
 from app.directory import universities
@@ -751,27 +753,71 @@ def ask(question: str, ui_lang: str, answer_lang: str, uai: str = "",
         return gr.update(value=render.thread_html(turns, ui_lang, reply_lang),
                          visible=True)
 
-    if live_source:
+    # A reply to a clarification completes the question it answered, rather
+    # than replacing it. "I live in Montpellier." on its own is about nothing;
+    # after "what do I need to renew my residence permit?" it is the rest of
+    # that question, and routing has to see both.
+    # turns[-1] is the turn just appended for this question, so the one that
+    # asked the clarification is the one before it.
+    routing_question = question
+    previous_turn = turns[-2] if len(turns) >= 2 else None
+    if previous_turn and previous_turn.get("state") in ("clarify", "clarify_place"):
+        routing_question = f"{previous_turn.get('question', '')} {question}".strip()
+
+    # Which authority actually speaks to this question? An institution's own
+    # rule, a préfecture's counter, a national body — or none of them, in
+    # which case the corpus answers as before.
+    place = resolve_place(
+        " ".join([*history, question]),
+        hint_department=(who.institution.departement
+                         if who.institution is not None else ""))
+    routing = source_route.plan(routing_question, entity_id=live_source or "",
+                                place=place)
+
+    if routing.needs_place:
+        # The answer genuinely differs by préfecture. Averaging the country
+        # here is how somebody arrives at a counter with the wrong folder.
+        turns[-1] = {**turns[-1], "state": "clarify_place", "result": None}
+        yield (thread(), hidden, hidden, gr.update(), gr.update(), hidden,
+               turns, {},
+               gr.update(value="", placeholder=t(ui_lang, "followup_ph")))
+        return
+
+    if routing.live_steps:
         yield (thread(), hidden, hidden, gr.update(), gr.update(),
                gr.update(visible=False), turns, {},
                gr.update(value="", placeholder=t(ui_lang, "followup_ph")))
-        found = live_sources.gather(live_source, question)
+
+        found = live_sources.gather_plan(routing, routing_question, per_source=2)
         if found.ok:
-            answered = answer_from_source(question, found, language=reply_lang)
+            answered = answer_from_source(routing_question, found,
+                                          language=reply_lang)
+            local = found.local_source
             turns[-1] = {"question": question, "state": "done",
                          "result": answered, "streaming": False,
                          "institution": about,
                          "freshness": freshness_key(found),
                          "live_source_name": found.source.name if found.source else "",
-                         "live_domain": found.source.domain if found.source else ""}
+                         "local_authority": local.name if local is not None else "",
+                         "live_domain": found.source.domain if found.source else "",
+                         "source_versions": found.source_versions}
             yield (thread(), hidden, hidden, gr.update(),
                    gr.update(visible=get_settings().debug_panel),
                    gr.update(visible=False), turns,
                    _context_of(answered, question, uai), gr.update())
             return
-        # The site could not be read. Fall through to the corpus rather than
-        # inventing anything, and say plainly that the official site was the
-        # thing that did not answer.
+
+        if routing.live_steps and not routing.fall_back_to_corpus:
+            # The body that owns this answer exists and could not be read.
+            # Saying so beats answering from something that does not own it.
+            authority = routing.live_steps[0].source.name
+            turns[-1] = {**turns[-1], "state": "authority_down",
+                         "result": None, "authority": authority}
+            yield (thread(), hidden, hidden, gr.update(), gr.update(), hidden,
+                   turns, {}, gr.update())
+            return
+        # Otherwise fall through: the corpus is a legitimate answer for this
+        # topic, and it is better than nothing.
         turns[-1] = {**turns[-1], "freshness": freshness_key(found)}
 
     offer_study = gr.update(visible=looks_like_study(question) and not uai)

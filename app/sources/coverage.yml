@@ -1,0 +1,64 @@
+# Which kinds of authority answer which kind of question.
+#
+# The ranking is per topic because the right answer to "who decides this"
+# genuinely differs. A school's admission rules are the school's. A residence
+# permit is national law applied at a préfecture counter, and what that counter
+# wants is local. Housing benefit is a national body. One ordering for all of
+# them would be wrong for most of them.
+#
+# `required` is what a complete answer needs. `preferred` is consulted first.
+# `fallback` is what to use when nothing better answered — which, for most of
+# these, is the general public-administration corpus.
+
+version: 1
+
+topics:
+  residence_permit:
+    purposes: [residence_permit, documents]
+    preferred: [local_authority, government]
+    required: [government]
+    fallback: [corpus]
+    note: National rule, local counter. Both matter; neither alone is enough.
+
+  admission:
+    purposes: [admission, programmes, tuition, deadline]
+    preferred: [school, university, institution]
+    required: [school, university, institution]
+    fallback: [public_body]
+    note: An institution's own rule. No government page can answer it.
+
+  housing:
+    purposes: [housing]
+    preferred: [public_body]
+    required: [public_body]
+    fallback: [corpus]
+
+  health:
+    purposes: [health]
+    preferred: [public_body]
+    required: [public_body]
+    fallback: [corpus]
+
+  work:
+    purposes: [work]
+    preferred: [public_body]
+    required: [public_body]
+    fallback: [corpus]
+
+  taxes:
+    purposes: [taxes]
+    preferred: [government]
+    required: [government]
+    fallback: [corpus]
+
+  identity_documents:
+    purposes: [documents]
+    preferred: [public_body, local_authority]
+    required: [public_body]
+    fallback: [corpus]
+
+  study_life:
+    purposes: [programmes]
+    preferred: [public_body]
+    required: [public_body]
+    fallback: [corpus]

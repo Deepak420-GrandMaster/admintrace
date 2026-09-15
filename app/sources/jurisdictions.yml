@@ -1,0 +1,75 @@
+# Where a person is, and which authority that puts them in front of.
+#
+# Immigration procedure in France is national law administered locally. The
+# rule comes from the ministry; the counter, the appointment system and the
+# list of papers that counter actually wants come from a préfecture. Answering
+# only from the national page is how someone arrives with the wrong folder.
+#
+# Every domain here was fetched before it was written down. Note Paris: there
+# is no paris.gouv.fr — the Préfecture de police handles it, which is exactly
+# the kind of thing a "{department}.gouv.fr" rule would have got wrong.
+#
+# `cities` is not a gazetteer. It is the communes a reader is likely to name
+# when they say where they live, and it exists so "I live in Montpellier"
+# resolves without asking them for a département number they may not know.
+
+version: 1
+
+regions:
+  - id: occitanie
+    name: Occitanie
+  - id: auvergne-rhone-alpes
+    name: Auvergne-Rhône-Alpes
+  - id: provence-alpes-cote-azur
+    name: Provence-Alpes-Côte d'Azur
+  - id: hauts-de-france
+    name: Hauts-de-France
+  - id: ile-de-france
+    name: Île-de-France
+
+departments:
+  - code: "34"
+    id: herault
+    name: Hérault
+    region: occitanie
+    prefecture_source: prefecture-herault
+    prefecture_name: Préfecture de l'Hérault
+    cities: [Montpellier, Béziers, Sète, Lunel, Agde, Frontignan, Mauguio,
+             Castelnau-le-Lez, Lattes, Palavas-les-Flots]
+
+  - code: "69"
+    id: rhone
+    name: Rhône
+    region: auvergne-rhone-alpes
+    prefecture_source: prefecture-rhone
+    prefecture_name: Préfecture du Rhône
+    cities: [Lyon, Villeurbanne, Vénissieux, Caluire-et-Cuire, Bron,
+             Saint-Priest, Vaulx-en-Velin]
+
+  - code: "13"
+    id: bouches-du-rhone
+    name: Bouches-du-Rhône
+    region: provence-alpes-cote-azur
+    prefecture_source: prefecture-bouches-du-rhone
+    prefecture_name: Préfecture des Bouches-du-Rhône
+    cities: [Marseille, Aix-en-Provence, Arles, Martigues, Aubagne, Salon-de-Provence]
+
+  - code: "59"
+    id: nord
+    name: Nord
+    region: hauts-de-france
+    prefecture_source: prefecture-nord
+    prefecture_name: Préfecture du Nord
+    cities: [Lille, Roubaix, Tourcoing, Dunkerque, Villeneuve-d'Ascq, Valenciennes]
+
+  - code: "75"
+    id: paris
+    name: Paris
+    region: ile-de-france
+    prefecture_source: prefecture-police-paris
+    prefecture_name: Préfecture de police de Paris
+    cities: [Paris]
+    notes: >
+      Paris is not served by a "paris.gouv.fr"; that host does not resolve.
+      Foreign-national procedures in Paris are handled by the Préfecture de
+      police. Checked 2026-09-15.
