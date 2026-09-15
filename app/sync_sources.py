@@ -26,8 +26,22 @@ from app.sources import store
 from app.sources.change import ChangeType
 from app.sources.extract import extract
 from app.sources.fetch import fetch
-from app.sources.live import candidate_pages
-from app.sources.registry import load_registry
+from app.sources.registry import Health, load_registry
+
+
+def _read(url, source, settings):
+    """Static HTML, then a render only if there was nothing readable in it."""
+    result = fetch(url, settings=settings, expect=source)
+    page = extract(result.body, result.final_url) if result.ok else None
+    if source.render_enabled and (page is None or not page.is_usable):
+        from app.sources.render import available, render
+        if available():
+            rendered = render(url, source=source, settings=settings)
+            if rendered.ok:
+                candidate = extract(rendered.body, rendered.final_url)
+                if candidate.is_usable:
+                    return rendered, candidate, True
+    return result, page, False
 
 
 def sync_source(source, settings, *, dry_run: bool, pages: int) -> list[dict]:
@@ -36,11 +50,13 @@ def sync_source(source, settings, *, dry_run: bool, pages: int) -> list[dict]:
 
     for url in targets:
         row = {"source": source.id, "url": url, "status": 0,
-               "change": ChangeType.NONE.value, "summary": "", "action": "",
-               "version": "", "error": ""}
-        result = fetch(url, settings=settings, expect=source)
+               "change": ChangeType.NONE.value, "severity": "low",
+               "categories": [], "topics": [], "summary": "", "action": "",
+               "version": "", "rendered": False, "error": ""}
+        result, page, rendered = _read(url, source, settings)
         row["status"] = result.status
-        if not result.ok:
+        row["rendered"] = rendered
+        if page is None:
             row["error"] = result.error or f"http {result.status}"
             row["action"] = "kept previous version"
             rows.append(row)
@@ -48,7 +64,6 @@ def sync_source(source, settings, *, dry_run: bool, pages: int) -> list[dict]:
                         url=url, error=row["error"], dry_run=dry_run)
             continue
 
-        page = extract(result.body, result.final_url)
         current = store.active(source.id, url, settings)
 
         if dry_run:
@@ -57,6 +72,9 @@ def sync_source(source, settings, *, dry_run: bool, pages: int) -> list[dict]:
                              old_title=current.title if current else "",
                              new_title=page.title)
             row["change"] = report.change_type.value
+            row["severity"] = report.severity.value
+            row["categories"] = report.categories[:4]
+            row["topics"] = report.affected_topics
             row["summary"] = report.summary
             row["action"] = ("would refuse: no usable content" if not page.is_usable
                              else "would activate" if report.change_type is not ChangeType.NONE
@@ -67,6 +85,9 @@ def sync_source(source, settings, *, dry_run: bool, pages: int) -> list[dict]:
         version, report = store.record(source.id, url, page, result.content_hash,
                                        settings=settings)
         row["change"] = report.change_type.value
+        row["severity"] = report.severity.value
+        row["categories"] = report.categories[:4]
+        row["topics"] = report.affected_topics
         row["summary"] = report.summary
         if version is None:
             row["action"] = "refused: no usable content, previous version kept"
@@ -88,18 +109,26 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--source", help="only this source id")
     parser.add_argument("--pages", type=int, default=2,
                         help="entry pages per source (default 2)")
+    parser.add_argument("--due", action="store_true",
+                        help="only sources past their own refresh interval")
+    parser.add_argument("--all", action="store_true",
+                        help="every usable source, not only live-query ones")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
 
     settings = get_settings()
-    sources = [s for s in load_registry() if s.live_query_enabled and s.verified]
+    sources = [s for s in load_registry()
+               if s.is_usable and (args.all or s.live_query_enabled)]
     if args.source:
-        sources = [s for s in sources if s.id == args.source]
+        sources = [s for s in load_registry() if s.id == args.source]
         if not sources:
-            print(f"no verified live source with id {args.source!r}", file=sys.stderr)
+            print(f"no source with id {args.source!r}", file=sys.stderr)
             return 1
+    if args.due:
+        sources = [s for s in sources if store.due(s, settings)]
     if not sources:
-        print("no source has live querying enabled and verified; nothing to sync.")
+        print("nothing due." if args.due else
+              "no usable source is enabled for sync.")
         return 0
 
     rows: list[dict] = []
@@ -112,14 +141,19 @@ def main(argv: list[str] | None = None) -> int:
     else:
         mode = "DRY RUN — nothing written" if args.dry_run else "SYNC"
         print(f"{mode}\n")
-        print(f"{'SOURCE':<12} {'CHANGE':<12} {'ACTION':<44} URL")
+        print(f"{'SOURCE':<12} {'CHANGE':<12} {'SEV':<9} {'ACTION':<40} URL")
         for row in rows:
-            print(f"{row['source']:<12} {row['change']:<12} "
-                  f"{(row['action'] or row['error'])[:44]:<44} {row['url'][:60]}")
+            print(f"{row['source']:<12} {row['change']:<12} {row['severity']:<9} "
+                  f"{(row['action'] or row['error'])[:40]:<40} {row['url'][:46]}")
         changed = [r for r in rows if r["change"] in ("substantive", "critical")]
-        print(f"\n{len(rows)} page(s) · {len(changed)} substantive change(s)")
-        for row in changed:
-            print(f"  ! {row['source']} {row['url']}\n    {row['summary']}")
+        attention = [r for r in changed if r["severity"] in ("critical", "high")]
+        print(f"\n{len(rows)} page(s) · {len(changed)} substantive change(s) · "
+              f"{len(attention)} needing review")
+        for row in attention:
+            print(f"  ! [{row['severity'].upper()}] {row['source']} {row['url']}")
+            print(f"    {row['summary']}")
+            if row["topics"]:
+                print(f"    invalidates: {', '.join(row['topics'])}")
     return 0
 
 

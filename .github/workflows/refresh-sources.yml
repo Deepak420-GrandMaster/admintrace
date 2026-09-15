@@ -1,0 +1,49 @@
+# Re-read the official sources on a schedule.
+#
+# The job fails when a substantive change needs review. That is the point:
+# GitHub's own failure notification becomes the alert, so there is no second
+# notification system to keep alive.
+name: refresh sources
+
+on:
+  schedule:
+    # Every six hours. The critical sources declare an eight-hour interval, so
+    # this wakes often enough that one of them is always checked in time.
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install
+        run: uv sync --extra dev --extra render
+
+      - name: Install the browser used for JS-rendered sources
+        run: uv run playwright install --with-deps chromium
+
+      - name: Check source health
+        run: uv run python -m app.live_source_check --json > health.json
+        continue-on-error: true
+
+      - name: Sync what is due
+        id: sync
+        run: uv run python -m app.sync_sources --all --due
+
+      - name: Keep the audit trail
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-audit
+          path: |
+            health.json
+            data/sources/audit.jsonl
+            data/sources/index.json
+          if-no-files-found: ignore
+          retention-days: 30

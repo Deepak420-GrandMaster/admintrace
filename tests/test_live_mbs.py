@@ -19,6 +19,7 @@ import pytest
 from app.directory.universities import search
 from app.query.entity import canonical_ids, resolve
 from app.sources import live as live_sources
+from app.sources import purpose
 from app.sources.registry import by_id, for_entity
 
 network = pytest.mark.skipif(
@@ -127,3 +128,66 @@ def test_the_old_domain_still_reaches_the_school(mbs_source):
     assert result.ok, result.error
     assert result.source_id == "mbs"
     assert (urlsplit(result.final_url).hostname or "").endswith("mbs-education.com")
+
+
+# ---------------------------------------------------- the question battery --
+
+#: The questions a real applicant asks, and the kind of page that answers each.
+BATTERY = [
+    ("What are the admission requirements?", {"admissions", "requirements"}),
+    ("What documents do I need to apply?", {"admissions", "requirements"}),
+    ("When is the application deadline?", {"admissions", "deadline",
+                                           "official_procedure"}),
+    ("How much does the programme cost?", {"fees", "official_procedure"}),
+    ("How can an international student apply?", {"admissions", "requirements",
+                                                 "official_procedure"}),
+]
+
+
+@pytest.mark.parametrize("question,wanted_types", BATTERY)
+@network
+def test_each_real_applicant_question_finds_a_page_that_answers_it(
+        mbs_source, question, wanted_types):
+    """Not merely a page on the right site — a page of the right kind."""
+    candidates = live_sources.discover(mbs_source, question, limit=4)
+    assert candidates, question
+
+    for candidate in candidates:
+        assert mbs_source.allows(candidate.url), candidate.url
+
+    types = {c.page_type for c in candidates}
+    assert types & wanted_types, (
+        f"{question!r} found only {sorted(types)}; expected one of "
+        f"{sorted(wanted_types)}")
+
+
+@pytest.mark.parametrize("question,_types", BATTERY)
+@network
+def test_no_press_release_is_ever_the_top_result(mbs_source, question, _types):
+    """A news item about last year's intake is not the rule."""
+    top = live_sources.discover(mbs_source, question, limit=3)[0]
+    assert not purpose.is_editorial(top.page_type), (
+        f"{question!r} put a {top.page_type} page first: {top.url}")
+
+
+@network
+def test_the_answer_cites_only_the_schools_own_pages():
+    from urllib.parse import urlsplit
+    result = live_sources.gather(ENTITY, "What are the admission requirements?")
+    assert result.ok, result.error
+    assert result.evidence
+    for item in result.evidence:
+        host = urlsplit(item.canonical_url or item.url).hostname or ""
+        assert host.endswith("mbs-education.com"), host
+
+
+@network
+def test_what_the_school_does_not_publish_is_not_invented():
+    """A question the site has no page for must not be answered from elsewhere."""
+    result = live_sources.gather(
+        ENTITY, "What is the exact bank account number for paying the deposit?")
+    # Either nothing relevant was found, or whatever was found is still MBS's.
+    from urllib.parse import urlsplit
+    for item in result.evidence:
+        host = urlsplit(item.canonical_url or item.url).hostname or ""
+        assert host.endswith("mbs-education.com"), host

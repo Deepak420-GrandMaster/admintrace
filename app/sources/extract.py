@@ -46,6 +46,10 @@ class Page:
     text: str = ""
     headings: list[str] = field(default_factory=list)
     links: list[str] = field(default_factory=list)
+    #: Absolute URL -> the words that pointed at it. A menu entry reading
+    #: "Admissions" is the strongest signal a site gives about what a page is,
+    #: and it is lost if only the href is kept.
+    anchors: dict[str, str] = field(default_factory=dict)
     language: str = ""
     updated: str = ""
     description: str = ""
@@ -75,10 +79,13 @@ class _Reader(HTMLParser):
         self.updated = ""
         self.headings: list[str] = []
         self.links: list[str] = []
+        self.anchors: list[tuple[str, str]] = []
         self._chunks: list[str] = []
         self._drop_depth = 0
         self._in_title = False
         self._heading: str | None = None
+        self._anchor: list[str] | None = None
+        self._anchor_href = ""
 
     # -- helpers ----------------------------------------------------------
     @staticmethod
@@ -99,6 +106,11 @@ class _Reader(HTMLParser):
     def handle_starttag(self, tag, attrs):
         tag = tag.lower()
         if self._drop_depth:
+            if tag == "a":
+                href = self._attr(attrs, "href")
+                if href and not href.startswith(("#", "javascript:", "mailto:", "tel:")):
+                    self._anchor_href = href
+                    self._anchor = []
             if tag not in ("br", "img", "meta", "link", "input"):
                 self._drop_depth += 1
             return
@@ -126,6 +138,8 @@ class _Reader(HTMLParser):
             href = self._attr(attrs, "href")
             if href and not href.startswith(("#", "javascript:", "mailto:", "tel:")):
                 self.links.append(href)
+                self._anchor_href = href
+                self._anchor = []
         elif tag in ("h1", "h2", "h3"):
             self._heading = ""
 
@@ -134,6 +148,14 @@ class _Reader(HTMLParser):
 
     def handle_endtag(self, tag):
         tag = tag.lower()
+        if tag == "a" and self._anchor is not None:
+            words = " ".join("".join(self._anchor).split())[:120]
+            if words and self._anchor_href:
+                self.anchors.append((self._anchor_href, words))
+                if self._anchor_href not in self.links:
+                    self.links.append(self._anchor_href)
+            self._anchor = None
+            self._anchor_href = ""
         if self._drop_depth:
             self._drop_depth -= 1
             return
@@ -148,6 +170,8 @@ class _Reader(HTMLParser):
             self._chunks.append("\n")
 
     def handle_data(self, data):
+        if self._anchor is not None:
+            self._anchor.append(data)
         if self._drop_depth:
             return
         if self._in_title:
@@ -194,10 +218,15 @@ def extract(html: str, url: str = "") -> Page:
 
     base = url or canonical
     links = []
-    for href in reader.links[:400]:
+    anchors: dict[str, str] = {}
+    for href in reader.links[:600]:
         absolute = urljoin(base, href) if base else href
         if absolute.startswith("https://"):
             links.append(absolute)
+    for href, words in reader.anchors[:600]:
+        absolute = urljoin(base, href) if base else href
+        if absolute.startswith("https://") and absolute not in anchors:
+            anchors[absolute] = words
 
     return Page(
         url=url,
@@ -205,7 +234,8 @@ def extract(html: str, url: str = "") -> Page:
         title=" ".join(unescape(reader.title).split())[:300],
         text=text,
         headings=reader.headings[:60],
-        links=list(dict.fromkeys(links))[:200],
+        links=list(dict.fromkeys(links))[:300],
+        anchors=anchors,
         language=reader.language,
         updated=updated,
         description=reader.description,

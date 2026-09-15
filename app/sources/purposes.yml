@@ -1,0 +1,132 @@
+# What someone is trying to do, and how that looks in a URL.
+#
+# Discovery used to rank pages by how much their path resembled the question.
+# That is not the same thing: a question about admission and a news item about
+# last year's admission round share every word. What separates them is the
+# *purpose* of the page — whether it exists to state a rule or to report an
+# event — so purpose is modelled here rather than inferred from similarity.
+#
+# `keywords` are matched against the URL path, the page title and the anchor
+# text that pointed at it. `page_types` are the kinds of page that answer this
+# purpose; anything else is ranked below them.
+
+version: 1
+
+purposes:
+  admission:
+    keywords: [admission, admissions, apply, application, applying, candidature,
+               candidater, postuler, requirements, requirement, conditions,
+               admissibilite, admissibilité, prerequis, prérequis, eligibility,
+               international, inscription, inscriptions, dossier, concours,
+               selection, sélection, entry, intake]
+    page_types: [admissions, requirements, official_procedure, application_portal]
+
+  tuition:
+    keywords: [tuition, fees, fee, frais, tarif, tarifs, cost, costs, cout, coût,
+               financement, financing, funding, bourse, bourses, scholarship,
+               scholarships, prix]
+    page_types: [fees, official_procedure]
+
+  deadline:
+    keywords: [deadline, deadlines, calendrier, calendar, dates, date-limite,
+               echeance, échéance, rentree, rentrée, session, sessions]
+    page_types: [deadline, official_procedure, admissions]
+
+  programmes:
+    keywords: [programme, programmes, program, programs, formation, formations,
+               cursus, bachelor, master, msc, mba, doctorat, phd, courses]
+    page_types: [official_procedure, admissions]
+
+  housing:
+    keywords: [housing, accommodation, logement, logements, residence, résidence,
+               hebergement, hébergement, bail, loyer, caution, colocation, apl,
+               allocation]
+    page_types: [official_procedure, requirements]
+
+  residence_permit:
+    keywords: [titre-de-sejour, titre-de-séjour, sejour, séjour, residence-permit,
+               visa, etranger, étranger, etrangers, étrangers, immigration,
+               prefecture, préfecture, renouvellement, naturalisation, anef,
+               recepisse, récépissé]
+    page_types: [official_procedure, requirements, application_portal]
+
+  documents:
+    keywords: [documents, document, justificatif, justificatifs, piece, pièce,
+               pieces, pièces, attestation, attestations, certificat, formulaire,
+               cerfa, papiers, proof, domicile, justificatif-de-domicile,
+               proof-of-address, releve, relevé, copie, traduction]
+    page_types: [requirements, official_procedure]
+
+  health:
+    keywords: [sante, santé, health, assurance-maladie, securite-sociale,
+               sécurité-sociale, mutuelle, carte-vitale, ameli, medecin, médecin]
+    page_types: [official_procedure, requirements]
+
+  work:
+    keywords: [emploi, travail, work, job, jobs, contrat, contrats, cdi, cdd,
+               alternance, stage, stages, recrutement, salaire, employment]
+    page_types: [official_procedure, requirements]
+
+  taxes:
+    keywords: [impot, impôt, impots, impôts, tax, taxes, declaration, déclaration,
+               fiscal, fiscale, revenus]
+    page_types: [official_procedure, requirements]
+
+  contact:
+    # "address" is deliberately absent: a newcomer asking about an address is
+    # almost always being asked to prove one, not trying to find ours.
+    keywords: [contact, contacts, nous-contacter, contactez, telephone, téléphone,
+               courriel, coordonnees, coordonnées, rendez-vous, appointment,
+               guichet]
+    page_types: [contact]
+
+# Page kinds, matched on the URL path first and the title second. Order is
+# significant: the first match wins, so the most specific patterns come first.
+page_types:
+  application_portal:
+    paths: [/candidature, /candidater, /postuler, /apply-now, /application-form,
+            /mon-compte, /login, /connexion, /portail, /espace-candidat]
+    titles: [candidature en ligne, application form, portail, se connecter]
+
+  admissions:
+    paths: [/admission, /admissions, /apply, /applying, /candidature,
+            /international-admissions, /comment-candidater, /inscription]
+    titles: [admission, admissions, candidater, comment postuler, apply]
+
+  requirements:
+    paths: [/conditions, /requirements, /prerequis, /prérequis, /admissibilite,
+            /pieces-justificatives, /documents]
+    titles: [conditions, requirements, pièces, documents requis, prérequis]
+
+  fees:
+    paths: [/frais, /tuition, /fees, /tarifs, /cout, /coût, /financement]
+    titles: [frais de scolarité, tuition, tarifs, financement]
+
+  deadline:
+    paths: [/calendrier, /dates, /deadlines, /echeances, /échéances]
+    titles: [calendrier, dates clés, deadlines, échéances]
+
+  news:
+    paths: [/actualites, /actualité, /actualites, /news, /blog, /presse, /press,
+            /communique, /communiqué, /temoignages, /témoignages, /stories]
+    titles: [actualité, actualités, news, communiqué de presse]
+
+  event:
+    paths: [/evenements, /événements, /events, /agenda, /portes-ouvertes,
+            /journee, /journée, /webinar, /salon]
+    titles: [événement, events, agenda, portes ouvertes, journée]
+
+  marketing:
+    paths: [/brochure, /decouvrir, /découvrir, /pourquoi, /why-, /campagne,
+            /classement, /ranking, /rankings]
+    titles: [pourquoi choisir, découvrez, classement, ranking]
+
+  contact:
+    paths: [/contact, /nous-contacter, /contactez, /plan-acces, /acces]
+    titles: [contact, nous contacter, accès]
+
+  official_procedure:
+    paths: [/demarche, /démarche, /demarches, /démarches, /procedure, /procédure,
+            /comment, /guide, /fiche, /vos-droits, /programmes-formations,
+            /programme, /formation]
+    titles: [démarche, procédure, comment faire, guide, programme]

@@ -17,6 +17,11 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
+# Rendering is opt-in. Most official sites serve their content in the HTML and
+# need none of this; a few state services are browser-rendered applications
+# and cannot be read without it. Installing a browser should be the reader's
+# decision, not a cost every install pays.
+render = ["playwright>=1.44"]
 
 [build-system]
 requires = ["hatchling"]

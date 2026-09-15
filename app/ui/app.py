@@ -762,6 +762,7 @@ def ask(question: str, ui_lang: str, answer_lang: str, uai: str = "",
                          "result": answered, "streaming": False,
                          "institution": about,
                          "freshness": freshness_key(found),
+                         "live_source_name": found.source.name if found.source else "",
                          "live_domain": found.source.domain if found.source else ""}
             yield (thread(), hidden, hidden, gr.update(),
                    gr.update(visible=get_settings().debug_panel),

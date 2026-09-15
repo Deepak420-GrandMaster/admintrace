@@ -58,6 +58,47 @@ AUTHORITY_DECIDES = 1
 AUTHORITY_EXPLAINS = 2
 
 
+class Health(str, Enum):
+    """What is actually true of a source right now.
+
+    Kept distinct rather than collapsed into "up/down", because the remedies
+    are completely different: a parser failure may be fixable by rendering, a
+    block never is, and an unverified source has simply never been asked.
+    """
+
+    #: Read over plain HTTP, content extracted.
+    HEALTHY = "healthy"
+    #: Only readable once its scripts have run. Still a good source.
+    HEALTHY_RENDERED = "healthy_rendered"
+    #: Readable, but the stored copy is past its freshness window.
+    STALE = "stale"
+    #: Readable, and what it says has materially changed.
+    CHANGED = "changed"
+    #: Could not be reached.
+    UNAVAILABLE = "unavailable"
+    #: Reached, but nothing readable came out — even after rendering.
+    PARSER_FAILURE = "parser_failure"
+    #: Reached, and deliberately refused: a bot wall or a captcha. Not a bug
+    #: to route around.
+    BLOCKED = "blocked"
+    #: Registered, never checked.
+    UNVERIFIED = "unverified"
+
+
+#: How often a source is worth re-reading, by how much it matters.
+REFRESH_HOURS = {"critical": 8, "high": 24, "medium": 72, "low": 336}
+
+
+class JurisdictionLevel(str, Enum):
+    """Whose rule this is. A local rule beats a national one where it applies."""
+
+    NATIONAL = "national"
+    REGIONAL = "regional"
+    DEPARTMENT = "department"
+    CITY = "city"
+    INSTITUTION = "institution"
+
+
 class RegistryError(RuntimeError):
     """The registry file is missing or cannot be read."""
 
@@ -80,16 +121,50 @@ class Source:
     verified_at: str = ""
     crawl_enabled: bool = False
     live_query_enabled: bool = False
+    #: Attempt a browser render when the static HTML has no readable content.
+    render_enabled: bool = False
+    #: critical | high | medium | low — drives how often a refresh is due.
+    refresh_priority: str = "medium"
+    health: Health = Health.UNVERIFIED
+    #: Whose rule this source states.
+    jurisdiction: JurisdictionLevel = JurisdictionLevel.NATIONAL
+    #: The area it applies to, when narrower than the whole country
+    #: (a département name, a commune). Empty means national.
+    jurisdiction_area: str = ""
+    #: Domains this source used to answer on, kept so a redirect from one is
+    #: recognised as the same body rather than refused as a hijack.
+    legacy_domains: tuple[str, ...] = field(default_factory=tuple)
+    #: The pages worth knowing by name, when the site publishes them.
+    official_site_url: str = ""
+    admission_url: str = ""
+    application_url: str = ""
+    portal_url: str = ""
     #: Hours after which an indexed copy is treated as stale.
     freshness_hours: int = 720
     entry_points: tuple[str, ...] = field(default_factory=tuple)
     notes: str = ""
 
     @property
+    def refresh_hours(self) -> int:
+        """How old a copy may get before a refresh is due."""
+        return REFRESH_HOURS.get(self.refresh_priority, REFRESH_HOURS["medium"])
+
+    @property
+    def is_usable(self) -> bool:
+        """Whether this source may be cited in an answer."""
+        return self.verified and self.health in (
+            Health.HEALTHY, Health.HEALTHY_RENDERED, Health.STALE, Health.CHANGED)
+
+    @property
+    def canonical_domain(self) -> str:
+        """The domain this source answers on today."""
+        return self.domain
+
+    @property
     def domains(self) -> tuple[str, ...]:
         """Every hostname that may serve this source, canonical first."""
         seen, out = set(), []
-        for candidate in (self.domain, *self.aliases):
+        for candidate in (self.domain, *self.aliases, *self.legacy_domains):
             host = (candidate or "").strip().lower().lstrip(".")
             if host and host not in seen:
                 seen.add(host)
@@ -147,6 +222,7 @@ def _source_from(row: dict) -> Source:
         source_type=source_type,
         authority_level=int(row.get("authority_level", AUTHORITY_EXPLAINS)),
         aliases=tuple(str(a).lower() for a in row.get("aliases", ())),
+        legacy_domains=tuple(str(a).lower() for a in row.get("legacy_domains", ())),
         supported_topics=tuple(str(t) for t in row.get("supported_topics", ())),
         supported_entities=tuple(str(e) for e in row.get("supported_entities", ())),
         language=str(row.get("language", "fr")),
@@ -154,6 +230,16 @@ def _source_from(row: dict) -> Source:
         verified_at=str(row.get("verified_at", "")),
         crawl_enabled=bool(row.get("crawl_enabled", False)),
         live_query_enabled=bool(row.get("live_query_enabled", False)),
+        render_enabled=bool(row.get("render_enabled", False)),
+        refresh_priority=str(row.get("refresh_priority", "medium")).lower(),
+        health=Health(str(row.get("health", "unverified")).lower()),
+        jurisdiction=JurisdictionLevel(
+            str(row.get("jurisdiction", "national")).lower()),
+        jurisdiction_area=str(row.get("jurisdiction_area", "")),
+        official_site_url=str(row.get("official_site_url", "")),
+        admission_url=str(row.get("admission_url", "")),
+        application_url=str(row.get("application_url", "")),
+        portal_url=str(row.get("portal_url", "")),
         freshness_hours=int(row.get("freshness_hours", 720)),
         entry_points=tuple(str(u) for u in row.get("entry_points", ())),
         notes=str(row.get("notes", "")),
@@ -219,4 +305,26 @@ def for_domain(url_or_host: str) -> Source | None:
 
 def is_authoritative(url_or_host: str) -> bool:
     source = for_domain(url_or_host)
-    return source is not None and source.verified
+    return source is not None and source.is_usable
+
+
+def by_jurisdiction(level: JurisdictionLevel, area: str = "") -> tuple[Source, ...]:
+    """Sources that speak for this level, narrowed to an area when given."""
+    wanted = (area or "").strip().lower()
+    return tuple(s for s in load_registry()
+                 if s.jurisdiction is level
+                 and (not wanted or s.jurisdiction_area.lower() == wanted))
+
+
+def most_specific(sources: tuple[Source, ...]) -> tuple[Source, ...]:
+    """Local rule first.
+
+    A préfecture states what it requires at its counter; the ministry states
+    the national rule. Where they differ for a particular département, the
+    préfecture is the one the reader is standing in front of.
+    """
+    order = {JurisdictionLevel.INSTITUTION: 0, JurisdictionLevel.CITY: 1,
+             JurisdictionLevel.DEPARTMENT: 2, JurisdictionLevel.REGIONAL: 3,
+             JurisdictionLevel.NATIONAL: 4}
+    return tuple(sorted(sources, key=lambda s: (order.get(s.jurisdiction, 9),
+                                                s.authority_level)))

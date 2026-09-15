@@ -21,11 +21,15 @@ sources:
     name: Service-Public
     domain: service-public.gouv.fr
     base_url: https://www.service-public.gouv.fr/
-    aliases: [service-public.fr]
+    legacy_domains: [service-public.fr]
     source_type: government
     authority_level: 2
     supported_topics: [residence-permit, housing, documents, work, family, health, taxes]
     language: fr
+    refresh_priority: medium
+    jurisdiction: national
+    health: healthy
+    official_site_url: https://www.service-public.gouv.fr/
     verified: true
     verified_at: 2026-09-15
     live_query_enabled: false
@@ -44,6 +48,9 @@ sources:
     authority_level: 1
     supported_topics: [residence-permit, prefecture, identity]
     language: fr
+    refresh_priority: high
+    jurisdiction: national
+    health: unavailable
     verified: false
     live_query_enabled: false
 
@@ -55,7 +62,13 @@ sources:
     authority_level: 1
     supported_topics: [residence-permit, prefecture]
     language: fr
-    verified: false
+    refresh_priority: critical
+    jurisdiction: national
+    render_enabled: true
+    health: healthy_rendered
+    portal_url: https://administration-etrangers-en-france.interieur.gouv.fr/
+    verified: true
+    verified_at: 2026-09-15
     live_query_enabled: false
     notes: >
       Checked 2026-09-15: ANEF renders its content in the browser, so the fetched page parses to nothing. Not usable as a text source without executing its scripts, which this fetcher deliberately does not do.
@@ -68,7 +81,12 @@ sources:
     authority_level: 1
     supported_topics: [identity, documents]
     language: fr
-    verified: false
+    refresh_priority: high
+    jurisdiction: national
+    render_enabled: true
+    health: healthy_rendered
+    verified: true
+    verified_at: 2026-09-15
     live_query_enabled: false
     notes: >
       Checked 2026-09-15: Same as ANEF: the page arrives as an application shell with no readable text.
@@ -81,6 +99,9 @@ sources:
     authority_level: 1
     supported_topics: [taxes]
     language: fr
+    refresh_priority: medium
+    jurisdiction: national
+    health: healthy
     verified: true
     verified_at: 2026-09-15
     live_query_enabled: false
@@ -95,6 +116,9 @@ sources:
     supported_topics: [housing, benefits, family]
     supported_entities: [caf]
     language: fr
+    refresh_priority: critical
+    jurisdiction: national
+    health: blocked
     verified: false
     live_query_enabled: false
     notes: >
@@ -112,6 +136,9 @@ sources:
     supported_topics: [health]
     supported_entities: [ameli, assurance-maladie]
     language: fr
+    refresh_priority: high
+    jurisdiction: national
+    health: healthy
     verified: true
     verified_at: 2026-09-15
     live_query_enabled: false
@@ -120,13 +147,18 @@ sources:
     name: France Travail
     domain: francetravail.fr
     base_url: https://www.francetravail.fr/
-    aliases: [pole-emploi.fr]
+    legacy_domains: [pole-emploi.fr]
     source_type: public_body
     authority_level: 1
     supported_topics: [work, employment]
     supported_entities: [france-travail, pole-emploi]
     language: fr
-    verified: false
+    refresh_priority: high
+    jurisdiction: national
+    render_enabled: true
+    health: healthy_rendered
+    verified: true
+    verified_at: 2026-09-15
     live_query_enabled: false
     notes: Renamed from Pôle emploi; the former domain is kept as an alias.
 
@@ -140,6 +172,9 @@ sources:
     supported_topics: [study, housing, student-life, crous]
     supported_entities: [crous]
     language: fr
+    refresh_priority: high
+    jurisdiction: national
+    health: healthy
     verified: true
     verified_at: 2026-09-15
     live_query_enabled: false
@@ -152,6 +187,9 @@ sources:
     authority_level: 2
     supported_topics: [study, admission, visa]
     language: fr
+    refresh_priority: medium
+    jurisdiction: national
+    health: healthy
     verified: true
     verified_at: 2026-09-15
     live_query_enabled: false
@@ -161,12 +199,17 @@ sources:
     name: MBS School of Business
     domain: mbs-education.com
     base_url: https://www.mbs-education.com/
-    aliases: [montpellier-bs.com, supdeco-montpellier.com]
+    legacy_domains: [montpellier-bs.com, supdeco-montpellier.com]
     source_type: school
     authority_level: 1
     supported_topics: [admission, tuition, programmes, student-life]
     supported_entities: [montpellier-business-school, mbs, mbs-school-of-business]
     language: fr
+    refresh_priority: high
+    jurisdiction: institution
+    jurisdiction_area: Montpellier
+    health: healthy
+    official_site_url: https://www.mbs-education.com/
     verified: true
     verified_at: 2026-09-15
     live_query_enabled: true

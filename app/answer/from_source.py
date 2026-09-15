@@ -40,6 +40,15 @@ Rules you may not break:
   cover. Do not fill the gap.
 - Refer to the institution by the name the pages use.
 - Write in {language_name}.
+
+Length is part of being useful. You were given several pages; that is so you
+can find the relevant part, not so you can summarise all of them. Answer the
+question that was asked and stop:
+- a fact or a yes/no: two or three sentences;
+- a list of what is needed: the list, and nothing around it;
+- a procedure: the steps, briefly.
+Never pad an answer to look thorough. If one sentence is the whole answer,
+one sentence is the answer.
 """
 
 SOURCE_USER = """\

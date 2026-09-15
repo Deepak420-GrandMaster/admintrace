@@ -218,6 +218,81 @@ def record(source_id: str, url: str, page: Page, content_hash: str, *,
     return version, report
 
 
+def due(source, settings: Settings | None = None) -> bool:
+    """Whether this source is past its own refresh interval.
+
+    Interval comes from the source's importance, not from one number for the
+    whole registry: an immigration portal going out of date matters in hours,
+    a glossary of terms in weeks.
+    """
+    settings = settings or get_settings()
+    current = active(source.id, source.base_url, settings)
+    if current is None:
+        return True
+    try:
+        age = _now() - datetime.fromisoformat(current.retrieved_at)
+    except ValueError:
+        return True
+    return age > timedelta(hours=source.refresh_hours)
+
+
+def _invalidation_path(settings: Settings) -> Path:
+    root(settings).mkdir(parents=True, exist_ok=True)
+    return root(settings) / "invalidations.json"
+
+
+def mark_topics_stale(topics: list[str], source_id: str, version_id: str,
+                      settings: Settings | None = None) -> None:
+    """Record that work resting on these topics can no longer be trusted.
+
+    An answer knows which source versions supported it. This file is the other
+    half: when a source moves on, the topics it covered are stamped, and
+    anything cached against an older stamp is regenerated rather than served.
+    """
+    if not topics:
+        return
+    settings = settings or get_settings()
+    path = _invalidation_path(settings)
+    try:
+        current = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        current = {}
+    stamp = _stamp()
+    for topic in topics:
+        current[topic] = {"at": stamp, "source": source_id, "version": version_id}
+    try:
+        path.write_text(json.dumps(current, ensure_ascii=False, indent=2),
+                        encoding="utf-8")
+    except OSError:
+        pass
+
+
+def topic_invalidated_at(topic: str, settings: Settings | None = None) -> str:
+    settings = settings or get_settings()
+    try:
+        return json.loads(_invalidation_path(settings).read_text(encoding="utf-8")) \
+            .get(topic, {}).get("at", "")
+    except (OSError, ValueError):
+        return ""
+
+
+def answer_is_current(source_versions: dict[str, str],
+                      settings: Settings | None = None) -> bool:
+    """Whether every version an answer rested on is still the active one.
+
+    ``source_versions`` maps ``"<source_id>|<url>"`` to the version id the
+    answer used. A single moved page makes the whole answer stale: it was
+    assembled from a set of statements, and one of them has changed.
+    """
+    settings = settings or get_settings()
+    for key, version_id in (source_versions or {}).items():
+        source_id, _, url = key.partition("|")
+        current = active(source_id, url, settings)
+        if current is None or current.version_id != version_id:
+            return False
+    return True
+
+
 def _activate(settings: Settings, source_id: str, url: str, version: Version,
               report: ChangeReport) -> None:
     index = _load_index(settings)
@@ -231,9 +306,21 @@ def _activate(settings: Settings, source_id: str, url: str, version: Version,
     _save_index(settings, index)
     audit("version.activated", settings, source=source_id, url=url,
           version=version.version_id, previous=version.previous_version,
-          change=report.change_type.value, summary=report.summary)
+          change=report.change_type.value, severity=report.severity.value,
+          categories=report.categories[:5],
+          affected_topics=report.affected_topics,
+          summary=report.summary)
     if report.is_substantive:
         invalidate(source_id, url, settings)
+        mark_topics_stale(report.affected_topics, source_id,
+                          version.version_id, settings)
+        if report.needs_attention:
+            # Loud in the log, so a scheduled run can surface it without a
+            # person reading every line.
+            audit("source.change_needs_review", settings, source=source_id,
+                  url=url, severity=report.severity.value,
+                  categories=report.categories[:5], summary=report.summary,
+                  version=version.version_id)
 
 
 def rollback(source_id: str, url: str, settings: Settings | None = None) -> Version | None:

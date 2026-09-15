@@ -6,13 +6,18 @@ The route is narrow on purpose:
 
 There is no step in it where a search engine, a link found on a page, or a URL
 a reader typed can introduce a domain. Discovery happens *inside* one
-registered site: fetch its entry point, read the links it publishes, keep the
-ones on its own domain, and rank them against the question.
+registered site, and every candidate is re-validated against the registry
+before it is fetched.
 
-Cached first, live when the cache is stale or the question is about what is
-true now. Every page that comes back carries the URL, the domain, the time it
-was retrieved and the hash of what was read, so a claim can be traced to a
-version rather than to "the web".
+Discovery is purpose-aware rather than similarity-aware, because those are not
+the same thing. A question about admission and a press release reporting last
+year's admission round share every important word; what separates them is what
+the page is *for*. So candidates are ranked by whether their kind serves the
+reader's purpose — see :mod:`app.sources.purpose` — and dated announcements
+are pushed down unless the question is about what recently changed.
+
+Depth is bounded at two: the entry point, what it links to, and the children
+of the links that already looked relevant. Nothing recurses.
 """
 
 from __future__ import annotations
@@ -23,6 +28,7 @@ from dataclasses import dataclass, field
 from urllib.parse import urlsplit
 
 from app.config import Settings, get_settings
+from app.sources import purpose as purpose_model
 from app.sources import store
 from app.sources.extract import Page, extract
 from app.sources.fetch import fetch
@@ -30,39 +36,28 @@ from app.sources.registry import Source, for_entity
 from app.sources.store import Freshness
 
 #: Words that say "what is true now", which is when a cached copy is not good
-#: enough even if it is inside its freshness window.
+#: enough even if it is inside its freshness window — and the one case where a
+#: dated announcement is the right document rather than the wrong one.
 _NOW_WORDS = ("latest", "current", "currently", "now", "recent", "recently",
-              "changed", "change", "update", "updated", "this year", "still",
-              "actuel", "actuelle", "actuellement", "récent", "recent",
-              "récemment", "changé", "change", "mise à jour", "maintenant",
-              "cette année", "toujours")
+              "changed", "change", "changes", "update", "updated", "this year",
+              "still", "new rule", "actuel", "actuelle", "actuellement",
+              "récent", "recent", "récemment", "changé", "change", "changement",
+              "mise à jour", "maintenant", "cette année", "toujours", "nouveau")
 
-_STOP = frozenset({
-    "how", "what", "where", "when", "which", "who", "why", "do", "does", "did",
-    "can", "could", "should", "is", "are", "was", "the", "a", "an", "to", "for",
-    "of", "in", "on", "at", "and", "or", "my", "me", "i", "it", "this", "that",
-    "get", "need", "want", "with", "from", "about", "into", "school",
-    "comment", "que", "quoi", "ou", "quand", "quel", "quelle", "est", "sont",
-    "je", "mon", "ma", "les", "des", "une", "pour", "dans", "avec", "sur",
-    "ecole", "faire", "faut",
-})
+_LOC = re.compile(r"<loc>\s*([^<\s]+)\s*</loc>", re.I)
 
 
 def _fold(text: str) -> str:
     folded = unicodedata.normalize("NFD", (text or "").lower())
-    folded = "".join(c for c in folded if unicodedata.category(c) != "Mn")
-    return folded
-
-
-def _keywords(text: str) -> set[str]:
-    words = re.findall(r"[a-z0-9]{3,}", _fold(text))
-    return {w for w in words if w not in _STOP}
+    return "".join(c for c in folded if unicodedata.category(c) != "Mn")
 
 
 def wants_current_information(question: str) -> bool:
     folded = _fold(question)
     return any(_fold(word) in folded for word in _NOW_WORDS)
 
+
+# ------------------------------------------------------------- evidence ----
 
 @dataclass
 class Evidence:
@@ -80,6 +75,7 @@ class Evidence:
     freshness: Freshness
     version_id: str = ""
     updated: str = ""
+    page_type: str = purpose_model.UNKNOWN_TYPE
 
     @property
     def excerpt(self) -> str:
@@ -93,6 +89,7 @@ class LiveResult:
     evidence: list[Evidence] = field(default_factory=list)
     freshness: Freshness = Freshness.UNKNOWN
     attempted_live: bool = False
+    purposes: tuple[str, ...] = field(default_factory=tuple)
     error: str = ""
 
     @property
@@ -100,49 +97,75 @@ class LiveResult:
         return bool(self.evidence)
 
 
-#: Sections that publish dated stories rather than standing procedure. A news
-#: item about last year's admission round is not what the rules are now.
-_EDITORIAL = ("/actualites/", "/actualite/", "/news/", "/blog/", "/evenements/",
-              "/events/", "/temoignages/", "/presse/", "/agenda/")
+# ------------------------------------------------------------ discovery ----
+
+@dataclass
+class Candidate:
+    """A page worth considering, and why."""
+
+    url: str
+    anchor: str = ""
+    title: str = ""
+    page_type: str = purpose_model.UNKNOWN_TYPE
+    depth: int = 1
+    score: float = 0.0
 
 
-def _score(url: str, wanted: set[str], topics: tuple[str, ...]) -> int:
-    """How much a link's own path looks like the question."""
-    raw_path = urlsplit(url).path
-    path = _fold(raw_path.replace("-", " ").replace("/", " ").replace("_", " "))
-    words = set(re.findall(r"[a-z0-9]{3,}", path))
-    score = len(words & wanted) * 3
-    score += sum(1 for topic in topics if _fold(topic) in path)
-    # A deep, specific page beats the homepage for a specific question.
-    depth = len([p for p in raw_path.split("/") if p])
-    score += 1 if 1 <= depth <= 4 else 0
-    if any(section in _fold(raw_path) for section in _EDITORIAL):
-        score -= 4
-    return score
+def score_candidate(url: str, *, anchor: str = "", title: str = "",
+                    found: tuple, source: Source, depth: int = 1,
+                    wants_news: bool = False) -> tuple[float, str]:
+    """How well this page is likely to answer, and what kind of page it is."""
+    path = urlsplit(url).path
+    page_type = purpose_model.classify(url, title=title, anchor=anchor)
 
+    score = 0.0
+    # The site's own label for a link is its clearest statement of intent.
+    score += purpose_model.keyword_hits(anchor, found) * 4.0
+    score += purpose_model.keyword_hits(path, found) * 3.0
+    score += purpose_model.keyword_hits(title, found) * 2.0
 
-_LOC = re.compile(r"<loc>\s*([^<\s]+)\s*</loc>", re.I)
+    if purpose_model.serves(page_type, found):
+        score += 6.0
+    elif page_type in ("official_procedure", "requirements"):
+        score += 2.0
+
+    if purpose_model.is_editorial(page_type):
+        score += 5.0 if wants_news else -8.0
+    if page_type == "application_portal":
+        # Where you do it, not what it requires. Useful, rarely the answer.
+        score -= 1.0
+
+    segments = len([p for p in path.split("/") if p])
+    if 1 <= segments <= 4:
+        score += 1.0
+    elif segments > 6:
+        score -= 1.0
+    if source.language and f"/{source.language}/" in path:
+        score += 0.5
+
+    score += {0: 0.0, 1: 0.0, 2: -0.5}.get(depth, -2.0)
+    return score, page_type
 
 
 def sitemap_urls(source: Source, *, settings: Settings | None = None,
-                 max_children: int = 3, cap: int = 600) -> list[str]:
+                 max_children: int = 6, cap: int = 1200) -> list[str]:
     """Pages the source itself publishes as its index.
 
     A site's own sitemap is a better map of it than whatever happens to be
     linked from the homepage — a dedicated admissions page is often reachable
-    from a menu the extractor discards as navigation. Index files are followed
-    one level, a few children at most; this is not a crawl.
+    only from a menu the extractor discards as navigation. Index files are
+    followed one level, a few children at most; this is not a crawl.
     """
     settings = settings or get_settings()
     found: list[str] = []
-    seen_sitemaps: set[str] = set()
+    seen: set[str] = set()
     queue = [f"https://{urlsplit(source.base_url).hostname}/sitemap.xml"]
 
     while queue and len(found) < cap:
         target = queue.pop(0)
-        if target in seen_sitemaps or not source.allows(target):
+        if target in seen or not source.allows(target):
             continue
-        seen_sitemaps.add(target)
+        seen.add(target)
         result = fetch(target, settings=settings, expect=source,
                        max_age_seconds=source.freshness_hours * 3600)
         if not result.ok:
@@ -155,41 +178,94 @@ def sitemap_urls(source: Source, *, settings: Settings | None = None,
     return list(dict.fromkeys(found))[:cap]
 
 
-def candidate_pages(source: Source, question: str, *, limit: int = 3,
-                    settings: Settings | None = None) -> list[str]:
-    """Pages on this source worth reading for this question.
+def _harvest(url: str, source: Source, settings: Settings,
+             depth: int) -> tuple[Page | None, list[Candidate]]:
+    """Read one page and offer up the links it publishes."""
+    result = fetch(url, settings=settings, expect=source,
+                   max_age_seconds=source.freshness_hours * 3600)
+    if not result.ok:
+        return None, []
+    page = extract(result.body, result.final_url)
+    out = []
+    for link in page.links:
+        if source.allows(link):
+            out.append(Candidate(url=link, anchor=page.anchors.get(link, ""),
+                                 depth=depth))
+    return page, out
 
-    Discovery is confined to links the source itself publishes on its own
-    entry point, and every candidate is re-validated against the registry
-    before it is used.
+
+def discover(source: Source, question: str, *, limit: int = 3,
+             settings: Settings | None = None) -> list[Candidate]:
+    """The pages on this source most likely to answer this question.
+
+    Depth 0 is the entry point, depth 1 the links it publishes, depth 2 the
+    children of the depth-1 links that already scored well. Relevance is
+    judged before anything deeper is fetched, so a site is never walked
+    speculatively.
     """
     settings = settings or get_settings()
+    found = purpose_model.detect(question)
+    wants_news = wants_current_information(question)
     entries = list(source.entry_points) or [source.base_url]
-    wanted = _keywords(question)
 
-    found: list[str] = []
+    pool: dict[str, Candidate] = {}
+
+    def offer(candidates: list[Candidate]) -> None:
+        for candidate in candidates:
+            existing = pool.get(candidate.url)
+            if existing is None or candidate.depth < existing.depth:
+                pool[candidate.url] = candidate
+
+    # Depth 0 and 1.
     for entry in entries[:2]:
-        result = fetch(entry, settings=settings, expect=source,
-                       max_age_seconds=source.freshness_hours * 3600)
-        if not result.ok:
-            continue
-        page = extract(result.body, result.final_url)
-        found.extend(link for link in page.links if source.allows(link))
+        page, links = _harvest(entry, source, settings, depth=1)
+        if page is not None:
+            offer([Candidate(url=entry, title=page.title, depth=0)])
+        offer(links)
 
-    def rank(urls: list[str]) -> list[tuple[int, str]]:
-        return sorted(((_score(u, wanted, source.supported_topics), u)
-                       for u in dict.fromkeys(urls)), reverse=True)
+    # The site's own index, which reaches pages no menu links to.
+    offer([Candidate(url=u, depth=1) for u in sitemap_urls(source, settings=settings)])
 
-    scored = rank(found)
-    # A homepage rarely links to the page that answers a specific question.
-    # If nothing linked from it actually matches the words asked, ask the
-    # site for its own index instead.
-    if not scored or scored[0][0] < 4:
-        scored = rank([*found, *sitemap_urls(source, settings=settings)])
+    def rescore() -> list[Candidate]:
+        for candidate in pool.values():
+            candidate.score, candidate.page_type = score_candidate(
+                candidate.url, anchor=candidate.anchor, title=candidate.title,
+                found=found, source=source, depth=candidate.depth,
+                wants_news=wants_news)
+        return sorted(pool.values(), key=lambda c: -c.score)
 
-    best = [url for score, url in scored if score > 1][:limit]
-    # The entry point is always worth keeping as a fallback.
-    return list(dict.fromkeys([*best, entries[0]]))[:limit + 1]
+    ranked = rescore()
+
+    # Depth 2, only from links that already look right. A strong section page
+    # ("Admissions") usually lists the page that actually answers.
+    for parent in [c for c in ranked[:2] if c.score >= 6.0 and c.depth <= 1]:
+        _page, links = _harvest(parent.url, source, settings, depth=2)
+        offer(links)
+    ranked = rescore()
+
+    best = [c for c in ranked if c.score > 0][:limit]
+    if not best:
+        best = [Candidate(url=entries[0], depth=0)]
+    return best
+
+
+def candidate_pages(source: Source, question: str, *, limit: int = 3,
+                    settings: Settings | None = None) -> list[str]:
+    """Discovery, as a plain list of URLs."""
+    return [c.url for c in discover(source, question, limit=limit, settings=settings)]
+
+
+# ------------------------------------------------------------ gathering ----
+
+def _evidence_from_version(version, source: Source, url: str,
+                           freshness: Freshness, page_type: str) -> Evidence:
+    return Evidence(
+        source_id=source.id, source_name=source.name, domain=source.domain,
+        url=url, canonical_url=version.canonical_url, title=version.title,
+        text=version.text, retrieved_at=version.retrieved_at,
+        content_hash=version.content_hash, freshness=freshness,
+        version_id=version.version_id, updated=version.updated,
+        page_type=page_type)
 
 
 def gather(entity_id: str, question: str, *, limit: int = 3,
@@ -197,37 +273,36 @@ def gather(entity_id: str, question: str, *, limit: int = 3,
            settings: Settings | None = None) -> LiveResult:
     """Evidence for this question from the entity's own official source."""
     settings = settings or get_settings()
-    sources = [s for s in for_entity(entity_id) if s.live_query_enabled and s.verified]
+    sources = [s for s in for_entity(entity_id)
+               if s.live_query_enabled and s.verified]
     if not sources:
         return LiveResult(entity_id=entity_id,
                           error="no verified live source is registered for this entity")
 
     source = sources[0]
-    result = LiveResult(entity_id=entity_id, source=source)
+    found = purpose_model.detect(question)
+    result = LiveResult(entity_id=entity_id, source=source,
+                        purposes=tuple(p.id for p in found))
     live_wanted = wants_current_information(question) if force_live is None else force_live
 
     try:
-        urls = candidate_pages(source, question, limit=limit, settings=settings)
+        candidates = discover(source, question, limit=limit, settings=settings)
     except Exception as exc:  # noqa: BLE001 - a source outage is an outcome
         result.error = f"{type(exc).__name__}: {exc}"
         return result
 
     worst = Freshness.LIVE_VERIFIED
-    for url in urls:
+    for candidate in candidates:
+        url = candidate.url
         state = store.freshness(source.id, url, source.freshness_hours, settings)
-        use_cache = state is Freshness.FRESH and not live_wanted
 
-        if use_cache:
+        if state is Freshness.FRESH and not live_wanted:
             version = store.active(source.id, url, settings)
             if version is not None:
-                result.evidence.append(Evidence(
-                    source_id=source.id, source_name=source.name,
-                    domain=source.domain, url=url,
-                    canonical_url=version.canonical_url, title=version.title,
-                    text=version.text, retrieved_at=version.retrieved_at,
-                    content_hash=version.content_hash, freshness=Freshness.FRESH,
-                    version_id=version.version_id, updated=version.updated))
-                worst = Freshness.FRESH if worst is Freshness.LIVE_VERIFIED else worst
+                result.evidence.append(_evidence_from_version(
+                    version, source, url, Freshness.FRESH, candidate.page_type))
+                if worst is Freshness.LIVE_VERIFIED:
+                    worst = Freshness.FRESH
                 continue
 
         result.attempted_live = True
@@ -237,14 +312,8 @@ def gather(entity_id: str, question: str, *, limit: int = 3,
                         url=url, error=fetched.error)
             fallback = store.active(source.id, url, settings)
             if fallback is not None:
-                result.evidence.append(Evidence(
-                    source_id=source.id, source_name=source.name,
-                    domain=source.domain, url=url,
-                    canonical_url=fallback.canonical_url, title=fallback.title,
-                    text=fallback.text, retrieved_at=fallback.retrieved_at,
-                    content_hash=fallback.content_hash,
-                    freshness=Freshness.STALE, version_id=fallback.version_id,
-                    updated=fallback.updated))
+                result.evidence.append(_evidence_from_version(
+                    fallback, source, url, Freshness.STALE, candidate.page_type))
                 worst = Freshness.STALE
             else:
                 worst = Freshness.UNAVAILABLE
@@ -256,12 +325,8 @@ def gather(entity_id: str, question: str, *, limit: int = 3,
         if version is None:
             worst = Freshness.UNAVAILABLE
             continue
-        result.evidence.append(Evidence(
-            source_id=source.id, source_name=source.name, domain=source.domain,
-            url=url, canonical_url=version.canonical_url, title=version.title,
-            text=version.text, retrieved_at=version.retrieved_at,
-            content_hash=version.content_hash, freshness=Freshness.LIVE_VERIFIED,
-            version_id=version.version_id, updated=version.updated))
+        result.evidence.append(_evidence_from_version(
+            version, source, url, Freshness.LIVE_VERIFIED, candidate.page_type))
 
     result.freshness = worst if result.evidence else Freshness.UNAVAILABLE
     if not result.evidence and not result.error:

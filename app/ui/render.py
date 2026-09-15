@@ -206,7 +206,7 @@ def limit_html(result: AnswerResult, lang: str = "en") -> str:
 
 
 def answer_html(result: AnswerResult, streaming: bool = False,
-                lang: str = "en") -> str:
+                lang: str = "en", source_label: str = "") -> str:
     if result.rate_limited and not result.text:
         return limit_html(result, lang)
     if result.error and not result.text:
@@ -217,6 +217,11 @@ def answer_html(result: AnswerResult, streaming: bool = False,
     if result.refused:
         label = t(lang, "refused")
         shell = "rp-answer rp-refusal"
+    elif source_label:
+        # When the evidence is one body's own site, naming it says more than
+        # counting how many of its pages were read.
+        label = t(lang, "source_is", name=source_label)
+        shell = "rp-answer"
     else:
         count = len(result.citations)
         label = (t(lang, "grounded_one") if count == 1
@@ -551,7 +556,8 @@ def turn_html(turn: dict, lang: str, reply_lang: str, index: int) -> str:
         else:
             body_parts.append(
                 answer_html(result, streaming=turn.get("streaming", False),
-                            lang=reply_lang))
+                            lang=reply_lang,
+                            source_label=turn.get("live_source_name", "")))
             if result.refused:
                 # A named institution owns this answer; the nearest
                 # public-administration pages do not, and offering them here

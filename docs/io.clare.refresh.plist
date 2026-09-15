@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Re-read due official sources every six hours. launchd is used rather than
+     cron because it catches up after the machine has been asleep, which on a
+     laptop is most of the time. -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>io.clare.refresh</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-lc</string>
+    <string>REPLACE_WITH_REPO_PATH/scripts/refresh-sources.sh</string>
+  </array>
+  <key>StartInterval</key><integer>21600</integer>
+  <key>RunAtLoad</key><false/>
+  <key>StandardOutPath</key><string>/tmp/clare-refresh.log</string>
+  <key>StandardErrorPath</key><string>/tmp/clare-refresh.err</string>
+</dict>
+</plist>

@@ -471,7 +471,8 @@ body.rp-answered .gradio-container button.rp-restart,
   border: 1px solid var(--border) !important; border-radius: var(--r) !important;
   font-size: 13px !important; font-weight: 550 !important;
   padding: var(--s2) var(--s4) !important; white-space: nowrap !important;
-  width: auto !important; min-width: 0 !important; box-shadow: none !important;
+  width: fit-content !important; min-width: 0 !important;
+  align-self: flex-start !important; box-shadow: none !important;
   transition: border-color var(--fast) var(--ease), color var(--fast) var(--ease);
 }
 .gradio-container button.rp-chip:hover {

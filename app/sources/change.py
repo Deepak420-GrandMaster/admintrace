@@ -46,6 +46,96 @@ class ChangeType(str, Enum):
     NEW = "new"
 
 
+class Severity(str, Enum):
+    """How much a maintainer should care, in the order they should care."""
+
+    CRITICAL = "critical"
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+
+
+#: What kind of administrative thing changed, and the words that betray it.
+#: The words are matched against the lines that were added or removed, never
+#: against the whole page: a site that merely mentions "deadline" somewhere
+#: has not changed a deadline.
+CATEGORY_WORDS: dict[str, tuple[str, ...]] = {
+    "eligibility": ("eligib", "éligib", "condition", "qui peut", "who can",
+                    "reserve", "réservé", "ouvert aux", "open to", "critere",
+                    "critère"),
+    "required_document": ("document", "justificatif", "piece", "pièce",
+                          "attestation", "formulaire", "cerfa", "certificat",
+                          "copie", "originaux"),
+    "deadline": ("delai", "délai", "deadline", "date limite", "avant le",
+                 "jusqu'au", "cloture", "clôture", "echeance", "échéance"),
+    "fee": ("tarif", "frais", "fee", "cost", "cout", "coût", "montant",
+            "gratuit", "payant", "prix"),
+    "procedure": ("procedure", "procédure", "demarche", "démarche", "etape",
+                  "étape", "step", "comment faire", "how to"),
+    "application_portal": ("teleservice", "téléservice", "portail", "portal",
+                           "en ligne", "online", "compte", "connexion", "login"),
+    "contact": ("contact", "telephone", "téléphone", "courriel", "email",
+                "guichet"),
+    "address": ("adresse", "address", "situe", "situé", "rue", "avenue"),
+    "jurisdiction": ("prefecture", "préfecture", "departement", "département",
+                     "commune", "mairie", "consulat", "competent", "compétent"),
+    "student_rule": ("etudiant", "étudiant", "crous", "universite", "université",
+                     "campus", "scolarite", "scolarité", "admission"),
+    "immigration_rule": ("sejour", "séjour", "visa", "etranger", "étranger",
+                         "titre de sejour", "titre de séjour", "naturalisation",
+                         "anef", "recepisse", "récépissé"),
+    "housing_rule": ("logement", "bail", "loyer", "caution", "apl",
+                     "allocation logement", "residence", "résidence"),
+    "tax_rule": ("impot", "impôt", "fiscal", "declaration", "déclaration",
+                 "revenus"),
+    "health_rule": ("sante", "santé", "assurance maladie", "securite sociale",
+                    "sécurité sociale", "carte vitale", "mutuelle"),
+    "employment_rule": ("emploi", "travail", "contrat", "cdi", "cdd",
+                        "alternance", "salaire", "chomage", "chômage"),
+}
+
+#: Severity per category. Anything that changes who qualifies, by when, or how
+#: much it costs can send someone to a counter with the wrong expectation.
+CATEGORY_SEVERITY: dict[str, Severity] = {
+    "eligibility": Severity.CRITICAL,
+    "deadline": Severity.CRITICAL,
+    "fee": Severity.CRITICAL,
+    "procedure": Severity.CRITICAL,
+    "immigration_rule": Severity.CRITICAL,
+    "required_document": Severity.HIGH,
+    "application_portal": Severity.HIGH,
+    "jurisdiction": Severity.HIGH,
+    "student_rule": Severity.HIGH,
+    "housing_rule": Severity.HIGH,
+    "tax_rule": Severity.HIGH,
+    "health_rule": Severity.HIGH,
+    "employment_rule": Severity.HIGH,
+    "contact": Severity.MEDIUM,
+    "address": Severity.MEDIUM,
+    "cosmetic": Severity.LOW,
+}
+
+#: Which parts of the product a change to this category makes doubtful. Used
+#: to invalidate derived work without a developer listing it by hand.
+CATEGORY_TOPICS: dict[str, tuple[str, ...]] = {
+    "eligibility": ("admission", "residence_permit", "housing", "health", "work"),
+    "required_document": ("documents", "admission", "residence_permit", "housing"),
+    "deadline": ("deadline", "admission", "taxes"),
+    "fee": ("tuition", "taxes"),
+    "procedure": ("admission", "residence_permit", "documents"),
+    "application_portal": ("admission", "residence_permit"),
+    "jurisdiction": ("residence_permit", "documents"),
+    "student_rule": ("admission", "programmes", "housing"),
+    "immigration_rule": ("residence_permit", "documents"),
+    "housing_rule": ("housing",),
+    "tax_rule": ("taxes",),
+    "health_rule": ("health",),
+    "employment_rule": ("work",),
+    "contact": ("contact",),
+    "address": ("contact",),
+}
+
+
 #: A change in any of these is worth waking someone for.
 _CRITICAL_WORDS = ("document", "justificatif", "pièce", "condition", "éligib",
                    "eligib", "délai", "deadline", "date limite", "obligatoire",
@@ -61,10 +151,20 @@ class ChangeReport:
     links_changed: bool = False
     title_changed: bool = False
     summary: str = ""
+    #: What kind of administrative thing changed, most confident first.
+    categories: list[str] = field(default_factory=list)
+    severity: Severity = Severity.LOW
+    #: Product areas this change makes doubtful.
+    affected_topics: list[str] = field(default_factory=list)
 
     @property
     def is_substantive(self) -> bool:
         return self.change_type in (ChangeType.SUBSTANTIVE, ChangeType.CRITICAL)
+
+    @property
+    def needs_attention(self) -> bool:
+        """Whether a person should be told, rather than only the log."""
+        return self.severity in (Severity.CRITICAL, Severity.HIGH)
 
 
 def _fold(text: str) -> str:
@@ -87,6 +187,32 @@ def signal_lines(text: str) -> set[str]:
 
 def numbers_in(text: str) -> set[str]:
     return {" ".join(match.split()) for match in _NUMBERS.findall(text or "")}
+
+
+def categorise(lines: list[str]) -> list[str]:
+    """Which administrative categories these changed lines touch."""
+    folded = _fold(" ".join(lines))
+    hits = [(sum(1 for word in words if _fold(word) in folded), name)
+            for name, words in CATEGORY_WORDS.items()]
+    return [name for count, name in sorted(hits, reverse=True) if count]
+
+
+def severity_of(categories: list[str]) -> Severity:
+    order = [Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM, Severity.LOW]
+    found = [CATEGORY_SEVERITY.get(name, Severity.LOW) for name in categories]
+    for level in order:
+        if level in found:
+            return level
+    return Severity.LOW
+
+
+def topics_for(categories: list[str]) -> list[str]:
+    out: list[str] = []
+    for name in categories:
+        for topic in CATEGORY_TOPICS.get(name, ()):
+            if topic not in out:
+                out.append(topic)
+    return out
 
 
 def compare(old_text: str, new_text: str, *, old_title: str = "",
@@ -112,7 +238,13 @@ def compare(old_text: str, new_text: str, *, old_title: str = "",
     if not added and not removed and not report.title_changed:
         report.change_type = ChangeType.COSMETIC
         report.summary = "wording or layout only; nothing a reader acts on changed"
+        report.severity = Severity.LOW
+        report.categories = ["cosmetic"]
         return report
+
+    report.categories = categorise(added + removed)
+    report.severity = severity_of(report.categories)
+    report.affected_topics = topics_for(report.categories)
 
     touched = " ".join(added + removed)
     critical = any(_fold(word) in _fold(touched) for word in _CRITICAL_WORDS)
@@ -126,5 +258,7 @@ def compare(old_text: str, new_text: str, *, old_title: str = "",
         parts.append("title changed")
     if report.numbers_changed:
         parts.append("numbers changed")
+    if report.categories:
+        parts.append("touches " + ", ".join(report.categories[:3]))
     report.summary = ", ".join(parts)
     return report
