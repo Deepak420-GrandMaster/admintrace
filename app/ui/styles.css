@@ -206,7 +206,11 @@ html, body { background: var(--paper); color-scheme: light; margin: 0; }
   padding: var(--s3) 0 !important; border-radius: 0 !important;
   border-top: 2px solid transparent !important;
   margin-top: -1px !important;
-  min-height: 0 !important;
+  /* A section link is a touch target like any other. This was min-height: 0
+     to keep the bar compact, which left it at 26px on a phone. The padding
+     above already carries most of the height; this makes up the rest without
+     moving the text. */
+  min-height: 44px !important;
   transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
 }
 .gradio-container button[role="tab"]:hover { color: var(--ink) !important; }
