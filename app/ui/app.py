@@ -25,6 +25,9 @@ from app.llm import get_chat_provider
 from app.query.detect import detect
 from app.query import entity
 from app.retrieval.answerability import Answerability, classify
+from app.answer.from_source import answer_from_source, freshness_key
+from app.sources import live as live_sources
+from app.sources.registry import for_entity
 from app.ui import brand, render
 from app.directory import universities
 from app.feedback import submit as submit_report
@@ -717,11 +720,20 @@ def ask(question: str, ui_lang: str, answer_lang: str, uai: str = "",
     # Carried into the turn so a refusal can name the body that owns the
     # answer instead of offering the nearest public-administration page.
     about = None
+    live_source = None
     if who.institution is not None:
         about = {"name": who.institution.name,
                  "commune": who.institution.commune,
                  "departement": who.institution.departement,
                  "url": who.institution.url}
+        # Is this body's own website a registered, verified source we may
+        # read? The lookup is local and costs nothing; only a hit leads to
+        # any network access at all.
+        for candidate_id in entity.canonical_ids(who.institution):
+            if any(s.live_query_enabled and s.verified
+                   for s in for_entity(candidate_id)):
+                live_source = candidate_id
+                break
 
     # Where someone studies narrows the question in a way the corpus can use:
     # a number of fiches branch per departement.
@@ -734,9 +746,32 @@ def ask(question: str, ui_lang: str, answer_lang: str, uai: str = "",
     turns.append({"question": question, "state": "thinking",
                   "result": None, "streaming": False, "institution": about})
 
+
     def thread():
         return gr.update(value=render.thread_html(turns, ui_lang, reply_lang),
                          visible=True)
+
+    if live_source:
+        yield (thread(), hidden, hidden, gr.update(), gr.update(),
+               gr.update(visible=False), turns, {},
+               gr.update(value="", placeholder=t(ui_lang, "followup_ph")))
+        found = live_sources.gather(live_source, question)
+        if found.ok:
+            answered = answer_from_source(question, found, language=reply_lang)
+            turns[-1] = {"question": question, "state": "done",
+                         "result": answered, "streaming": False,
+                         "institution": about,
+                         "freshness": freshness_key(found),
+                         "live_domain": found.source.domain if found.source else ""}
+            yield (thread(), hidden, hidden, gr.update(),
+                   gr.update(visible=get_settings().debug_panel),
+                   gr.update(visible=False), turns,
+                   _context_of(answered, question, uai), gr.update())
+            return
+        # The site could not be read. Fall through to the corpus rather than
+        # inventing anything, and say plainly that the official site was the
+        # thing that did not answer.
+        turns[-1] = {**turns[-1], "freshness": freshness_key(found)}
 
     offer_study = gr.update(visible=looks_like_study(question) and not uai)
     # The landing copy steps aside once there is a conversation to read.
@@ -1007,12 +1042,19 @@ def build() -> gr.Blocks:
         search.change(render.glossary_html, [search, site_lang], gloss_box)
         refresh.click(corpus_html, site_lang, corpus_box)
 
-        def switch_language(lang: str, current_search: str):
+        def switch_language(lang: str, current_search: str, turns: list):
             """Re-label the whole interface without losing what is on screen.
 
             Every user-facing string is re-read from the translation table, so
-            nothing can be left behind in the other language.
+            nothing can be left behind in the other language — including the
+            conversation already on screen, whose labels, freshness note and
+            controls are chrome and must follow the interface.
+
+            The answers themselves are not re-rendered into the new language.
+            They were written from sources in a particular language, and
+            translating them here would be inventing a text nobody wrote.
             """
+            turns = turns or []
             return [
                 brand_block(lang),
                 hero_block(lang),
@@ -1047,17 +1089,19 @@ def build() -> gr.Blocks:
                 f"<p class='rp-section-intro'>"
                 f"{html.escape(t(lang, 'corpus_intro'))}</p>",
                 gr.update(value=t(lang, "refresh")),
+                gr.update(value=render.thread_html(turns, lang, lang),
+                          visible=bool(turns)),
             ]
 
         site_lang.change(
             switch_language,
-            [site_lang, search],
+            [site_lang, search, turns_state],
             [head, hero, disclaimer, reply_caption, reply_lang, question,
              submit, restart, cats, trust, debug_acc, tab_ask, tab_gloss,
              tab_corpus, study_why, study_search, report_panel, report_intro,
              report_text, report_doing_label, report_doing, report_keeps,
              report_cancel, report_send, gloss_intro, search,
-             gloss_box, corpus_intro, refresh],
+             gloss_box, corpus_intro, refresh, thread_box],
         )
 
     return demo

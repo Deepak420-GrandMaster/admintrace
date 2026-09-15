@@ -155,6 +155,23 @@ def named_institutions(text: str) -> list[Institution]:
     return _distinct(found)
 
 
+def canonical_ids(institution: Institution) -> tuple[str, ...]:
+    """The ids this institution might be registered under in the source registry.
+
+    The register of institutions and the registry of authoritative domains are
+    separate lists maintained for different reasons, so they are joined on a
+    slug of the name and on the acronym rather than on a shared key.
+    """
+    if institution is None:
+        return ()
+    slug = re.sub(r"[^a-z0-9]+", "-", _fold(institution.name)).strip("-")
+    out = [slug] if slug else []
+    acronym = _fold(institution.acronym).strip()
+    if acronym:
+        out.append(re.sub(r"[^a-z0-9]+", "-", acronym).strip("-"))
+    return tuple(dict.fromkeys(out))
+
+
 def mentions_institution_reference(text: str) -> bool:
     """Whether the text leans on an institution it does not name."""
     return bool(_DEMONSTRATIVE.search(text or ""))

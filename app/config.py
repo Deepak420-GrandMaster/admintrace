@@ -226,7 +226,8 @@ def get_settings() -> Settings:
         smtp_port=_as_int("SMTP_PORT", "587"),
         smtp_username=_raw("SMTP_USERNAME", ""),
         smtp_password=_raw("SMTP_PASSWORD", ""),
-        smtp_starttls=_as_bool("SMTP_STARTTLS", "true"),
+        smtp_starttls=_as_bool("SMTP_STARTTLS",
+                               _raw("SMTP_USE_TLS", "true")),
     )
 
     _validate(settings)

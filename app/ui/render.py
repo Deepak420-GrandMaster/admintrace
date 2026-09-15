@@ -564,6 +564,11 @@ def turn_html(turn: dict, lang: str, reply_lang: str, index: int) -> str:
             else:
                 body_parts.append(services_html(result.services, lang))
                 body_parts.append(sources_html(result.citations, lang))
+            # Stored as a translation key, so it follows a language switch.
+            note = turn.get("freshness")
+            if note:
+                body_parts.append(
+                    f"<p class='rp-freshness'>{html.escape(t(lang, note))}</p>")
             if not turn.get("streaming"):
                 body_parts.append(actions_html(index, lang))
 

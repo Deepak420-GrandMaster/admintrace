@@ -805,6 +805,13 @@ body.rp-answered .gradio-container button.rp-restart,
 }
 .rp-near-search:hover { background: var(--accent-deep); }
 
+/* How current this answer's evidence is. Quiet, but never absent when the
+   evidence came from a live site rather than the indexed corpus. */
+.rp-freshness {
+  margin: var(--s4) 0 0; font-size: 12.5px; line-height: 1.5;
+  color: var(--ink-faint); max-width: var(--col);
+}
+
 /* ----------------------------------------------------------- actions -- */
 .rp-actions {
   display: flex; flex-wrap: wrap; align-items: center; gap: var(--s4);

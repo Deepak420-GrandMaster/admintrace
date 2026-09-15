@@ -172,6 +172,12 @@ STRINGS: dict[str, dict[str, str]] = {
                        "enrolment rules, so that answer comes from them, not "
                        "from here.",
         "entity_register": "{name} in the official register",
+        "fresh_live": "Read from the official site just now.",
+        "fresh_cached": "From the official site, read recently.",
+        "fresh_stale": "From a stored copy — the official site couldn't be "
+                       "reached just now, so this may have moved on.",
+        "fresh_unavailable": "I couldn't reach the official site just now.",
+        "live_source_head": "Official source",
         "say_note": "Suggested wording — not an official text.",
         "no_match": "No word matches “{q}”.",
     },
@@ -341,6 +347,12 @@ STRINGS: dict[str, dict[str, str]] = {
                        "règles d'admission et d'inscription : cette réponse "
                        "vient de lui, pas d'ici.",
         "entity_register": "{name} dans l'annuaire officiel",
+        "fresh_live": "Lu à l'instant sur le site officiel.",
+        "fresh_cached": "Depuis le site officiel, consulté récemment.",
+        "fresh_stale": "Depuis une copie enregistrée — le site officiel est "
+                       "injoignable pour le moment, cela a pu changer depuis.",
+        "fresh_unavailable": "Le site officiel est injoignable pour le moment.",
+        "live_source_head": "Source officielle",
         "say_note": "Formulation suggérée — ce n'est pas un texte officiel.",
         "no_match": "Aucun mot ne correspond à « {q} ».",
     },

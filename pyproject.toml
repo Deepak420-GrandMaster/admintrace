@@ -28,3 +28,6 @@ packages = ["app"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+markers = [
+    "network: reaches the live web. Skipped unless CLARE_NETWORK_TESTS=1, so the\n    default suite stays offline, fast and immune to someone else's outage.",
+]

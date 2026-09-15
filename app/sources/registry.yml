@@ -1,0 +1,179 @@
+# Authoritative sources.
+#
+# A domain in this file may become evidence in an answer. A domain not in this
+# file may not, however official it looks and however confidently a page or a
+# reader claims it. Adding one is a deliberate act: name the body, say what it
+# is the authority for, and verify it — `python -m app.live_source_check`
+# writes the verification date back here.
+#
+# authority_level 1 = this body decides the rule.
+# authority_level 2 = this body explains someone else's rule.
+#
+# `aliases` are other hostnames that legitimately serve the same source,
+# including ones it has moved away from. They are how a rebrand stays
+# reachable without a redirect to a new name looking like a hijack.
+
+version: 1
+
+sources:
+  # ---------------------------------------------------------------- state --
+  - id: service-public
+    name: Service-Public
+    domain: service-public.gouv.fr
+    base_url: https://www.service-public.gouv.fr/
+    aliases: [service-public.fr]
+    source_type: government
+    authority_level: 2
+    supported_topics: [residence-permit, housing, documents, work, family, health, taxes]
+    language: fr
+    verified: true
+    verified_at: 2026-09-15
+    live_query_enabled: false
+    freshness_hours: 720
+    notes: >
+      The corpus this system is built on, ingested locally from the DILA open
+      data publication. Explains procedure across government; rarely the body
+      that decides it. Live querying stays off because the local index is the
+      whole point.
+
+  - id: interieur
+    name: Ministère de l'Intérieur
+    domain: interieur.gouv.fr
+    base_url: https://www.interieur.gouv.fr/
+    source_type: government
+    authority_level: 1
+    supported_topics: [residence-permit, prefecture, identity]
+    language: fr
+    verified: false
+    live_query_enabled: false
+
+  - id: anef
+    name: ANEF — Administration numérique pour les étrangers en France
+    domain: administration-etrangers-en-france.interieur.gouv.fr
+    base_url: https://administration-etrangers-en-france.interieur.gouv.fr/
+    source_type: government
+    authority_level: 1
+    supported_topics: [residence-permit, prefecture]
+    language: fr
+    verified: false
+    live_query_enabled: false
+    notes: >
+      Checked 2026-09-15: ANEF renders its content in the browser, so the fetched page parses to nothing. Not usable as a text source without executing its scripts, which this fetcher deliberately does not do.
+
+  - id: ants
+    name: ANTS — Agence nationale des titres sécurisés
+    domain: ants.gouv.fr
+    base_url: https://ants.gouv.fr/
+    source_type: public_body
+    authority_level: 1
+    supported_topics: [identity, documents]
+    language: fr
+    verified: false
+    live_query_enabled: false
+    notes: >
+      Checked 2026-09-15: Same as ANEF: the page arrives as an application shell with no readable text.
+
+  - id: impots
+    name: impots.gouv.fr
+    domain: impots.gouv.fr
+    base_url: https://www.impots.gouv.fr/
+    source_type: government
+    authority_level: 1
+    supported_topics: [taxes]
+    language: fr
+    verified: true
+    verified_at: 2026-09-15
+    live_query_enabled: false
+
+  # --------------------------------------------------------- public bodies --
+  - id: caf
+    name: Caisse d'allocations familiales
+    domain: caf.fr
+    base_url: https://www.caf.fr/
+    source_type: public_body
+    authority_level: 1
+    supported_topics: [housing, benefits, family]
+    supported_entities: [caf]
+    language: fr
+    verified: false
+    live_query_enabled: false
+    notes: >
+      Checked 2026-09-15: caf.fr redirects to a third-party bot-check
+      (validate.perfdrive.com), which the fetcher refuses because it is not a
+      registered host for this source. Bypassing it is out of the question, so
+      CAF stays unverified and cannot be used as live evidence.
+
+  - id: ameli
+    name: Assurance Maladie
+    domain: ameli.fr
+    base_url: https://www.ameli.fr/
+    source_type: public_body
+    authority_level: 1
+    supported_topics: [health]
+    supported_entities: [ameli, assurance-maladie]
+    language: fr
+    verified: true
+    verified_at: 2026-09-15
+    live_query_enabled: false
+
+  - id: france-travail
+    name: France Travail
+    domain: francetravail.fr
+    base_url: https://www.francetravail.fr/
+    aliases: [pole-emploi.fr]
+    source_type: public_body
+    authority_level: 1
+    supported_topics: [work, employment]
+    supported_entities: [france-travail, pole-emploi]
+    language: fr
+    verified: false
+    live_query_enabled: false
+    notes: Renamed from Pôle emploi; the former domain is kept as an alias.
+
+  - id: etudiant-gouv
+    name: etudiant.gouv.fr — CROUS
+    domain: etudiant.gouv.fr
+    base_url: https://www.etudiant.gouv.fr/
+    aliases: [messervices.etudiant.gouv.fr]
+    source_type: public_body
+    authority_level: 1
+    supported_topics: [study, housing, student-life, crous]
+    supported_entities: [crous]
+    language: fr
+    verified: true
+    verified_at: 2026-09-15
+    live_query_enabled: false
+
+  - id: campus-france
+    name: Campus France
+    domain: campusfrance.org
+    base_url: https://www.campusfrance.org/
+    source_type: public_body
+    authority_level: 2
+    supported_topics: [study, admission, visa]
+    language: fr
+    verified: true
+    verified_at: 2026-09-15
+    live_query_enabled: false
+
+  # ---------------------------------------------------------- institutions --
+  - id: mbs
+    name: MBS School of Business
+    domain: mbs-education.com
+    base_url: https://www.mbs-education.com/
+    aliases: [montpellier-bs.com, supdeco-montpellier.com]
+    source_type: school
+    authority_level: 1
+    supported_topics: [admission, tuition, programmes, student-life]
+    supported_entities: [montpellier-business-school, mbs, mbs-school-of-business]
+    language: fr
+    verified: true
+    verified_at: 2026-09-15
+    live_query_enabled: true
+    freshness_hours: 168
+    entry_points:
+      - https://www.mbs-education.com/
+    notes: >
+      Formerly Montpellier Business School; montpellier-bs.com now redirects
+      to mbs-education.com. Both are registered, so following that redirect is
+      recognised as the same institution rather than refused as a hijack.
