@@ -215,3 +215,36 @@ def test_a_render_stays_on_the_approved_domain(mbs):
     from urllib.parse import urlsplit
     assert (urlsplit(result.final_url).hostname or "").endswith("mbs-education.com")
     assert result.content_type.endswith("rendered")
+
+
+@network
+@pytest.mark.skipif(not available(), reason="rendering extra is not installed")
+def test_rendering_works_while_another_playwright_session_is_open():
+    """Playwright's sync API refuses to start twice on one thread.
+
+    Its event loop keeps running in whichever thread opened the session, so a
+    second `sync_playwright()` there dies with "Sync API inside the asyncio
+    loop" — which surfaced as a source that looked unreachable rather than as
+    a bug in us. Clare serves on asyncio and the browser tests hold a session
+    of their own, so rendering has to survive a caller that already has one.
+    """
+    from playwright.sync_api import Error as PlaywrightError
+    from playwright.sync_api import sync_playwright
+
+    source = by_id("anef")
+    try:
+        with sync_playwright() as driver:
+            browser = driver.chromium.launch(headless=True)
+            try:
+                result = render(source.base_url, source=source)
+            finally:
+                browser.close()
+    except PlaywrightError:
+        # A session is already open on this thread — the browser suite holds
+        # one for the whole run. That is precisely the condition under test,
+        # so render straight into it rather than skipping.
+        result = render(source.base_url, source=source)
+
+    assert "Sync API" not in (result.error or ""), result.error
+    if not result.ok:
+        pytest.skip(f"ANEF unreachable: {result.error}")

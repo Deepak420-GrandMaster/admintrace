@@ -42,6 +42,31 @@ from app.sources.jurisdiction import departments
 from app.sources.registry import Health, JurisdictionLevel, load_registry
 
 
+class HistoryDepth(str, Enum):
+    """How much past a source can actually speak to.
+
+    Per source, never globally. MBS having six weeks of history says nothing
+    about whether the Hérault préfecture can answer a question about June, and
+    a single global figure would let the deepest source vouch for the
+    shallowest.
+    """
+
+    INSUFFICIENT = "insufficient_history"
+    LIMITED = "limited_history"
+    READY = "historical_ready"
+    MATURE = "historical_mature"
+
+
+def depth_of(version_count: int, days: int, settings: Settings) -> HistoryDepth:
+    if version_count < settings.minimum_historical_versions:
+        return HistoryDepth.INSUFFICIENT
+    if days >= settings.minimum_historical_days * 3:
+        return HistoryDepth.MATURE
+    if days >= settings.minimum_historical_days:
+        return HistoryDepth.READY
+    return HistoryDepth.LIMITED
+
+
 class Verification(str, Enum):
     PRODUCTION_VERIFIED = "production_verified"
     MECHANISM_VERIFIED = "mechanism_verified"
@@ -107,9 +132,11 @@ def history_metrics(settings: Settings | None = None) -> dict:
                         continue
         versions.sort(key=lambda v: v.retrieved_at)
         if not versions:
-            per_source[source.id] = {"version_count": 0, "days_of_history": 0,
-                                     "oldest_version": "", "newest_version": "",
-                                     "last_change": ""}
+            per_source[source.id] = {
+                "version_count": 0, "days_of_history": 0,
+                "oldest_version": "", "newest_version": "", "last_change": "",
+                "depth": HistoryDepth.INSUFFICIENT.value,
+            }
             continue
         oldest, newest = versions[0], versions[-1]
         try:
@@ -124,8 +151,23 @@ def history_metrics(settings: Settings | None = None) -> dict:
             "oldest_version": oldest.retrieved_at,
             "newest_version": newest.retrieved_at,
             "last_change": changed.retrieved_at if changed else "",
+            "depth": depth_of(len(versions), days, settings).value,
         }
     return per_source
+
+
+def historical_answerable(source_id: str, settings: Settings | None = None) -> bool:
+    """Whether this source can support a claim about the past at all.
+
+    An answer may only reach back as far as the source behind it does. Without
+    this, a question about June gets answered from the only version we have,
+    which is today's — and reads as though it were June's.
+    """
+    settings = settings or get_settings()
+    metrics = history_metrics(settings).get(source_id)
+    if not metrics:
+        return False
+    return metrics["depth"] in (HistoryDepth.READY.value, HistoryDepth.MATURE.value)
 
 
 def claim_metrics(settings: Settings | None = None) -> dict:
@@ -235,15 +277,22 @@ def assess(settings: Settings | None = None) -> dict[str, Capability]:
 
     # Works, but the archive is one day deep. Saying otherwise would imply an
     # archive that does not exist.
-    enough = (deepest >= settings.minimum_historical_days
-              and most_versions >= settings.minimum_historical_versions)
+    by_depth: dict[str, list[str]] = {}
+    for source_id, metrics in history.items():
+        if metrics["version_count"]:
+            by_depth.setdefault(metrics["depth"], []).append(source_id)
+    ready = (by_depth.get(HistoryDepth.READY.value, [])
+             + by_depth.get(HistoryDepth.MATURE.value, []))
     out["historical_retrieval"] = cap(
         "Historical retrieval",
-        Verification.PRODUCTION_VERIFIED if enough else Verification.INSUFFICIENT_HISTORY,
-        f"deepest archive {deepest}d / {most_versions} versions; "
-        f"needs {settings.minimum_historical_days}d / "
-        f"{settings.minimum_historical_versions} versions",
-        days=deepest, versions=most_versions)
+        Verification.PRODUCTION_VERIFIED if ready else Verification.INSUFFICIENT_HISTORY,
+        (f"{len(ready)} source(s) deep enough to answer about the past"
+         if ready else
+         f"deepest archive {deepest}d / {most_versions} versions; a source "
+         f"needs {settings.minimum_historical_days}d and "
+         f"{settings.minimum_historical_versions} versions"),
+        days=deepest, versions=most_versions,
+        ready_sources=ready, by_depth=by_depth)
 
     conflicts = live_conflicts(settings)
     out["conflict_detection"] = cap(
@@ -292,6 +341,51 @@ def assess(settings: Settings | None = None) -> dict[str, Capability]:
     return out
 
 
+def previous_scorecard(settings: Settings | None = None) -> dict:
+    """The last scorecard written, for comparison."""
+    settings = settings or get_settings()
+    path = settings.data_dir / "production_status.json"
+    if not path.exists():
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+#: Going from one of these to anything else is a regression worth an incident.
+_EARNED = {Verification.PRODUCTION_VERIFIED, Verification.MECHANISM_VERIFIED}
+
+
+def regressions(before: dict, after: dict[str, Capability]) -> list[dict]:
+    """Capabilities that have gone backwards since the last scorecard.
+
+    A capability that was proven and is not any more means something broke
+    quietly — a source went dark, a test stopped covering it. Noticing that is
+    the difference between a scorecard and a dashboard nobody trusts.
+    """
+    old = (before or {}).get("capabilities", {})
+    out = []
+    for key, capability in after.items():
+        was = old.get(key, {}).get("status")
+        if not was or was == capability.status.value:
+            continue
+        try:
+            previous = Verification(was)
+        except ValueError:
+            continue
+        if previous in _EARNED and capability.status not in _EARNED:
+            out.append({"capability": key, "was": was,
+                        "now": capability.status.value,
+                        "evidence": capability.evidence})
+        elif previous is Verification.PRODUCTION_VERIFIED \
+                and capability.status is Verification.MECHANISM_VERIFIED:
+            out.append({"capability": key, "was": was,
+                        "now": capability.status.value,
+                        "evidence": capability.evidence})
+    return out
+
+
 def write_scorecard(settings: Settings | None = None) -> Path:
     """Persist the derived status so nobody has to remember it.
 
@@ -300,16 +394,33 @@ def write_scorecard(settings: Settings | None = None) -> Path:
     """
     settings = settings or get_settings()
     capabilities = assess(settings)
+    before = previous_scorecard(settings)
+    went_backwards = regressions(before, capabilities)
+
+    stamp = datetime.now(tz=timezone.utc).isoformat(timespec="seconds")
     payload = {
-        "generated_at": datetime.now(tz=timezone.utc).isoformat(timespec="seconds"),
+        "generated_at": stamp,
         "note": ("Derived from data on disk, never hand-edited. "
                  "production_verified requires a real-world observation, not "
                  "only a passing test."),
-        "capabilities": {key: asdict(cap) | {"status": cap.status.value}
+        "capabilities": {key: asdict(cap) | {"status": cap.status.value,
+                                             "last_verified": stamp}
                          for key, cap in capabilities.items()},
+        "regressions": went_backwards,
     }
     path = settings.data_dir / "production_status.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2),
                     encoding="utf-8")
+
+    # Snapshots, so "what was proven last week" has an answer.
+    archive = path.parent / "status_history"
+    archive.mkdir(parents=True, exist_ok=True)
+    (archive / f"{stamp.replace(':', '_')}.json").write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    for item in went_backwards:
+        store.audit("capability.regressed", settings,
+                    capability=item["capability"], was=item["was"],
+                    now=item["now"], severity="high")
     return path

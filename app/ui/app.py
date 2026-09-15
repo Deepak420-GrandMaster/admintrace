@@ -26,6 +26,7 @@ from app.query.detect import detect
 from app.query import entity
 from app.retrieval.answerability import Answerability, classify
 from app.answer.from_source import answer_from_source, freshness_key
+from app.answer import length as answer_length
 from app.answer.validate import validate as validate_answer
 from app.query import dates as question_dates
 from app.sources import live as live_sources
@@ -822,6 +823,15 @@ def ask(question: str, ui_lang: str, answer_lang: str, uai: str = "",
 
             answered = answer_from_source(routing_question, found,
                                           language=reply_lang)
+            # Measured, never truncated: cutting at a word count is how a
+            # condition that changes who qualifies gets dropped.
+            length = answer_length.check(routing_question, answered.text)
+            if length.over:
+                from app.sources import store as source_store
+                source_store.audit("answer.too_long", None,
+                                   question=routing_question[:160],
+                                   answer_class=length.answer_class.value,
+                                   words=length.words, ceiling=length.ceiling)
             local = found.local_source
             turns[-1] = {"question": question, "state": "done",
                          "result": answered, "streaming": False,

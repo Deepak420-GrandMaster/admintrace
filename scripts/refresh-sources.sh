@@ -21,6 +21,10 @@ echo "=== $(date -u +%Y-%m-%dT%H:%M:%SZ) refreshing due sources ==="
 uv run python -m app.live_source_check --write || true
 
 uv run python -m app.sync_sources --all --due --json > /tmp/clare-sync.json
+
+# A snapshot after every refresh, so a trend is visible before a symptom is.
+uv run python -m app.healthcheck --write >/dev/null || true
+uv run python -m app.production_report --write >/dev/null || true
 uv run python - <<'PY'
 import json, sys
 rows = json.load(open("/tmp/clare-sync.json"))

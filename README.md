@@ -74,6 +74,9 @@ uv run python -m app.coverage_report            # per-topic coverage
 uv run python -m app.sync_sources --dry-run
 uv run python -m app.sync_sources --all --due
 
+# Is it well? Reads only; safe from cron. Non-zero when a person is needed.
+uv run python -m app.healthcheck                # --write saves a snapshot
+
 # What still needs a person to look at it.
 uv run python -m app.review_queue
 
@@ -94,13 +97,32 @@ uv sync --extra render
 uv run playwright install chromium
 ```
 
-Tests that reach the live web are opt-in, so the default suite stays offline
-and immune to somebody else's outage:
+Tests that leave the machine are opt-in, so the default suite stays offline,
+fast, and immune to somebody else's outage:
 
 ```bash
-uv run pytest                          # offline
-CLARE_NETWORK_TESTS=1 uv run pytest    # and the live web
+uv run pytest                                      # offline
+CLARE_NETWORK_TESTS=1 uv run pytest                # and the live web
+
+# Browser tests drive the real interface and need the app running.
+uv run python -m app.ui.app &
+CLARE_BROWSER_TESTS=1 uv run pytest tests/browser/test_smoke.py   # ~13s, every deploy
+CLARE_BROWSER_TESTS=1 uv run pytest tests/browser                 # ~50s, every merge
 ```
+
+The smoke suite is the one worth running on every deploy: if it passes, the
+interface loads, speaks both languages, takes a question and shows an answer
+with a source. The full matrix sweeps seven viewports, both sections,
+keyboard navigation and outbound network, and is better suited to a merge or
+a nightly run. Console errors fail whichever test produced them — a page can
+look perfect in a screenshot while its JavaScript has thrown, and every
+interaction after that silently does nothing.
+
+All three suites can run in one pass — `CLARE_NETWORK_TESTS=1
+CLARE_BROWSER_TESTS=1 uv run pytest`. Rendering does its browser work on a
+thread of its own precisely so that it can: Playwright's sync API refuses to
+start a second session on a thread that already holds one, which is also what
+would happen to a render called from inside the asyncio loop Clare serves on.
 
 ### What "production ready" means here
 

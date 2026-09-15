@@ -1289,6 +1289,12 @@ footer:has(a[href*="gradio.app"]) { display: none !important; }
 
   .rp-sections div[role="tablist"] { gap: var(--s5) !important; margin-bottom: var(--s6) !important; }
 
+  /* A segmented control is compact because a pointer is precise. A finger is
+     not, so on a phone every option gets the full target. */
+  .rp-switch label { height: 44px !important; min-height: 44px !important; }
+  .rp-switch-site label { height: 44px !important; }
+  .rp-switch .wrap:not(.default) { padding: 3px !important; }
+
   .rp-hero { padding-bottom: var(--s5); }
   .rp-headline { font-size: clamp(32px, 9vw, 40px); max-width: 100%; }
   .rp-tagline { font-size: 15px; }
@@ -1297,6 +1303,11 @@ footer:has(a[href*="gradio.app"]) { display: none !important; }
   .rp-ask textarea {
     font-size: 16px !important; padding: var(--s4) var(--s4) var(--s2) !important;
     min-height: 84px !important;
+    /* Gradio's auto-resize writes an inline height sized to max_lines once
+       the placeholder wraps, which on a phone left a composer with 140px of
+       empty field above the send control. It still grows as you type; it just
+       does not start there. The element already scrolls. */
+    max-height: 132px !important;
   }
   .rp-composer { border-radius: var(--r-lg) !important; }
   .rp-composer-bar { padding: 0 var(--s2) var(--s2) var(--s4) !important; }
