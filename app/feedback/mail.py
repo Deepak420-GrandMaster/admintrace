@@ -70,6 +70,52 @@ def body_for(record: dict, local_path: str = "") -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
+def source_change_subject(source_name: str, severity: str, summary: str) -> str:
+    return (f"[CLARÉ SOURCE CHANGE][{severity.upper()}] {source_name} — "
+            + " ".join((summary or "changed").split())[:70])
+
+
+def send_source_change(*, source_name: str, url: str, severity: str,
+                       summary: str, before_after: str = "",
+                       categories: list[str] | None = None,
+                       topics: list[str] | None = None,
+                       version: str = "", review_required: bool = True,
+                       settings: Settings | None = None) -> tuple[bool, str]:
+    """Tell a maintainer an official rule appears to have moved.
+
+    Never raises and never blocks a sync: a source change is recorded whether
+    or not anyone could be told about it. The delivery result is returned so
+    the audit log can say which of the two happened.
+    """
+    settings = settings or get_settings()
+    if not settings.email_configured:
+        return False, "no SMTP host or recipient is configured"
+
+    lines = [
+        f"{source_name}",
+        f"{url}",
+        "",
+        f"severity: {severity}   version: {version or '-'}",
+        f"categories: {', '.join(categories or []) or '-'}",
+        f"affected topics: {', '.join(topics or []) or '-'}",
+        "",
+        "CHANGE",
+        f"  {summary or '(not summarised)'}",
+        "",
+    ]
+    if before_after:
+        lines += ["WHAT THE PAGE SAID, AND WHAT IT SAYS NOW",
+                  *(f"  {line}" for line in before_after.splitlines()), ""]
+    lines += [f"review required: {'yes' if review_required else 'no'}", ""]
+
+    message = EmailMessage()
+    message["Subject"] = source_change_subject(source_name, severity, summary)
+    message["To"] = settings.bug_email_to
+    message["From"] = settings.bug_email_from or settings.bug_email_to
+    message.set_content("\n".join(lines))
+    return _deliver(message, settings)
+
+
 def send(record: dict, local_path: str = "",
          settings: Settings | None = None) -> tuple[bool, str]:
     """Deliver one report. Returns ``(sent, reason_if_not)``.
@@ -86,7 +132,11 @@ def send(record: dict, local_path: str = "",
     message["To"] = settings.bug_email_to
     message["From"] = settings.bug_email_from or settings.bug_email_to
     message.set_content(body_for(record, local_path))
+    return _deliver(message, settings)
 
+
+def _deliver(message: EmailMessage, settings: Settings) -> tuple[bool, str]:
+    """Hand one message to the configured server. Never raises."""
     try:
         if settings.smtp_port == 465:
             server = smtplib.SMTP_SSL(settings.smtp_host, settings.smtp_port,

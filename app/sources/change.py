@@ -156,6 +156,10 @@ class ChangeReport:
     severity: Severity = Severity.LOW
     #: Product areas this change makes doubtful.
     affected_topics: list[str] = field(default_factory=list)
+    #: The requirements that appeared and disappeared, in the source's own
+    #: words. Filled by the version store, which is where the claims live.
+    claims_added: list[str] = field(default_factory=list)
+    claims_removed: list[str] = field(default_factory=list)
 
     @property
     def is_substantive(self) -> bool:
@@ -165,6 +169,25 @@ class ChangeReport:
     def needs_attention(self) -> bool:
         """Whether a person should be told, rather than only the log."""
         return self.severity in (Severity.CRITICAL, Severity.HIGH)
+
+    def before_after(self) -> str:
+        """What the page used to say and what it says now, in its own words.
+
+        Never paraphrased. When the claims cannot be paired up, this says so
+        rather than inventing a summary of a change nobody can see.
+        """
+        if not self.claims_added and not self.claims_removed:
+            return ""
+        lines = []
+        for text in self.claims_removed[:3]:
+            lines.append(f"BEFORE: {text}")
+        for text in self.claims_added[:3]:
+            lines.append(f"AFTER:  {text}")
+        if not self.claims_removed:
+            lines.insert(0, "BEFORE: (no matching requirement was stated)")
+        if not self.claims_added:
+            lines.append("AFTER:  (the requirement is no longer stated)")
+        return "\n".join(lines)
 
 
 def _fold(text: str) -> str:

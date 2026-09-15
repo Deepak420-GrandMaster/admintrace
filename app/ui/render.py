@@ -575,6 +575,12 @@ def turn_html(turn: dict, lang: str, reply_lang: str, index: int) -> str:
                 body_parts.append(services_html(result.services, lang))
                 body_parts.append(sources_html(result.citations, lang))
             # Stored as a translation key, so it follows a language switch.
+            missing = turn.get("authority_unverified")
+            if missing:
+                body_parts.insert(
+                    0,
+                    f"<p class='rp-caveat'>"
+                    f"{html.escape(t(lang, 'authority_partial', name=missing))}</p>")
             local = turn.get("local_authority")
             if local:
                 body_parts.append(

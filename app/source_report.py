@@ -16,9 +16,18 @@ import json
 from datetime import datetime, timedelta, timezone
 
 from app.config import get_settings
+from app.sources import claims as claim_store
 from app.sources import store
 from app.sources.gating import evaluate, mode_for
-from app.sources.registry import load_registry
+from app.sources.registry import Health, load_registry
+
+#: Why a source cannot currently be read, in words rather than a state name.
+_ACCESS_REASON = {
+    Health.BLOCKED: "bot protection; not bypassed",
+    Health.PARSER_FAILURE: "fetched, but nothing readable came out",
+    Health.UNAVAILABLE: "could not be reached",
+    Health.UNVERIFIED: "never checked against the live site",
+}
 
 
 def describe(source, settings) -> dict:
@@ -37,6 +46,20 @@ def describe(source, settings) -> dict:
             next_due = ""
 
     gate = evaluate(source, settings)
+    claims = claim_store.load(source.id, current.version_id, settings) if current else []
+    stale_claims = [c for c in claims if not c.is_current]
+    dated = [c for c in claims if c.effective_from]
+
+    conflicts = 0
+    conflict_path = settings.data_dir / "sources" / "conflicts.jsonl"
+    if conflict_path.exists():
+        try:
+            for line in conflict_path.read_text(encoding="utf-8").splitlines():
+                if line.strip() and f'"{source.id}"' in line:
+                    conflicts += 1
+        except OSError:
+            pass
+
     return {
         "id": source.id,
         "name": source.name,
@@ -57,6 +80,13 @@ def describe(source, settings) -> dict:
         "next_refresh": next_due,
         "due_now": store.due(source, settings),
         "gate_failures": [c.name for c in gate.failures],
+        "access_reason": _ACCESS_REASON.get(source.health, ""),
+        "claims": len(claims),
+        "claims_stale": len(stale_claims),
+        "claims_dated": len(dated),
+        "conflicts": conflicts,
+        "currentness": ("current" if current and not stale_claims
+                        else "pending review" if stale_claims else "unknown"),
     }
 
 
@@ -74,12 +104,16 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     print(f"{'SOURCE':<28} {'HEALTH':<18} {'MODE':<12} {'PARSER':<9} "
-          f"{'JURISDICTION':<22} {'VER':<4} NEXT REFRESH")
+          f"{'CLAIMS':<7} {'CONF':<5} {'CURRENTNESS':<14} NEXT REFRESH")
     for row in rows:
+        claims = f"{row['claims']}" + (f"/{row['claims_stale']}!"
+                                       if row["claims_stale"] else "")
         print(f"{row['id']:<28} {row['health']:<18} {row['mode']:<12} "
-              f"{row['parser_mode']:<9} {row['jurisdiction']:<22} "
-              f"{row['versions']:<4} "
+              f"{row['parser_mode']:<9} {claims:<7} {row['conflicts']:<5} "
+              f"{row['currentness']:<14} "
               f"{(row['next_refresh'] or '—')[:16]}{'  (due)' if row['due_now'] else ''}")
+        if row["access_reason"]:
+            print(f"{'':<28} {row['access_reason']}")
 
     live = sum(1 for r in rows if r["mode"] == "live_query")
     cached = sum(1 for r in rows if r["mode"] == "cached_only")

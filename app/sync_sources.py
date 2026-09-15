@@ -22,6 +22,7 @@ import json
 import sys
 
 from app.config import get_settings
+from app.feedback import mail
 from app.sources import store
 from app.sources.change import ChangeType
 from app.sources.extract import extract
@@ -84,6 +85,7 @@ def sync_source(source, settings, *, dry_run: bool, pages: int) -> list[dict]:
 
         version, report = store.record(source.id, url, page, result.content_hash,
                                        settings=settings)
+        row["before_after"] = report.before_after()
         row["change"] = report.change_type.value
         row["severity"] = report.severity.value
         row["categories"] = report.categories[:4]
@@ -97,6 +99,23 @@ def sync_source(source, settings, *, dry_run: bool, pages: int) -> list[dict]:
                              else "unchanged")
             if report.is_substantive:
                 row["action"] += " · derived caches invalidated"
+            if report.needs_attention:
+                # Email is a notification on top of the record, never the
+                # record itself: a sync must not fail because a mail server
+                # is down, and must not pretend it told anyone if it did not.
+                sent, reason = mail.send_source_change(
+                    source_name=source.name, url=url,
+                    severity=report.severity.value, summary=report.summary,
+                    before_after=report.before_after(),
+                    categories=report.categories[:5],
+                    topics=report.affected_topics,
+                    version=version.version_id, settings=settings)
+                row["notified"] = sent
+                row["notification_error"] = "" if sent else reason
+                store.audit("source.change_notified" if sent
+                            else "source.notification_failed",
+                            settings, source=source.id, url=url,
+                            severity=report.severity.value, reason=reason)
         rows.append(row)
     return rows
 
@@ -152,8 +171,12 @@ def main(argv: list[str] | None = None) -> int:
         for row in attention:
             print(f"  ! [{row['severity'].upper()}] {row['source']} {row['url']}")
             print(f"    {row['summary']}")
+            for line in (row.get("before_after") or "").splitlines():
+                print(f"    {line}")
             if row["topics"]:
                 print(f"    invalidates: {', '.join(row['topics'])}")
+            if row.get("notification_error"):
+                print(f"    not emailed: {row['notification_error']}")
     return 0
 
 

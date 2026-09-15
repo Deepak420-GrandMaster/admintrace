@@ -142,6 +142,27 @@ def history(source_id: str, url: str, settings: Settings | None = None) -> list[
     return sorted(out, key=lambda v: v.retrieved_at)
 
 
+def version_on(source_id: str, url: str, when, settings: Settings | None = None):
+    """The version that was in force on a given date.
+
+    "In force" means the most recent version retrieved on or before that day:
+    what the page said then is the best record anyone has of what the rule was
+    then. Returning ``None`` is a real answer — it means nothing was stored
+    that far back, and the honest reply is that we cannot verify it, not a
+    reconstruction from memory.
+    """
+    settings = settings or get_settings()
+    wanted = when.isoformat() if hasattr(when, "isoformat") else str(when)
+    covering = [v for v in history(source_id, url, settings)
+                if v.retrieved_at[:10] <= wanted]
+    return covering[-1] if covering else None
+
+
+def has_history_before(source_id: str, url: str, when,
+                       settings: Settings | None = None) -> bool:
+    return version_on(source_id, url, when, settings) is not None
+
+
 def freshness(source_id: str, url: str, freshness_hours: int,
               settings: Settings | None = None) -> Freshness:
     current = active(source_id, url, settings)
@@ -209,6 +230,37 @@ def record(source_id: str, url: str, page: Page, content_hash: str, *,
     except OSError as exc:
         audit("version.write_failed", settings, source=source_id, url=url, error=str(exc))
         return None, report
+
+    # What this version asserts, kept per claim so an answer can cite a
+    # sentence and a later change can be seen as that sentence moving rather
+    # than as an unrelated page edit.
+    from app.sources import claims as claim_store
+    from app.sources.registry import by_id as source_by_id
+    source = source_by_id(source_id)
+    extracted = claim_store.extract(
+        page.text, source_id=source_id, version_id=version.version_id,
+        url=version.canonical_url or url,
+        authority_level=source.authority_level if source else 2,
+        jurisdiction=source.jurisdiction.value if source else "national",
+        jurisdiction_area=source.jurisdiction_area if source else "",
+        topics=list(source.supported_topics) if source else [],
+        published_at=page.updated, retrieved_at=version.retrieved_at)
+    claim_store.save(extracted, source_id, version.version_id, settings)
+
+    # A requirement that moved is what "this changed" should mean. Claims that
+    # disappeared are flagged on the version they came from, so nothing still
+    # points at them as current while they are being checked.
+    if previous is not None and report.is_substantive:
+        old_claims = claim_store.load(source_id, previous.version_id, settings)
+        added, removed, _kept = claim_store.diff(old_claims, extracted)
+        report.claims_added = [c.text for c in added][:10]
+        report.claims_removed = [c.text for c in removed][:10]
+        if removed:
+            claim_store.mark_stale(source_id, previous.version_id,
+                                   [c.claim_id for c in removed], settings)
+        audit("claims.changed", settings, source=source_id, url=url,
+              version=version.version_id, added=len(added), removed=len(removed),
+              marked_stale=len(removed))
 
     if activate:
         _activate(settings, source_id, url, version, report)

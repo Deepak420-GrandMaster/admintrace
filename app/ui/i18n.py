@@ -188,6 +188,9 @@ STRINGS: dict[str, dict[str, str]] = {
                                "have changed, I'd rather say so. Try again in "
                                "a little while, or check their site directly.",
         "local_authority_is": "Local authority: {name}",
+        "authority_partial": "{name} is the authority for this, and I couldn't "
+                             "check its current page just now — so treat the "
+                             "below as background rather than as their rule.",
         "say_note": "Suggested wording — not an official text.",
         "no_match": "No word matches “{q}”.",
     },
@@ -375,6 +378,9 @@ STRINGS: dict[str, dict[str, str]] = {
                                "Réessayez un peu plus tard, ou consultez "
                                "directement leur site.",
         "local_authority_is": "Autorité locale : {name}",
+        "authority_partial": "{name} fait autorité ici, et je n'ai pas pu "
+                             "consulter sa page à l'instant : prenez ce qui "
+                             "suit comme un éclairage, pas comme leur règle.",
         "say_note": "Formulation suggérée — ce n'est pas un texte officiel.",
         "no_match": "Aucun mot ne correspond à « {q} ».",
     },

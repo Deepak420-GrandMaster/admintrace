@@ -799,6 +799,9 @@ def ask(question: str, ui_lang: str, answer_lang: str, uai: str = "",
                          "freshness": freshness_key(found),
                          "live_source_name": found.source.name if found.source else "",
                          "local_authority": local.name if local is not None else "",
+                         "authority_unverified": (routing.unreachable_deciders[0]
+                                                  if routing.unreachable_deciders
+                                                  else ""),
                          "live_domain": found.source.domain if found.source else "",
                          "source_versions": found.source_versions}
             yield (thread(), hidden, hidden, gr.update(),

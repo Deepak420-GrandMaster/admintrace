@@ -97,6 +97,10 @@ class Plan:
     steps: list[Step] = field(default_factory=list)
     #: An authority that should have answered but cannot be reached.
     unreachable: list[str] = field(default_factory=list)
+    #: Of those, the ones that actually *decide* this topic. CAF decides
+    #: housing benefit; CROUS answering instead is useful and is not the same
+    #: thing, and a reader must be told which they are getting.
+    unreachable_deciders: list[str] = field(default_factory=list)
     #: True when the topic needs a place and the reader has not given one.
     needs_place: bool = False
     fall_back_to_corpus: bool = True
@@ -139,6 +143,8 @@ def plan(question: str, *, entity_id: str = "", place: Place | None = None,
         mode = mode_for(source, settings)
         if mode is QueryMode.UNAVAILABLE:
             result.unreachable.append(source.name)
+            if source.authority_level == 1:
+                result.unreachable_deciders.append(source.name)
             seen.add(source.id)
             return
         seen.add(source.id)
