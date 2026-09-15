@@ -55,6 +55,80 @@ uv run python -m app.ui.app
 
 Then open **http://localhost:7860**.
 
+## Running it for real
+
+Claré answers from two kinds of evidence: the local corpus, and a closed list
+of official sites read over the web. The second needs looking after, and these
+are the commands that do it. Full detail in [docs/SOURCES.md](docs/SOURCES.md).
+
+```bash
+# What is proven, what is only tested, and what is blocked.
+uv run python -m app.production_report          # add --write for the JSON scorecard
+
+# Are the registered sources reachable, and do they still parse?
+uv run python -m app.live_source_check          # --write records health
+uv run python -m app.source_report              # per-source detail
+uv run python -m app.coverage_report            # per-topic coverage
+
+# Re-read what is overdue, version it, invalidate what it changed.
+uv run python -m app.sync_sources --dry-run
+uv run python -m app.sync_sources --all --due
+
+# What still needs a person to look at it.
+uv run python -m app.review_queue
+
+# Keep the archive inside its retention policy.
+uv run python -m app.prune_history --dry-run
+
+# Bug-report mail.
+uv run python -m app.test_email --check-config
+uv run python -m app.test_email --dry-run
+uv run python -m app.test_email --send
+```
+
+Sources that render in the browser (ANEF, France Titres, France Travail, the
+Préfecture de police) need the optional extra:
+
+```bash
+uv sync --extra render
+uv run playwright install chromium
+```
+
+Tests that reach the live web are opt-in, so the default suite stays offline
+and immune to somebody else's outage:
+
+```bash
+uv run pytest                          # offline
+CLARE_NETWORK_TESTS=1 uv run pytest    # and the live web
+```
+
+### What "production ready" means here
+
+`app.production_report` distinguishes a capability that works from one that has
+met real data. A passing test earns `mechanism_verified`; only a real-world
+observation earns `production_verified`. The scorecard is derived from what is
+on disk and is never hand-edited — a readiness file somebody can type into is a
+readiness file that will eventually be wrong.
+
+### Backup
+
+Everything that matters lives under `data/` and is plain JSON:
+
+| Path | What it is |
+|---|---|
+| `data/sources/versions/` | every version of every official page |
+| `data/sources/claims/` | what each version asserts, with provenance |
+| `data/sources/index.json` | which version is currently answering |
+| `data/sources/audit.jsonl` | every decision this layer made |
+| `data/sources/incidents.json` | source failures and recoveries |
+| `data/review/` | changes and conflicts awaiting a person |
+| `data/bugs/` | bug reports, by status |
+| `data/chroma/` | the embedded corpus (rebuildable from the feed) |
+
+Copying `data/` is the backup. Restoring it is the recovery; `data/chroma/`
+can be rebuilt from scratch with `uv run python -m app.ingest.pipeline` if it
+is lost, at the cost of a re-embed.
+
 The first ingestion downloads ~33 MB, parses it, and embeds 43,794 passages
 locally. Embedding is the slow part — a few hours on an Apple GPU. It is
 resumable: interrupt it and run the same command again.

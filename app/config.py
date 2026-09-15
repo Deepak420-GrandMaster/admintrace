@@ -122,6 +122,14 @@ class Settings:
     answer_language: str
     debug_panel: bool
 
+    # How much source history to keep, and how much is enough to answer a
+    # question about the past. The second is deliberately separate: keeping
+    # versions is cheap, having enough of them to be useful takes weeks.
+    retention_days: int
+    retention_versions: int
+    minimum_historical_days: int
+    minimum_historical_versions: int
+
     # Bug reports. Delivery is optional: a report is always written to disk
     # first, and the interface never claims an email was sent unless one was.
     bug_email_to: str
@@ -220,6 +228,10 @@ def get_settings() -> Settings:
         chroma_dir=_as_path("CHROMA_DIR", "./data/chroma"),
         answer_language=_raw("ANSWER_LANGUAGE", "auto").lower(),
         debug_panel=_as_bool("DEBUG_PANEL", "true"),
+        retention_days=_as_int("RETENTION_DAYS", "90"),
+        retention_versions=_as_int("RETENTION_VERSIONS", "20"),
+        minimum_historical_days=_as_int("MINIMUM_HISTORICAL_DAYS", "30"),
+        minimum_historical_versions=_as_int("MINIMUM_HISTORICAL_VERSIONS", "3"),
         bug_email_to=_raw("BUG_REPORT_EMAIL_TO", ""),
         bug_email_from=_raw("BUG_REPORT_EMAIL_FROM", ""),
         smtp_host=_raw("SMTP_HOST", ""),
@@ -250,6 +262,12 @@ def _validate(s: Settings) -> None:
             "EMBED_MAX_TOKENS must be at least CHUNK_MAX_TOKENS, otherwise "
             "chunks would be silently truncated when embedded"
         )
+    if s.retention_versions < 2:
+        raise ConfigError(
+            "RETENTION_VERSIONS must be at least 2: pruning to a single "
+            "version would leave nothing to roll back to")
+    if s.retention_days < 1:
+        raise ConfigError("RETENTION_DAYS must be at least 1")
     if s.answer_language not in {"auto", "en", "fr"}:
         raise ConfigError("ANSWER_LANGUAGE must be one of: auto, en, fr")
     if not s.feed_segments:

@@ -41,6 +41,10 @@ def _describe(settings) -> list[tuple[str, str, bool]]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="app.test_email",
                                      description="Check, and optionally exercise, bug-report email.")
+    parser.add_argument("--check-config", action="store_true",
+                        help="report whether delivery is configured, and stop")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="build the message and print it; send nothing")
     parser.add_argument("--send", action="store_true",
                         help="actually send one test message")
     args = parser.parse_args(argv)
@@ -51,6 +55,10 @@ def main(argv: list[str] | None = None) -> int:
     for label, shown, present in _describe(settings):
         print(f"  {'✓' if present else '·'} {label:<24} {shown}")
     print()
+
+    if args.check_config:
+        print(f"configured: {'yes' if settings.email_configured else 'no'}")
+        return 0 if settings.email_configured else 1
 
     if not settings.email_configured:
         print("SMTP credentials are not configured; real email delivery was "
@@ -77,6 +85,14 @@ def main(argv: list[str] | None = None) -> int:
         "ai_summary": "SMTP delivery test",
         "app_version": "0.1.0",
     }
+    if args.dry_run:
+        print("DRY RUN — nothing is sent.\n")
+        print(f"Subject: {mail.subject_for(record)}")
+        print(f"To:      {settings.bug_email_to}")
+        print()
+        print(mail.body_for(record, "(not stored: this is a delivery test)"))
+        return 0
+
     sent, reason = mail.send(record, "(not stored: this is a delivery test)", settings)
     if sent:
         print(f"Sent. The server accepted a message addressed to "

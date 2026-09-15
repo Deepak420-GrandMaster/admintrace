@@ -26,6 +26,8 @@ from app.query.detect import detect
 from app.query import entity
 from app.retrieval.answerability import Answerability, classify
 from app.answer.from_source import answer_from_source, freshness_key
+from app.answer.validate import validate as validate_answer
+from app.query import dates as question_dates
 from app.sources import live as live_sources
 from app.sources import route as source_route
 from app.sources.jurisdiction import resolve as resolve_place
@@ -684,6 +686,19 @@ def _context_of(result, question: str, uai: str) -> dict:
     }
 
 
+def store_audit_validation(checked, question: str) -> None:
+    """Record an answer that failed its own checks, so it can be found later.
+
+    Never silent: a mismatch that is only logged is a mismatch that keeps
+    happening, and these are precisely the failures that read like successes.
+    """
+    from app.sources import store as source_store
+    source_store.audit("answer.validation_failed", None,
+                       question=question[:200],
+                       failed=[f.check for f in checked.failures],
+                       detail=checked.why()[:300])
+
+
 def ask(question: str, ui_lang: str, answer_lang: str, uai: str = "",
         turns: list | None = None):
     """Answer a question inside the conversation, streaming as it is written.
@@ -790,6 +805,21 @@ def ask(question: str, ui_lang: str, answer_lang: str, uai: str = "",
 
         found = live_sources.gather_plan(routing, routing_question, per_source=2)
         if found.ok:
+            # Last check before anyone reads it: is this evidence actually
+            # evidence for *this* question? A Montpellier question answered
+            # from the Rhône préfecture reads exactly like a good answer.
+            asked_about = question_dates.parse(routing_question)
+            checked = validate_answer(
+                found.evidence,
+                entity_source_id=(routing.steps[0].source.id
+                                  if routing.steps and routing.steps[0].is_institution
+                                  else ""),
+                expected_area=(place.department.name
+                               if place.known and place.department else ""),
+                on=asked_about.on)
+            if not checked.ok:
+                store_audit_validation(checked, routing_question)
+
             answered = answer_from_source(routing_question, found,
                                           language=reply_lang)
             local = found.local_source

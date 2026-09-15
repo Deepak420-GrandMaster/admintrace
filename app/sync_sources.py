@@ -23,7 +23,7 @@ import sys
 
 from app.config import get_settings
 from app.feedback import mail
-from app.sources import store
+from app.sources import incidents, review, store
 from app.sources.change import ChangeType
 from app.sources.extract import extract
 from app.sources.fetch import fetch
@@ -63,6 +63,12 @@ def sync_source(source, settings, *, dry_run: bool, pages: int) -> list[dict]:
             rows.append(row)
             store.audit("sync.fetch_failed", settings, source=source.id,
                         url=url, error=row["error"], dry_run=dry_run)
+            if not dry_run:
+                kind = incidents.classify(row["error"], result.status)
+                incident = incidents.record(source.id, kind=kind,
+                                            detail=row["error"][:200],
+                                            status=result.status, settings=settings)
+                row["incident"] = f"{kind} ×{incident['occurrence_count']}"
             continue
 
         current = store.active(source.id, url, settings)
@@ -99,6 +105,14 @@ def sync_source(source, settings, *, dry_run: bool, pages: int) -> list[dict]:
                              else "unchanged")
             if report.is_substantive:
                 row["action"] += " · derived caches invalidated"
+            # Read cleanly, so anything that was wrong with this source is
+            # over. Recovery is an event, not the absence of one.
+            if not dry_run:
+                recovered = incidents.resolve(source.id, settings)
+                if recovered:
+                    row["recovered"] = [i["kind"] for i in recovered]
+                    store.audit("source.recovered", settings, source=source.id,
+                                url=url, was=[i["kind"] for i in recovered])
             if report.needs_attention:
                 # Email is a notification on top of the record, never the
                 # record itself: a sync must not fail because a mail server
@@ -116,6 +130,18 @@ def sync_source(source, settings, *, dry_run: bool, pages: int) -> list[dict]:
                             else "source.notification_failed",
                             settings, source=source.id, url=url,
                             severity=report.severity.value, reason=reason)
+                # A finding nobody reads is a finding that did not happen.
+                review.record_change(
+                    source_id=source.id, url=url,
+                    old_version=version.previous_version or "",
+                    new_version=version.version_id,
+                    change_type=report.change_type.value,
+                    severity=report.severity.value, summary=report.summary,
+                    before_after=report.before_after(),
+                    affected_topics=report.affected_topics,
+                    affected_claims=report.claims_removed[:10],
+                    cache_invalidated=report.is_substantive,
+                    notified=sent, settings=settings)
         rows.append(row)
     return rows
 

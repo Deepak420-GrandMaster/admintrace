@@ -76,6 +76,9 @@ class Evidence:
     version_id: str = ""
     updated: str = ""
     page_type: str = purpose_model.UNKNOWN_TYPE
+    #: The area this source speaks for, so a Montpellier answer can be caught
+    #: citing the Rhône préfecture before a reader acts on it.
+    jurisdiction_area: str = ""
 
     @property
     def excerpt(self) -> str:
@@ -283,7 +286,7 @@ def _evidence_from_version(version, source: Source, url: str,
         text=version.text, retrieved_at=version.retrieved_at,
         content_hash=version.content_hash, freshness=freshness,
         version_id=version.version_id, updated=version.updated,
-        page_type=page_type)
+        page_type=page_type, jurisdiction_area=source.jurisdiction_area)
 
 
 def gather(entity_id: str, question: str, *, limit: int = 3,
