@@ -187,7 +187,8 @@ def _live_result():
     page = Evidence(source_id="mbs", source_name=source.name,
                     domain=source.domain, url=source.base_url,
                     canonical_url=source.base_url, title="Admissions",
-                    text="Conditions d'admission. " * 40,
+                    text=("Conditions d'admission.\n"
+                          "Les candidatures se font sur Parcoursup.\n") * 20,
                     retrieved_at="2026-09-16T10:00:00+00:00",
                     content_hash="abc", freshness=Freshness.FRESH,
                     version_id="v1")
@@ -262,16 +263,26 @@ def test_a_live_answer_is_timed_like_any_other(monkeypatch, tmp_path):
     from app import telemetry
     from app.config import get_settings
 
+    from app.answer import claimcheck
+
     settings = dataclasses.replace(get_settings(), data_dir=tmp_path)
     monkeypatch.setattr(from_source, "get_chat_provider",
                         lambda s: _Provider(returns="Apply through Parcoursup."))
-    from_source.answer_from_source("What are the admission requirements at MBS?",
-                                   _live_result(), settings=settings)
+    # Same-subject by construction; this test is about timing, not meaning,
+    # and loading the real embedder would cost it ten seconds.
+    monkeypatch.setattr(claimcheck, "embedding_similarity",
+                        lambda a, b: [[0.9] * len(b) for _ in a])
+    result = from_source.answer_from_source(
+        "What are the admission requirements at MBS?", _live_result(),
+        settings=settings)
 
     rows = telemetry.traces(settings)
     assert rows, "a live-source answer left no timing behind"
     assert rows[-1]["evidence_verdict"] == "live_source"
+    # A supported answer costs exactly one model call: no repair was needed.
+    assert result.text == "Apply through Parcoursup."
     assert rows[-1]["model_calls"] == 1
+    assert rows[-1]["claims_supported"] == rows[-1]["claims_generated"] == 1
 
 
 def test_a_provider_error_never_prints_account_details_to_a_reader():

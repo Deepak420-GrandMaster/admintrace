@@ -22,6 +22,8 @@ from app.answer.cite import Citation
 from app.answer.generate import AnswerResult
 from app.config import Settings, get_settings
 from app import telemetry
+from app.answer import claimcheck, procedures as procedure_model
+from app.query import dates as question_dates
 from app.answer import length
 from app.llm import ChatMessage, ProviderError, get_chat_provider
 from app.sources.live import Evidence, LiveResult
@@ -111,6 +113,22 @@ def answer_from_source(question: str, live: LiveResult, *,
         result.elapsed = time.monotonic() - started
         return result
 
+    # Which procedure is being asked about, and only evidence that can speak
+    # to it. The Antibes renewal page — whose text says "renouvellement de
+    # VLS-TS" — was offered as evidence for a validation question, and its
+    # renewal deadline came back as the validation timing.
+    asked = procedure_model.detect(question)
+    offered, withheld = claimcheck.filter_by_procedure(live.evidence, asked)
+    if withheld and not offered:
+        # Everything found is about a different procedure. Answering from it
+        # is the bug; saying it could not be verified is the answer.
+        result.unverified = True
+        result.citations = []
+        result.elapsed = time.monotonic() - started
+        return result
+    offered = offered or list(live.evidence)
+    result.citations = [_citation(item) for item in offered]
+
     messages = [
         ChatMessage("system", SOURCE_SYSTEM.format(
             voice=prompts.VOICE,
@@ -119,7 +137,8 @@ def answer_from_source(question: str, live: LiveResult, *,
             question=question,
             institution=institution,
             domain=source.domain if source else "",
-            passages=as_passages(live.evidence))),
+            passages=as_passages(offered))
+            + prompts.procedure_note(procedure_model.label(asked))),
     ]
 
     trace = telemetry.Trace(
@@ -166,6 +185,44 @@ def answer_from_source(question: str, live: LiveResult, *,
         trace.empty_answer = True
         telemetry.record(trace, settings)
         return result
+
+    if settings.claim_validation:
+        def regenerate(usable):
+            return get_chat_provider(settings).complete([
+                ChatMessage("system", prompts.REPAIR_SYSTEM.format(
+                    language_name=prompts.language_name(language))),
+                ChatMessage("user", prompts.REPAIR_USER.format(
+                    question=question,
+                    procedure=procedure_model.label(asked) or "not stated",
+                    passages=as_passages([e for e in offered
+                                          if e.url in {u.url for u in usable}]
+                                         or offered))),
+            ], temperature=0.0, max_tokens=600)
+
+        checked_at = time.monotonic()
+        validation, repairs = claimcheck.check_and_repair(
+            text, claimcheck.from_live(live.evidence), question=question,
+            on=question_dates.parse(question).on, regenerate=regenerate)
+        trace.claim_validation_time = round(time.monotonic() - checked_at, 3)
+        trace.model_calls += repairs
+        _note_claims(trace, validation, repairs)
+        claimcheck.record(validation, path="live_source", settings=settings)
+        result.validation = validation.as_dict()
+        if not validation.text:
+            # Nothing the model wrote survived the evidence. Never blank.
+            result.unverified = True
+            result.refused = True
+            result.elapsed = time.monotonic() - started
+            telemetry.record(trace, settings)
+            return result
+        text = validation.text
+        backing = validation.source_urls()
+        if backing:
+            # Cite what the surviving claims actually rest on.
+            result.citations = [c for c in result.citations if c.url in backing] \
+                or result.citations
+        trace.word_count = len(text.split())
+
     telemetry.record(trace, settings)
 
     result.text = text
@@ -178,6 +235,15 @@ def answer_from_source(question: str, live: LiveResult, *,
          "ne couvrent pas", "ne couvre pas", "n'indiquent pas", "ne précisent pas"))
     result.elapsed = time.monotonic() - started
     return result
+
+
+def _note_claims(trace, validation, repairs: int) -> None:
+    trace.claims_generated = validation.generated
+    trace.claims_supported = validation.supported
+    trace.claims_removed = validation.removed
+    trace.claims_contradicted = validation.contradicted
+    trace.supported_claim_ratio = validation.supported_ratio
+    trace.repair_calls = repairs
 
 
 def freshness_key(live: LiveResult) -> str:

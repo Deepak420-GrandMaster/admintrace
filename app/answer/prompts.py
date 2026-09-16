@@ -197,3 +197,46 @@ def answer_system(language: str) -> str:
         h_watch=headings["watch"],
         h_say=headings["say"],
     )
+
+
+# ------------------------------------------------------------------ repair --
+
+#: Used at most once per answer, and only when validation removed every
+#: factual claim. The first draft blended things the evidence did not say;
+#: this asks for less, from less.
+REPAIR_SYSTEM = """\
+You rewrite an answer so that it says only what the official passages below
+actually state. You are not asked to be complete. You are asked to be right.
+
+- Use only statements the passages make. If a passage only names a service or
+  a portal, say only that it exists and where it is named.
+- Never state a time limit, a date, an amount, a document, an eligibility
+  condition, a portal address or an authority that the passages do not
+  state in so many words.
+- Never carry a rule from one procedure into another. Renewing a permit,
+  validating a visa and applying for one are different procedures.
+- Keep it short: two or three sentences at most.
+- Write in {language_name}.
+"""
+
+REPAIR_USER = """\
+Question: {question}
+The reader is asking about: {procedure}
+
+Official passages:
+{passages}
+"""
+
+
+def procedure_note(label: str) -> str:
+    """One line telling the answer model which procedure is being asked about.
+
+    Cheap prevention. The validator removes a renewal rule presented as a
+    validation rule after the fact; saying which procedure is in question
+    makes the model far less likely to write one in the first place.
+    """
+    if not label:
+        return ""
+    return (f"\n\nThe reader is asking about: {label}. Use only rules for that "
+            f"procedure; rules about other procedures in the passages do not "
+            f"apply to it and must not be stated as if they did.")

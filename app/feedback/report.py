@@ -106,6 +106,10 @@ class Report:
     # candidate/selected split at the moment the reader gave up.
     conversation: dict = field(default_factory=dict)
     source_selection: dict = field(default_factory=dict)
+    # "Your answer says X but the official page says Y": every claim the
+    # answer made, its verdict, the reason, and the source versions it rested
+    # on. Kept only because the reader chose to send a report.
+    claim_validation: dict = field(default_factory=dict)
 
     @property
     def is_triaged(self) -> bool:
@@ -210,6 +214,7 @@ def as_record(report: Report) -> dict:
         "conversation_context": report.context_summary,
         "conversation_state": report.conversation,
         "source_selection": report.source_selection,
+        "claim_validation": report.claim_validation,
         "sources": report.sources,
         "environment": report.app,
         "emailed": report.emailed,
@@ -285,6 +290,7 @@ def submit(raw_text: str, *, reporter_language: str = "", question: str = "",
            conversation_context: str = "",
            conversation: dict | None = None,
            source_selection: dict | None = None,
+           claim_validation: dict | None = None,
            settings: Settings | None = None) -> tuple[Report, Path]:
     """Take a report, triage it, store it, and try to tell someone.
 
@@ -308,6 +314,7 @@ def submit(raw_text: str, *, reporter_language: str = "", question: str = "",
         context_summary=conversation_context,
         conversation=conversation or {},
         source_selection=source_selection or {},
+        claim_validation=claim_validation or {},
         app=_environment(settings),
     )
     report = triage(report, settings)

@@ -1,0 +1,55 @@
+# Which administrative procedure a piece of text is about.
+#
+# The bug this exists for: asked how to validate a long-stay visa, discovery
+# picked a préfecture page titled "Demande de renouvellement", because its
+# text says "renouvellement de VLS-TS". The model then gave that page's
+# renewal deadline as the validation timing. Both pages were official and
+# both mention the VLS-TS; they describe different procedures, and a rule
+# from one is not evidence about the other.
+#
+# Vocabulary only. Nothing here states what a procedure requires, when it is
+# due, or what it costs — those reach a reader only from a retrieved page.
+#
+# `all_of` is a list of groups; a text matches when every group has at least
+# one pattern present. Patterns are regular expressions matched against
+# folded text: lowercase, accents removed, hyphens read as spaces.
+
+version: 1
+
+procedures:
+  vls_ts_validation:
+    label: VLS-TS validation
+    all_of:
+      - ['\bvalid(?:er|e|es|ez|ons|ation|ate|ated|ates|ating)\b']
+      - ['\bvls\s*ts\b', '\bvisa\b', '\blong\s+stay\b', '\blong\s+sejour\b']
+
+  residence_permit_renewal:
+    label: residence permit renewal
+    all_of:
+      - ['\brenouvel', '\brenew']
+
+  residence_permit_first_application:
+    label: first residence permit
+    all_of:
+      - ['\bpremi(?:er|ere)\s+(?:titre|demande)\b', '\bfirst\s+(?:application|permit|residence\s+permit|titre)\b']
+
+  visa_application:
+    label: visa application
+    all_of:
+      - ['\bdemande\s+de\s+visa\b', '\bapply(?:ing)?\s+for\s+a\s+visa\b', '\bvisa\s+application\b', '\bconsula(?:t|te)\b']
+
+  visa_extension:
+    label: visa extension
+    all_of:
+      - ['\bprolong(?:ation|er)\b', '\bextend(?:ing)?\b', '\bextension\b']
+      - ['\bvisa\b', '\bsejour\b', '\bstay\b', '\bpermit\b', '\btitre\b']
+
+  naturalisation:
+    label: naturalisation
+    all_of:
+      - ['\bnaturali[sz]']
+
+  change_of_status:
+    label: change of status
+    all_of:
+      - ['\bchangement\s+de\s+statut\b', '\bchange\s+(?:of|my|your)\s+status\b']

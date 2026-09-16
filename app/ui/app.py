@@ -695,6 +695,7 @@ def _context_of(result, question: str, uai: str, *, task=None) -> dict:
         "institution": campus.name if campus else "",
         "conversation_state": (task.as_dict() if task is not None else {}),
         "source_selection": getattr(result, "selection", {}) or {},
+        "claim_validation": getattr(result, "validation", {}) or {},
     }
 
 
@@ -1144,6 +1145,7 @@ def build() -> gr.Blocks:
                 conversation_context=context.get("conversation", ""),
                 conversation=context.get("conversation_state") or {},
                 source_selection=context.get("source_selection") or {},
+                claim_validation=context.get("claim_validation") or {},
             )
 
             if report.emailed:

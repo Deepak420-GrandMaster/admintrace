@@ -99,6 +99,10 @@ class Settings:
     keyword_weight: float
     relevance_threshold: float
     answerability_check: bool
+    # Every answer's claims are checked against its evidence before a reader
+    # sees them. A switch exists so a test can prove the check is what
+    # removes a bad claim — not so that it can be turned off in production.
+    claim_validation: bool
 
     # Chunking
     chunk_target_tokens: int
@@ -210,6 +214,7 @@ def get_settings() -> Settings:
         keyword_weight=_as_float("KEYWORD_WEIGHT", "0.5"),
         relevance_threshold=_as_float("RELEVANCE_THRESHOLD", "0.35"),
         answerability_check=_as_bool("ANSWERABILITY_CHECK", "true"),
+        claim_validation=_as_bool("CLAIM_VALIDATION", "true"),
         chunk_target_tokens=_as_int("CHUNK_TARGET_TOKENS", "600"),
         chunk_max_tokens=_as_int("CHUNK_MAX_TOKENS", "1200"),
         embed_max_tokens=_as_int("EMBED_MAX_TOKENS", "8192"),

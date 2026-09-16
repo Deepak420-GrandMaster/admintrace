@@ -18,7 +18,7 @@ from __future__ import annotations
 import argparse
 import json
 
-from app.telemetry import TARGET_SECONDS, provider_health, summarise, traces
+from app.telemetry import TARGET_SECONDS, claim_health, provider_health, summarise, traces
 
 
 def _bar(value: float, target: float, width: int = 18) -> str:
@@ -44,10 +44,11 @@ def main(argv: list[str] | None = None) -> int:
     rows = traces()
     grouped = summarise(rows, by=args.by)
     health = provider_health(rows)
+    claims = claim_health(rows)
 
     if args.as_json:
         print(json.dumps({"grouped_by": args.by, "latency": grouped,
-                          "provider": health,
+                          "provider": health, "claims": claims,
                           "targets": TARGET_SECONDS}, indent=2))
         return 0
 
@@ -74,6 +75,19 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  longest wait asked    {health['rate_limit_wait_max']:.0f}s")
     print(f"  answered locally      {health['fallback_count']}")
     print(f"  empty answers         {health['empty_answers']}")
+
+    print("\nClaims")
+    if claims["answers_checked"]:
+        print(f"  answers checked       {claims['answers_checked']}")
+        print(f"  validation p50 / p95  {claims['validation_p50_ms']:.0f} ms / "
+              f"{claims['validation_p95_ms']:.0f} ms")
+        print(f"  claims kept           {claims['claims_supported']} of "
+              f"{claims['claims_generated']} "
+              f"({claims['supported_claim_ratio'] * 100:.0f}%)")
+        print(f"  contradicted          {claims['claims_contradicted']}")
+        print(f"  repair generations    {claims['repair_calls']}")
+    else:
+        print("  no answers have been claim-checked yet")
 
     if health["empty_answers"]:
         print("\n  An empty answer is never rendered; it is reported as an "

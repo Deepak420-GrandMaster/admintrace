@@ -66,6 +66,14 @@ class Trace:
     retry_after: float = 0.0
     refused: bool = False
     empty_answer: bool = False
+    #: Claim validation: how long it took, and what it found.
+    claim_validation_time: float = 0.0
+    claims_generated: int = 0
+    claims_supported: int = 0
+    claims_removed: int = 0
+    claims_contradicted: int = 0
+    supported_claim_ratio: float = 1.0
+    repair_calls: int = 0
     phases: dict = field(default_factory=dict)
 
     @contextmanager
@@ -149,6 +157,26 @@ def summarise(rows: list[dict], by: str = "response_class") -> dict:
             "max": round(max(values), 2),
         }
         for key, values in sorted(groups.items())
+    }
+
+
+def claim_health(rows: list[dict]) -> dict:
+    """What claim validation cost, and how much of what models wrote held up."""
+    checked = [r for r in rows if r.get("claims_generated")
+               or r.get("claim_validation_time")]
+    times = [float(r.get("claim_validation_time") or 0) for r in checked]
+    generated = sum(int(r.get("claims_generated") or 0) for r in checked)
+    supported = sum(int(r.get("claims_supported") or 0) for r in checked)
+    return {
+        "answers_checked": len(checked),
+        "validation_p50_ms": round(percentile(times, 0.50) * 1000, 1),
+        "validation_p95_ms": round(percentile(times, 0.95) * 1000, 1),
+        "claims_generated": generated,
+        "claims_supported": supported,
+        "claims_removed": sum(int(r.get("claims_removed") or 0) for r in checked),
+        "claims_contradicted": sum(int(r.get("claims_contradicted") or 0) for r in checked),
+        "supported_claim_ratio": round(supported / generated, 3) if generated else 1.0,
+        "repair_calls": sum(int(r.get("repair_calls") or 0) for r in checked),
     }
 
 

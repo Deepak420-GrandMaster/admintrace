@@ -23,7 +23,9 @@ EVIDENCE_PASSAGES = 4
 #: number well above anything that can occur.
 ANSWER_TOKEN_CEILING = 900
 
-from app.answer import cite, length, prompts, relevance
+from app.answer import cite, claimcheck, length, prompts, relevance
+from app.answer import procedures as procedure_model
+from app.query import dates as question_dates
 from app import telemetry
 from app.sources import purpose as purpose_table
 from app.answer.cite import Citation, ServiceLink
@@ -53,6 +55,11 @@ class AnswerResult:
     error: str | None = None
     rate_limited: bool = False
     retry_after: float | None = None
+    #: What claim validation decided about this answer. Never displayed.
+    validation: dict = field(default_factory=dict)
+    #: True when nothing the model wrote could be verified against the
+    #: evidence. Rendered as an honest statement, never as blank text.
+    unverified: bool = False
     elapsed: float = 0.0
 
     @property
@@ -100,7 +107,8 @@ def _messages(prepared: PreparedQuery, decision: GateDecision) -> list[ChatMessa
             language_name=language,
             question=prepared.original,
             passages=cite.as_passages(_evidence_for(decision)),
-        )),
+        ) + prompts.procedure_note(procedure_model.label(
+            procedure_model.detect(prepared.original)))),
     ]
 
 
@@ -269,6 +277,7 @@ def answer_stream(question: str, settings: Settings | None = None,
 
     provider = get_chat_provider(settings)
     generation_started = time.time()
+    buffering = settings.claim_validation and not decision.should_refuse
     collected: list[str] = []
     try:
         for piece in provider.stream(_messages(prepared, decision),
@@ -285,9 +294,15 @@ def answer_stream(question: str, settings: Settings | None = None,
                                      # room and stops reserving 2000.
                                      max_tokens=ANSWER_TOKEN_CEILING):
             collected.append(piece)
+            # Not shown while it is written. An answer is checked claim by
+            # claim before a reader sees it, and streaming the unchecked draft
+            # would put exactly the sentences validation removes on screen for
+            # the seconds it takes to write them. The interface keeps its
+            # "reading the official pages" state until the checked answer lands.
             partial = AnswerResult(
                 question=question, language=prepared.language,
-                text="".join(collected), refused=decision.should_refuse,
+                text="" if buffering else "".join(collected),
+                refused=decision.should_refuse,
                 carried_context=carried, citations=citations, services=services, prepared=prepared,
                 gate=decision, elapsed=time.time() - started,
             )
@@ -338,12 +353,63 @@ def answer_stream(question: str, settings: Settings | None = None,
         return
 
     trace.empty_answer = False
+    validation_summary: dict = {}
+    if buffering:
+        shown = _evidence_for(decision)
+
+        def regenerate(usable):
+            urls = {item.url for item in usable}
+            return provider.complete([
+                ChatMessage("system", prompts.REPAIR_SYSTEM.format(
+                    language_name=prompts.language_name(prepared.language))),
+                ChatMessage("user", prompts.REPAIR_USER.format(
+                    question=question,
+                    procedure=procedure_model.label(
+                        procedure_model.detect(question)) or "not stated",
+                    passages=cite.as_passages(
+                        [h for h in shown
+                         if (h.metadata or {}).get("source_url") in urls] or shown))),
+            ], temperature=0.0, max_tokens=600)
+
+        checked_at = time.time()
+        validation, repairs = claimcheck.check_and_repair(
+            written, claimcheck.from_hits(shown), question=question,
+            on=question_dates.parse(question).on, place=place,
+            regenerate=regenerate)
+        trace.claim_validation_time = round(time.time() - checked_at, 3)
+        trace.model_calls += repairs
+        trace.claims_generated = validation.generated
+        trace.claims_supported = validation.supported
+        trace.claims_removed = validation.removed
+        trace.claims_contradicted = validation.contradicted
+        trace.supported_claim_ratio = validation.supported_ratio
+        trace.repair_calls = repairs
+        claimcheck.record(validation, path="corpus", settings=settings)
+        validation_summary = validation.as_dict()
+        if not validation.text:
+            trace.total_time = round(time.time() - started, 3)
+            telemetry.record(trace, settings)
+            yield AnswerResult(
+                question=question, language=prepared.language, text="",
+                refused=True, carried_context=carried, citations=[],
+                services=services, prepared=prepared, gate=decision,
+                selection=selection.as_diagnostics(),
+                validation=validation_summary, unverified=True,
+                elapsed=time.time() - started)
+            return
+        written = validation.text
+        backing = validation.source_urls()
+        if backing:
+            citations = [c for c in citations if c.url in backing] or citations
+        trace.word_count = len(written.split())
+        trace.total_time = round(time.time() - started, 3)
+
     telemetry.record(trace, settings)
     yield AnswerResult(
         question=question, language=prepared.language, text=written,
         refused=decision.should_refuse, carried_context=carried, citations=citations, services=services,
         prepared=prepared, gate=decision, selection=selection.as_diagnostics(),
-        elapsed=time.time() - started,
+        validation=validation_summary, elapsed=time.time() - started,
     )
 
 

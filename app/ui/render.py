@@ -209,8 +209,18 @@ def answer_html(result: AnswerResult, streaming: bool = False,
                 lang: str = "en", source_label: str = "") -> str:
     if result.rate_limited and not result.text:
         return limit_html(result, lang)
+    if getattr(result, "unverified", False) and not result.text:
+        # What the model wrote did not survive the evidence it came from.
+        # Said plainly, in the reader's language — never an empty bubble,
+        # and never a list of the claims that failed.
+        return (f"<div class='rp-answer rp-refusal'>"
+                f"<span class='rp-badge'><span class='rp-dot'></span>"
+                f"{html.escape(t(lang, 'refused'))}</span>"
+                f"<p>{html.escape(t(lang, 'claims_unverified'))}</p></div>")
     if result.error and not result.text:
-        return f"<div class='rp-error'>{html.escape(result.error)}</div>"
+        # Same redaction as error_html: this branch printed provider text raw.
+        return (f"<div class='rp-error'>"
+                f"{html.escape(_reader_safe(result.error))}</div>")
     if not result.text:
         return skeleton(2, lang)
 
@@ -235,7 +245,7 @@ def answer_html(result: AnswerResult, streaming: bool = False,
         body += "<span class='rp-caret'></span>"
 
     error = (
-        f"<div class='rp-error' style='margin-top:14px'>{html.escape(result.error)}</div>"
+        f"<div class='rp-error' style='margin-top:14px'>{html.escape(_reader_safe(result.error))}</div>"
         if result.error else ""
     )
     return f"<div class='{shell}'>{badge}{body}{error}</div>"

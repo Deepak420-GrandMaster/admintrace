@@ -68,6 +68,11 @@ STRINGS: dict[str, dict[str, str]] = {
                           "stranger. The one exception is a bug report — that "
                           "is saved, because it has to be, and only when you "
                           "send one.",
+        "claims_unverified": "I couldn't verify an answer to this from the "
+                             "official information available. Rather than "
+                             "tell you something the pages don't actually "
+                             "say, I'll leave it there — the official page "
+                             "is the place to check.",
         "limit_title": "Out of tokens for now",
         "limit_body": "Nothing is broken and nothing you did caused this — the "
                       "meter simply ran out. Go and drink a glass of water, "
@@ -264,6 +269,11 @@ STRINGS: dict[str, dict[str, str]] = {
                           "Seule exception : un signalement de bug, qui est "
                           "enregistré, parce qu'il le faut, et seulement si "
                           "vous en envoyez un.",
+        "claims_unverified": "Je n'ai pas pu vérifier de réponse à partir des "
+                             "informations officielles disponibles. Plutôt "
+                             "que de vous dire quelque chose que les pages "
+                             "ne disent pas vraiment, je m'arrête là — la "
+                             "page officielle est l'endroit où vérifier.",
         "limit_title": "Plus de jetons pour le moment",
         "limit_body": "Rien n'est cassé et vous n'y êtes pour rien — le "
                       "compteur est simplement arrivé au bout. Allez boire un "
