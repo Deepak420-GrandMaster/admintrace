@@ -569,7 +569,8 @@ def corpus_html(lang: str = "en") -> str:
 
     provider = get_chat_provider(settings)
     ok, _ = _provider_status(int(time.time()) // 300)
-    badge = ("rp-prov-official", "reachable") if ok else ("rp-prov-authored", "unavailable")
+    badge = (("rp-prov-official", t(lang, "provider_reachable")) if ok
+             else ("rp-prov-authored", t(lang, "provider_unavailable")))
 
     source_note = {
         "en": ("<strong>Where this comes from.</strong> Content published by the "

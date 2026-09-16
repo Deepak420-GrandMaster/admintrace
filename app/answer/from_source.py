@@ -79,7 +79,8 @@ def _citation(item: Evidence) -> Citation:
         # "update date unavailable" rather than to the time we happened to read it.
         last_updated=(item.updated or "")[:10],
         last_updated_is_plausible=True,
-        situation_fr=item.freshness.value.replace("_", " "),
+        # The raw state, not a sentence: the interface translates it.
+        situation_fr=item.freshness.value,
         section_title_fr="",
         score=1.0,
         excerpt=item.excerpt,

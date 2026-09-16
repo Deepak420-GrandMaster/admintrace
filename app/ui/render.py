@@ -322,13 +322,35 @@ def near_misses_html(result: AnswerResult, lang: str = "en") -> str:
 
 # ----------------------------------------------------------------- sources --
 
+def _scope_label(scope: str, lang: str) -> str:
+    """Translate a freshness state; pass real French scope text through.
+
+    A live source carries a machine state here ("fresh", "stale"); a corpus
+    citation carries the fiche's own French situation text. Only the first
+    kind is ours to translate, so anything unrecognised is left alone.
+    """
+    key = f"scope_{scope}"
+    translated = t(lang, key)
+    return scope.replace("_", " ") if translated == key else translated
+
+
+def _updated_label(citation, lang: str) -> str:
+    """When the page itself last said it changed, in the reader's language."""
+    if not citation.last_updated:
+        return t(lang, "updated_unknown")
+    key = ("updated_on" if citation.last_updated_is_plausible
+           else "updated_suspect")
+    return t(lang, key, q=citation.last_updated)
+
+
 def sources_html(citations: list[Citation], lang: str = "en") -> str:
     if not citations:
         return ""
     cards = []
     for index, citation in enumerate(citations):
         scope = (
-            f"<span class='rp-scope'>{html.escape(citation.scope_label)}</span>"
+            f"<span class='rp-scope'>"
+            f"{html.escape(_scope_label(citation.scope_label, lang))}</span>"
             if citation.scope_label else ""
         )
         date_class = "" if citation.last_updated_is_plausible else " class='rp-date-suspect'"
@@ -342,7 +364,8 @@ def sources_html(citations: list[Citation], lang: str = "en") -> str:
             f"<div class='rp-source-meta'>"
             f"<span class='rp-source-id'>{html.escape(citation.fiche_id)}</span>"
             f"{scope}"
-            f"<span{date_class}>{html.escape(citation.updated_label)}</span>"
+            f"<span{date_class}>"
+            f"{html.escape(_updated_label(citation, lang))}</span>"
             f"</div>"
             + (f"<span class='rp-peek' data-expandable>"
                f"{html.escape(t(lang, 'peek'))}</span>"
@@ -459,11 +482,16 @@ def glossary_html(search: str = "", lang: str = "en") -> str:
     cards = []
     for index, term in enumerate(terms):
         provenance = (
-            f"<span class='rp-prov rp-prov-official'>Official definition · "
+            f"<span class='rp-prov rp-prov-official'>"
+            f"{html.escape(t(lang, 'gloss_official'))} · "
             f"{html.escape(term.definition_id or '')}</span>"
             if term.is_official else
-            "<span class='rp-prov rp-prov-authored'>Written for Claré</span>"
+            f"<span class='rp-prov rp-prov-authored'>"
+            f"{html.escape(t(lang, 'gloss_authored'))}</span>"
         )
+        primary, secondary = ((term.explanation_fr, term.explanation_en)
+                              if lang == "fr" else
+                              (term.explanation_en, term.explanation_fr))
         aliases = [a for a in term.aliases_en
                    if a.lower() not in {term.fr.lower(), term.en.lower()}]
         also = (
@@ -483,9 +511,12 @@ def glossary_html(search: str = "", lang: str = "en") -> str:
             f" stroke='currentColor' stroke-width='1.7' stroke-linecap='round'"
             f" stroke-linejoin='round'/></svg></div>"
             f"<div class='rp-gloss-en'>{html.escape(term.en)}</div>"
-            f"<div class='rp-gloss-def'>{html.escape(term.explanation_en)}</div>"
+            # The reader's own language goes first. Showing a French speaker
+            # the English gloss and hiding the French one behind a click is
+            # backwards in a product whose whole promise is being understood.
+            f"<div class='rp-gloss-def'>{html.escape(primary)}</div>"
             f"<div class='rp-gloss-more'>"
-            f"<div class='rp-gloss-def-fr'>{html.escape(term.explanation_fr)}</div>"
+            f"<div class='rp-gloss-def-fr'>{html.escape(secondary)}</div>"
             f"{also}{provenance}</div></div>"
         )
     return f"<div class='rp-gloss-grid'>{''.join(cards)}</div>"

@@ -53,3 +53,34 @@ def test_unrelated_text_is_left_alone():
 def test_terms_are_found_in_either_language():
     assert any(t.fr == "dépôt de garantie" for t in glossary.find_terms("security deposit"))
     assert any(t.fr == "dépôt de garantie" for t in glossary.find_terms("dépôt de garantie"))
+
+
+def test_a_word_is_explained_in_the_language_being_read():
+    """A French reader must not be handed the English gloss first.
+
+    The card carries both explanations; which one leads is the whole point.
+    Leading in English on a French page, with the French hidden behind a
+    click, is backwards in a product whose promise is being understood.
+    """
+    import re
+
+    from app.ui.render import glossary_html
+
+    def leading(html_text: str) -> str:
+        return re.search(r"rp-gloss-def'>(.*?)</div>", html_text).group(1)
+
+    french = leading(glossary_html("titre de séjour", "fr"))
+    english = leading(glossary_html("titre de séjour", "en"))
+    assert french != english, "both languages lead with the same explanation"
+    assert "The document proving" in english
+    # Rendered French, not the English string that happens to sit beside it.
+    assert "document" in french.lower()
+
+
+def test_glossary_provenance_labels_are_translated():
+    from app.ui.render import glossary_html
+
+    assert "Définition officielle" in glossary_html("titre de séjour", "fr") \
+        or "Rédigé pour" in glossary_html("titre de séjour", "fr")
+    assert "Official definition" in glossary_html("titre de séjour", "en") \
+        or "Written for" in glossary_html("titre de séjour", "en")
