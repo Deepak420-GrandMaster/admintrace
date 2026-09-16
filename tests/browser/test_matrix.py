@@ -7,10 +7,17 @@ page quietly fetching something it should not.
 
 from __future__ import annotations
 
+import os
+
 import pytest
 
-from tests.browser.conftest import no_horizontal_overflow, \
+from tests.browser.conftest import wait_for_answer, no_horizontal_overflow, \
     small_touch_targets
+
+#: A hosted model answers in seconds; a local one on a laptop takes a minute
+#: or more for the same question. Configurable so one suite runs against
+#: either without a number in the source being wrong for one of them.
+ANSWER_TIMEOUT = int(os.environ.get("CLARE_ANSWER_TIMEOUT_MS", "90000"))
 
 VIEWPORTS = [320, 390, 768, 1024, 1280, 1440, 1920]
 
@@ -153,7 +160,7 @@ def test_switching_language_mid_conversation_keeps_it_coherent(page):
     page.fill("#rp-question textarea",
               "What are the admission requirements at Montpellier Business School?")
     page.click("button.rp-submit")
-    page.wait_for_selector(".rp-answer", timeout=90_000)
+    wait_for_answer(page, ANSWER_TIMEOUT)
 
     page.locator(".rp-switch-site label", has_text="Français").click()
     page.wait_for_timeout(3000)

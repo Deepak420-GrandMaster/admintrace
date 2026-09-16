@@ -702,6 +702,24 @@ def actions_html(index: int, lang: str = "en") -> str:
     )
 
 
+#: Provider account details that must never reach a reader's screen.
+_ACCOUNT_DETAIL = re.compile(
+    r"(org_[A-Za-z0-9]+|req_[A-Za-z0-9]+|in organization\s+`?[^`\s]+`?"
+    r"|Need more tokens\?.*$|https?://\S+)", re.IGNORECASE | re.DOTALL)
+
+
+def _reader_safe(message: str) -> str:
+    """A provider error with its account identifiers taken out.
+
+    A Groq quota error names the organisation id and ends in an upgrade link.
+    Neither belongs in front of someone asking about their residence permit,
+    and the id is an account detail that should not be printed publicly at
+    all. The rest stays: "the limit has 292s left to run" is useful.
+    """
+    cleaned = _ACCOUNT_DETAIL.sub("", message or "")
+    return " ".join(cleaned.split())[:200]
+
+
 def error_html(message: str, lang: str = "en") -> str:
     """An error the reader can act on, not a stack trace."""
     friendly = t(lang, "err_network") if "unreachable" in message.lower() \
@@ -709,7 +727,7 @@ def error_html(message: str, lang: str = "en") -> str:
     return (
         f"<div class='rp-error' role='alert'>"
         f"<strong>{html.escape(friendly)}</strong>"
-        f"<span class='rp-error-detail'>{html.escape(message[:200])}</span>"
+        f"<span class='rp-error-detail'>{html.escape(_reader_safe(message))}</span>"
         f"</div>"
     )
 

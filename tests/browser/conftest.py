@@ -219,6 +219,36 @@ def page(browser_context, clare_app, request):
     assert not problems, "console errors:\n" + "\n".join(problems[:5])
 
 
+#: What the page shows when the model provider has refused us. A test that
+#: fails on this is reporting somebody else's quota, and teaches nothing.
+PROVIDER_REFUSED = ("rate limit", "limite", "quota", "back shortly",
+                    "something went wrong while preparing")
+
+
+def wait_for_answer(page, timeout: int) -> None:
+    """Wait for an answer, or stand aside at once if the provider refused.
+
+    Waiting only for ``.rp-answer`` meant a quota refusal the app reported in
+    two seconds was waited out for ninety, then counted as a failure of the
+    interface. The app's own rate-limit notice and error box end the wait.
+    """
+    page.wait_for_selector(".rp-answer, .rp-limit, .rp-error", timeout=timeout)
+    page.wait_for_timeout(400)
+    # The rate-limit notice is its own element, so its presence is the signal.
+    # Matching its words would not work: it deliberately avoids quota jargon
+    # ("Out of tokens"), and an earlier version of this check looked for
+    # "rate limit" and would never have fired on it.
+    if page.locator(".rp-limit").count():
+        pytest.skip("the model provider refused this request (quota); "
+                    "the interface showed its rate-limit notice")
+    if page.locator(".rp-error").count():
+        text = page.locator(".rp-error").inner_text().lower()
+        if any(sign in text for sign in PROVIDER_REFUSED):
+            pytest.skip("the model provider refused this request; "
+                        "the interface reported it")
+    page.wait_for_selector(".rp-answer", timeout=timeout)
+
+
 @pytest.fixture
 def sized(page):
     """Resize helper that waits for the layout to settle."""

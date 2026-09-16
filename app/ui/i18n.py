@@ -68,7 +68,7 @@ STRINGS: dict[str, dict[str, str]] = {
                           "stranger. The one exception is a bug report — that "
                           "is saved, because it has to be, and only when you "
                           "send one.",
-        "limit_title": "Out of tokens for today",
+        "limit_title": "Out of tokens for now",
         "limit_body": "Nothing is broken and nothing you did caused this — the "
                       "meter simply ran out. Go and drink a glass of water, "
                       "slowly, sip by sip, and it will be back.",
@@ -264,7 +264,7 @@ STRINGS: dict[str, dict[str, str]] = {
                           "Seule exception : un signalement de bug, qui est "
                           "enregistré, parce qu'il le faut, et seulement si "
                           "vous en envoyez un.",
-        "limit_title": "Plus de jetons pour aujourd'hui",
+        "limit_title": "Plus de jetons pour le moment",
         "limit_body": "Rien n'est cassé et vous n'y êtes pour rien — le "
                       "compteur est simplement arrivé au bout. Allez boire un "
                       "verre d'eau, doucement, gorgée par gorgée, et ça "

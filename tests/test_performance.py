@@ -174,3 +174,118 @@ def test_percentiles_are_not_nonsense_on_small_samples():
     assert percentile([], 0.5) == 0.0
     assert percentile([4.0], 0.95) == 4.0
     assert percentile([1.0, 2.0, 3.0], 0.5) == 2.0
+
+
+# ------------------------------------------- the live-source failure path --
+
+def _live_result():
+    from app.sources.live import Evidence, LiveResult
+    from app.sources.registry import by_id
+    from app.sources.store import Freshness
+
+    source = by_id("mbs")
+    page = Evidence(source_id="mbs", source_name=source.name,
+                    domain=source.domain, url=source.base_url,
+                    canonical_url=source.base_url, title="Admissions",
+                    text="Conditions d'admission. " * 40,
+                    retrieved_at="2026-09-16T10:00:00+00:00",
+                    content_hash="abc", freshness=Freshness.FRESH,
+                    version_id="v1")
+    return LiveResult(entity_id="mbs", source=source, evidence=[page],
+                      sources=[source], freshness=Freshness.FRESH)
+
+
+class _Provider:
+    def __init__(self, *, raises=None, returns=""):
+        self.raises, self.returns = raises, returns
+
+    def complete(self, *args, **kwargs):
+        if self.raises:
+            raise self.raises
+        return self.returns
+
+
+def test_a_quota_refusal_on_a_live_answer_is_reported_as_one(monkeypatch, tmp_path):
+    """The rate limit must survive the trip to the renderer.
+
+    This path used to keep only the error text, so the renderer could not
+    tell a quota refusal from a crash and printed the provider's raw message
+    — organisation id included — instead of the rate-limit notice.
+    """
+    import dataclasses
+
+    import app.answer.from_source as from_source
+    from app.config import get_settings
+    from app.llm.base import ProviderError
+
+    settings = dataclasses.replace(get_settings(), data_dir=tmp_path)
+    limited = ProviderError("Groq rate limit reached", rate_limited=True,
+                            retry_after=292.0)
+    monkeypatch.setattr(from_source, "get_chat_provider",
+                        lambda s: _Provider(raises=limited))
+
+    result = from_source.answer_from_source(
+        "What are the admission requirements at MBS?", _live_result(),
+        settings=settings)
+    assert result.rate_limited, "the quota refusal was flattened into an error"
+    assert result.retry_after == 292.0
+    assert not result.text
+
+
+def test_an_empty_live_reply_is_a_failure_not_a_refusal(monkeypatch, tmp_path):
+    """§33. Blank is the provider failing, not the pages declining.
+
+    Reading it as a refusal would tell the reader "the sources don't cover
+    this" about sources that were never actually consulted.
+    """
+    import dataclasses
+
+    import app.answer.from_source as from_source
+    from app.config import get_settings
+
+    settings = dataclasses.replace(get_settings(), data_dir=tmp_path)
+    monkeypatch.setattr(from_source, "get_chat_provider",
+                        lambda s: _Provider(returns="   \n "))
+
+    result = from_source.answer_from_source(
+        "What are the admission requirements at MBS?", _live_result(),
+        settings=settings)
+    assert result.error, "an empty reply produced no error"
+    assert not result.refused, "a provider failure was shown as a source gap"
+
+
+def test_a_live_answer_is_timed_like_any_other(monkeypatch, tmp_path):
+    """§30. The live path recorded nothing, so its latency was invisible."""
+    import dataclasses
+
+    import app.answer.from_source as from_source
+    from app import telemetry
+    from app.config import get_settings
+
+    settings = dataclasses.replace(get_settings(), data_dir=tmp_path)
+    monkeypatch.setattr(from_source, "get_chat_provider",
+                        lambda s: _Provider(returns="Apply through Parcoursup."))
+    from_source.answer_from_source("What are the admission requirements at MBS?",
+                                   _live_result(), settings=settings)
+
+    rows = telemetry.traces(settings)
+    assert rows, "a live-source answer left no timing behind"
+    assert rows[-1]["evidence_verdict"] == "live_source"
+    assert rows[-1]["model_calls"] == 1
+
+
+def test_a_provider_error_never_prints_account_details_to_a_reader():
+    """The organisation id is an account detail, not an error message."""
+    from app.ui.render import error_html
+
+    raw = ("Groq rate limit reached and the limit has 292s left to run. Rate "
+           "limit reached for model `openai/gpt-oss-120b` in organization "
+           "`org_01k1gkac99fcs9bny7wes1ka8x` service tier `on_demand`. Need "
+           "more tokens? Upgrade to Dev Tier today at "
+           "https://console.groq.com/settings/billing")
+    shown = error_html(raw)
+    assert "org_01k1" not in shown
+    assert "console.groq.com" not in shown
+    assert "Upgrade" not in shown
+    # The useful part survives.
+    assert "292s left" in shown

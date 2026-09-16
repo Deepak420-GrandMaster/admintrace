@@ -7,9 +7,16 @@ product. The slower matrix lives next door.
 
 from __future__ import annotations
 
+import os
+
 import pytest
 
-from tests.browser.conftest import no_horizontal_overflow
+from tests.browser.conftest import wait_for_answer, no_horizontal_overflow
+
+#: A hosted model answers in seconds; a local one on a laptop takes a minute
+#: or more for the same question. Configurable so one suite runs against
+#: either without a number in the source being wrong for one of them.
+ANSWER_TIMEOUT = int(os.environ.get("CLARE_ANSWER_TIMEOUT_MS", "90000"))
 
 
 def test_the_landing_page_loads_and_says_what_it_is(page):
@@ -57,7 +64,7 @@ def test_asking_a_question_produces_an_answer_with_a_source(page):
               "What are the admission requirements at Montpellier Business School?")
     page.click("button.rp-submit")
     page.wait_for_selector(".rp-thread .rp-turn", timeout=15_000)
-    page.wait_for_selector(".rp-answer", timeout=90_000)
+    wait_for_answer(page, ANSWER_TIMEOUT)
 
     badge = page.locator(".rp-answer .rp-badge").first.inner_text()
     assert "Source" in badge or "official page" in badge

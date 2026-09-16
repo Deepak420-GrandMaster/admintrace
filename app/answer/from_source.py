@@ -21,6 +21,8 @@ from app.answer import prompts
 from app.answer.cite import Citation
 from app.answer.generate import AnswerResult
 from app.config import Settings, get_settings
+from app import telemetry
+from app.answer import length
 from app.llm import ChatMessage, ProviderError, get_chat_provider
 from app.sources.live import Evidence, LiveResult
 from app.sources.store import Freshness
@@ -120,20 +122,57 @@ def answer_from_source(question: str, live: LiveResult, *,
             passages=as_passages(live.evidence))),
     ]
 
+    trace = telemetry.Trace(
+        question_chars=len(question), provider=settings.llm_provider,
+        model=(settings.groq_model if settings.llm_provider == "groq"
+               else settings.ollama_chat_model),
+        model_calls=1, evidence_verdict="live_source",
+        prompt_chars=sum(len(m.content) for m in messages),
+        response_class=length.classify(question).name)
+
     try:
         reply = get_chat_provider(settings).complete(
             messages, temperature=0.1, max_tokens=1200)
     except ProviderError as exc:
         result.error = str(exc)
+        # Carried, not dropped. Keeping only the message sent a quota refusal
+        # to the generic error box, which printed the provider's raw text —
+        # organisation id included — to someone asking about their visa,
+        # instead of the rate-limit notice written for exactly this.
+        result.rate_limited = getattr(exc, "rate_limited", False)
+        result.retry_after = getattr(exc, "retry_after", None)
+        # The result starts out refused until an answer earns otherwise. A
+        # failure has not earned a refusal either: nothing was judged.
+        result.refused = False
         result.elapsed = time.monotonic() - started
+        trace.rate_limited = result.rate_limited
+        trace.retry_after = float(result.retry_after or 0)
+        trace.empty_answer = True
+        trace.total_time = round(result.elapsed, 3)
+        telemetry.record(trace, settings)
         return result
 
     text = (reply or "").strip()
+    trace.total_time = round(time.monotonic() - started, 3)
+    trace.llm_time = trace.total_time
+    trace.word_count = len(text.split())
+    if not text:
+        # A blank reply is the provider failing, not the pages declining to
+        # answer. Reading it as a refusal would tell the reader "the sources
+        # don't cover this" about sources that were never actually consulted.
+        result.error = "the model returned nothing"
+        result.refused = False
+        result.elapsed = time.monotonic() - started
+        trace.empty_answer = True
+        telemetry.record(trace, settings)
+        return result
+    telemetry.record(trace, settings)
+
     result.text = text
     # The model was told to say when the pages do not cover the question; that
     # is a refusal, and the interface should treat it as one.
     lowered = text.lower()
-    result.refused = not text or any(
+    result.refused = any(
         marker in lowered for marker in
         ("do not cover", "don't cover", "does not cover", "doesn't cover",
          "ne couvrent pas", "ne couvre pas", "n'indiquent pas", "ne précisent pas"))
