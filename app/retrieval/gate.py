@@ -61,6 +61,9 @@ class GateDecision:
     refused_by: str = ""
     answerability_verdict: str = ""
     verdict_cached: bool = False
+    #: True when the provider refused on quota while judging. The answer call
+    #: would hit the same limit, so the caller stops instead of waiting twice.
+    provider_limited: bool = False
 
     @property
     def best_score(self) -> float:
@@ -227,6 +230,11 @@ def verify_answerable(question: str, decision: GateDecision,
         # If the check cannot run, the similarity decision stands. Failing
         # closed here would turn a provider outage into blanket refusal.
         decision.answerability_verdict = f"unavailable ({exc})"
+        # A rate limit is not transient within one question: the answer call
+        # is about to meet the same wall, and retrying it doubles the delay
+        # before the reader is told. Carry the fact forward so the caller can
+        # stop now rather than spend the same wait twice.
+        decision.provider_limited = getattr(exc, "rate_limited", False)
         return decision
 
     answerable, raw = _read_verdict(verdict)

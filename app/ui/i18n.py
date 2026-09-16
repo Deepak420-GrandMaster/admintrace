@@ -156,11 +156,10 @@ STRINGS: dict[str, dict[str, str]] = {
         "err_network": "We couldn't reach the service. Try again in a moment.",
         "err_unknown": "Something went wrong while preparing the answer.",
         "err_retry": "Try again",
-        "near_head": "Closest pages we found",
-        "near_note": "None of these answered your question closely enough to "
-                     "quote, but they are the nearest official pages and may "
-                     "be worth a look.",
-        "search_official": "Search service-public.gouv.fr for this",
+        "source_gap": "I couldn't find an official page that confirms this. "
+                      "Rather than show you pages that are close but about "
+                      "something else, here is nothing — which is the honest "
+                      "answer.",
         "services_head": "Do it here",
         "services_note": "Official government service — opens in a new tab.",
         "stage_search": "Queueing at the right counter…",
@@ -355,11 +354,10 @@ STRINGS: dict[str, dict[str, str]] = {
         "err_network": "Le service est injoignable. Réessayez dans un instant.",
         "err_unknown": "Un problème est survenu pendant la préparation de la réponse.",
         "err_retry": "Réessayer",
-        "near_head": "Les pages les plus proches",
-        "near_note": "Aucune ne répondait d'assez près pour être citée, mais "
-                     "ce sont les pages officielles les plus proches et elles "
-                     "valent peut-être un coup d'œil.",
-        "search_official": "Chercher ceci sur service-public.gouv.fr",
+        "source_gap": "Je n'ai pas trouvé de page officielle qui le "
+                      "confirme. Plutôt que de vous montrer des pages proches "
+                      "mais qui parlent d'autre chose, je ne montre rien : "
+                      "c'est la réponse honnête.",
         "services_head": "C'est ici que ça se passe",
         "services_note": "Service officiel de l'administration — s'ouvre dans un nouvel onglet.",
         "stage_search": "On fait la queue au bon guichet…",

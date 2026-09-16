@@ -5,46 +5,148 @@
 # list of papers that counter actually wants come from a préfecture. Answering
 # only from the national page is how someone arrives with the wrong folder.
 #
-# Every domain here was fetched before it was written down. Note Paris: there
-# is no paris.gouv.fr — the Préfecture de police handles it, which is exactly
-# the kind of thing a "{department}.gouv.fr" rule would have got wrong.
-#
 # `cities` is not a gazetteer. It is the communes a reader is likely to name
-# when they say where they live, and it exists so "I live in Montpellier"
+# when they say where they live, and it exists so "I live in Antibes"
 # resolves without asking them for a département number they may not know.
+#
+# `prefecture_source` is the important column, and it is mostly empty on
+# purpose. A département is listed here as geography — code, name, region and
+# principal communes are stable public facts. A `prefecture_source` is a
+# promise that a specific page was fetched, parsed and registered, and only
+# the five that were live-verified carry one. Knowing where Antibes is, and
+# having read the Alpes-Maritimes préfecture's own page, are different
+# things; conflating them is how a citation gets invented. A reader in a
+# département with no registered source is told which préfecture decides and
+# that its page is not among the sources here — never handed a guessed URL.
+#
+# Note Paris: there is no paris.gouv.fr — the Préfecture de police handles it,
+# which is exactly the kind of thing a "{department}.gouv.fr" rule would have
+# got wrong.
 
 version: 1
 
 regions:
-  - id: occitanie
-    name: Occitanie
   - id: auvergne-rhone-alpes
     name: Auvergne-Rhône-Alpes
-  - id: provence-alpes-cote-azur
-    name: Provence-Alpes-Côte d'Azur
+  - id: bourgogne-franche-comte
+    name: Bourgogne-Franche-Comté
+  - id: bretagne
+    name: Bretagne
+  - id: centre-val-de-loire
+    name: Centre-Val de Loire
+  - id: corse
+    name: Corse
+  - id: grand-est
+    name: Grand Est
   - id: hauts-de-france
     name: Hauts-de-France
   - id: ile-de-france
     name: Île-de-France
+  - id: normandie
+    name: Normandie
+  - id: nouvelle-aquitaine
+    name: Nouvelle-Aquitaine
+  - id: occitanie
+    name: Occitanie
+  - id: pays-de-la-loire
+    name: Pays de la Loire
+  - id: provence-alpes-cote-azur
+    name: Provence-Alpes-Côte d'Azur
+  - id: guadeloupe
+    name: Guadeloupe
+  - id: martinique
+    name: Martinique
+  - id: guyane
+    name: Guyane
+  - id: la-reunion
+    name: La Réunion
+  - id: mayotte
+    name: Mayotte
 
 departments:
-  - code: "34"
-    id: herault
-    name: Hérault
-    region: occitanie
-    prefecture_source: prefecture-herault
-    prefecture_name: Préfecture de l'Hérault
-    cities: [Montpellier, Béziers, Sète, Lunel, Agde, Frontignan, Mauguio,
-             Castelnau-le-Lez, Lattes, Palavas-les-Flots]
-
-  - code: "69"
-    id: rhone
-    name: Rhône
+  - code: "01"
+    id: ain
+    name: Ain
     region: auvergne-rhone-alpes
-    prefecture_source: prefecture-rhone
-    prefecture_name: Préfecture du Rhône
-    cities: [Lyon, Villeurbanne, Vénissieux, Caluire-et-Cuire, Bron,
-             Saint-Priest, Vaulx-en-Velin]
+    prefecture_name: Préfecture de l'Ain
+    cities: [Bourg-en-Bresse, Oyonnax, Ambérieu-en-Bugey]
+
+  - code: "02"
+    id: aisne
+    name: Aisne
+    region: hauts-de-france
+    prefecture_name: Préfecture de l'Aisne
+    cities: [Laon, Saint-Quentin, Soissons]
+
+  - code: "03"
+    id: allier
+    name: Allier
+    region: auvergne-rhone-alpes
+    prefecture_name: Préfecture de l'Allier
+    cities: [Moulins, Montluçon, Vichy]
+
+  - code: "04"
+    id: alpes-de-haute-provence
+    name: Alpes-de-Haute-Provence
+    region: provence-alpes-cote-azur
+    prefecture_name: Préfecture des Alpes-de-Haute-Provence
+    cities: [Digne-les-Bains, Manosque]
+
+  - code: "05"
+    id: hautes-alpes
+    name: Hautes-Alpes
+    region: provence-alpes-cote-azur
+    prefecture_name: Préfecture des Hautes-Alpes
+    cities: [Gap, Briançon]
+
+  - code: "06"
+    id: alpes-maritimes
+    name: Alpes-Maritimes
+    region: provence-alpes-cote-azur
+    prefecture_name: Préfecture des Alpes-Maritimes
+    cities: [Nice, Antibes, Cannes, Grasse, Cagnes-sur-Mer, Menton, Vallauris, Le Cannet]
+
+  - code: "07"
+    id: ardeche
+    name: Ardèche
+    region: auvergne-rhone-alpes
+    prefecture_name: Préfecture de l'Ardèche
+    cities: [Privas, Annonay, Aubenas]
+
+  - code: "08"
+    id: ardennes
+    name: Ardennes
+    region: grand-est
+    prefecture_name: Préfecture des Ardennes
+    cities: [Charleville-Mézières, Sedan]
+
+  - code: "09"
+    id: ariege
+    name: Ariège
+    region: occitanie
+    prefecture_name: Préfecture de l'Ariège
+    cities: [Foix, Pamiers]
+
+  - code: "10"
+    id: aube
+    name: Aube
+    region: grand-est
+    prefecture_name: Préfecture de l'Aube
+    cities: [Troyes, Romilly-sur-Seine]
+
+  - code: "11"
+    id: aude
+    name: Aude
+    region: occitanie
+    prefecture_name: Préfecture de l'Aude
+    cities: [Carcassonne, Narbonne]
+
+  - code: "12"
+    id: aveyron
+    name: Aveyron
+    region: occitanie
+    prefecture_name: Préfecture de l'Aveyron
+    cities: [Rodez, Millau]
 
   - code: "13"
     id: bouches-du-rhone
@@ -54,6 +156,329 @@ departments:
     prefecture_name: Préfecture des Bouches-du-Rhône
     cities: [Marseille, Aix-en-Provence, Arles, Martigues, Aubagne, Salon-de-Provence]
 
+  - code: "14"
+    id: calvados
+    name: Calvados
+    region: normandie
+    prefecture_name: Préfecture du Calvados
+    cities: [Caen, Lisieux, Bayeux]
+
+  - code: "15"
+    id: cantal
+    name: Cantal
+    region: auvergne-rhone-alpes
+    prefecture_name: Préfecture du Cantal
+    cities: [Aurillac, Saint-Flour]
+
+  - code: "16"
+    id: charente
+    name: Charente
+    region: nouvelle-aquitaine
+    prefecture_name: Préfecture de la Charente
+    cities: [Angoulême, Cognac]
+
+  - code: "17"
+    id: charente-maritime
+    name: Charente-Maritime
+    region: nouvelle-aquitaine
+    prefecture_name: Préfecture de la Charente-Maritime
+    cities: [La Rochelle, Rochefort, Saintes, Royan]
+
+  - code: "18"
+    id: cher
+    name: Cher
+    region: centre-val-de-loire
+    prefecture_name: Préfecture du Cher
+    cities: [Bourges, Vierzon]
+
+  - code: "19"
+    id: correze
+    name: Corrèze
+    region: nouvelle-aquitaine
+    prefecture_name: Préfecture de la Corrèze
+    cities: [Tulle, Brive-la-Gaillarde]
+
+  - code: "21"
+    id: cote-d-or
+    name: Côte-d'Or
+    region: bourgogne-franche-comte
+    prefecture_name: Préfecture de la Côte-d'Or
+    cities: [Dijon, Beaune, Chenôve]
+
+  - code: "22"
+    id: cotes-d-armor
+    name: Côtes-d'Armor
+    region: bretagne
+    prefecture_name: Préfecture des Côtes-d'Armor
+    cities: [Saint-Brieuc, Lannion, Dinan]
+
+  - code: "23"
+    id: creuse
+    name: Creuse
+    region: nouvelle-aquitaine
+    prefecture_name: Préfecture de la Creuse
+    cities: [Guéret]
+
+  - code: "24"
+    id: dordogne
+    name: Dordogne
+    region: nouvelle-aquitaine
+    prefecture_name: Préfecture de la Dordogne
+    cities: [Périgueux, Bergerac]
+
+  - code: "25"
+    id: doubs
+    name: Doubs
+    region: bourgogne-franche-comte
+    prefecture_name: Préfecture du Doubs
+    cities: [Besançon, Montbéliard, Pontarlier]
+
+  - code: "26"
+    id: drome
+    name: Drôme
+    region: auvergne-rhone-alpes
+    prefecture_name: Préfecture de la Drôme
+    cities: [Valence, Montélimar, Romans-sur-Isère]
+
+  - code: "27"
+    id: eure
+    name: Eure
+    region: normandie
+    prefecture_name: Préfecture de l'Eure
+    cities: [Évreux, Vernon, Louviers]
+
+  - code: "28"
+    id: eure-et-loir
+    name: Eure-et-Loir
+    region: centre-val-de-loire
+    prefecture_name: Préfecture d'Eure-et-Loir
+    cities: [Chartres, Dreux, Châteaudun]
+
+  - code: "29"
+    id: finistere
+    name: Finistère
+    region: bretagne
+    prefecture_name: Préfecture du Finistère
+    cities: [Quimper, Brest, Concarneau, Morlaix]
+
+  - code: "2A"
+    id: corse-du-sud
+    name: Corse-du-Sud
+    region: corse
+    prefecture_name: Préfecture de la Corse-du-Sud
+    cities: [Ajaccio, Porto-Vecchio]
+
+  - code: "2B"
+    id: haute-corse
+    name: Haute-Corse
+    region: corse
+    prefecture_name: Préfecture de la Haute-Corse
+    cities: [Bastia, Corte, Calvi]
+
+  - code: "30"
+    id: gard
+    name: Gard
+    region: occitanie
+    prefecture_name: Préfecture du Gard
+    cities: [Nîmes, Alès, Bagnols-sur-Cèze]
+
+  - code: "31"
+    id: haute-garonne
+    name: Haute-Garonne
+    region: occitanie
+    prefecture_name: Préfecture de la Haute-Garonne
+    cities: [Toulouse, Colomiers, Tournefeuille, Blagnac, Muret]
+
+  - code: "32"
+    id: gers
+    name: Gers
+    region: occitanie
+    prefecture_name: Préfecture du Gers
+    cities: [Auch, Condom]
+
+  - code: "33"
+    id: gironde
+    name: Gironde
+    region: nouvelle-aquitaine
+    prefecture_name: Préfecture de la Gironde
+    cities: [Bordeaux, Mérignac, Pessac, Talence, Villenave-d'Ornon, Arcachon]
+
+  - code: "34"
+    id: herault
+    name: Hérault
+    region: occitanie
+    prefecture_source: prefecture-herault
+    prefecture_name: Préfecture de l'Hérault
+    cities: [Montpellier, Béziers, Sète, Lunel, Agde, Frontignan, Mauguio, Castelnau-le-Lez, Lattes, Palavas-les-Flots]
+
+  - code: "35"
+    id: ille-et-vilaine
+    name: Ille-et-Vilaine
+    region: bretagne
+    prefecture_name: Préfecture d'Ille-et-Vilaine
+    cities: [Rennes, Saint-Malo, Fougères, Vitré]
+
+  - code: "36"
+    id: indre
+    name: Indre
+    region: centre-val-de-loire
+    prefecture_name: Préfecture de l'Indre
+    cities: [Châteauroux, Issoudun]
+
+  - code: "37"
+    id: indre-et-loire
+    name: Indre-et-Loire
+    region: centre-val-de-loire
+    prefecture_name: Préfecture d'Indre-et-Loire
+    cities: [Tours, Joué-lès-Tours, Amboise]
+
+  - code: "38"
+    id: isere
+    name: Isère
+    region: auvergne-rhone-alpes
+    prefecture_name: Préfecture de l'Isère
+    cities: [Grenoble, Saint-Martin-d'Hères, Échirolles, Vienne, Bourgoin-Jallieu]
+
+  - code: "39"
+    id: jura
+    name: Jura
+    region: bourgogne-franche-comte
+    prefecture_name: Préfecture du Jura
+    cities: [Lons-le-Saunier, Dole]
+
+  - code: "40"
+    id: landes
+    name: Landes
+    region: nouvelle-aquitaine
+    prefecture_name: Préfecture des Landes
+    cities: [Mont-de-Marsan, Dax]
+
+  - code: "41"
+    id: loir-et-cher
+    name: Loir-et-Cher
+    region: centre-val-de-loire
+    prefecture_name: Préfecture de Loir-et-Cher
+    cities: [Blois, Romorantin-Lanthenay]
+
+  - code: "42"
+    id: loire
+    name: Loire
+    region: auvergne-rhone-alpes
+    prefecture_name: Préfecture de la Loire
+    cities: [Saint-Étienne, Roanne, Firminy]
+
+  - code: "43"
+    id: haute-loire
+    name: Haute-Loire
+    region: auvergne-rhone-alpes
+    prefecture_name: Préfecture de la Haute-Loire
+    cities: [Le Puy-en-Velay, Monistrol-sur-Loire]
+
+  - code: "44"
+    id: loire-atlantique
+    name: Loire-Atlantique
+    region: pays-de-la-loire
+    prefecture_name: Préfecture de la Loire-Atlantique
+    cities: [Nantes, Saint-Nazaire, Rezé, Saint-Herblain]
+
+  - code: "45"
+    id: loiret
+    name: Loiret
+    region: centre-val-de-loire
+    prefecture_name: Préfecture du Loiret
+    cities: [Orléans, Montargis, Fleury-les-Aubrais]
+
+  - code: "46"
+    id: lot
+    name: Lot
+    region: occitanie
+    prefecture_name: Préfecture du Lot
+    cities: [Cahors, Figeac]
+
+  - code: "47"
+    id: lot-et-garonne
+    name: Lot-et-Garonne
+    region: nouvelle-aquitaine
+    prefecture_name: Préfecture de Lot-et-Garonne
+    cities: [Agen, Villeneuve-sur-Lot, Marmande]
+
+  - code: "48"
+    id: lozere
+    name: Lozère
+    region: occitanie
+    prefecture_name: Préfecture de la Lozère
+    cities: [Mende]
+
+  - code: "49"
+    id: maine-et-loire
+    name: Maine-et-Loire
+    region: pays-de-la-loire
+    prefecture_name: Préfecture de Maine-et-Loire
+    cities: [Angers, Cholet, Saumur]
+
+  - code: "50"
+    id: manche
+    name: Manche
+    region: normandie
+    prefecture_name: Préfecture de la Manche
+    cities: [Saint-Lô, Cherbourg-en-Cotentin, Granville]
+
+  - code: "51"
+    id: marne
+    name: Marne
+    region: grand-est
+    prefecture_name: Préfecture de la Marne
+    cities: [Châlons-en-Champagne, Reims, Épernay]
+
+  - code: "52"
+    id: haute-marne
+    name: Haute-Marne
+    region: grand-est
+    prefecture_name: Préfecture de la Haute-Marne
+    cities: [Chaumont, Saint-Dizier]
+
+  - code: "53"
+    id: mayenne
+    name: Mayenne
+    region: pays-de-la-loire
+    prefecture_name: Préfecture de la Mayenne
+    cities: [Laval, Mayenne]
+
+  - code: "54"
+    id: meurthe-et-moselle
+    name: Meurthe-et-Moselle
+    region: grand-est
+    prefecture_name: Préfecture de Meurthe-et-Moselle
+    cities: [Nancy, Vandœuvre-lès-Nancy, Lunéville]
+
+  - code: "55"
+    id: meuse
+    name: Meuse
+    region: grand-est
+    prefecture_name: Préfecture de la Meuse
+    cities: [Bar-le-Duc, Verdun]
+
+  - code: "56"
+    id: morbihan
+    name: Morbihan
+    region: bretagne
+    prefecture_name: Préfecture du Morbihan
+    cities: [Vannes, Lorient, Pontivy]
+
+  - code: "57"
+    id: moselle
+    name: Moselle
+    region: grand-est
+    prefecture_name: Préfecture de la Moselle
+    cities: [Metz, Thionville, Forbach, Sarreguemines]
+
+  - code: "58"
+    id: nievre
+    name: Nièvre
+    region: bourgogne-franche-comte
+    prefecture_name: Préfecture de la Nièvre
+    cities: [Nevers, Cosne-Cours-sur-Loire]
+
   - code: "59"
     id: nord
     name: Nord
@@ -61,6 +486,112 @@ departments:
     prefecture_source: prefecture-nord
     prefecture_name: Préfecture du Nord
     cities: [Lille, Roubaix, Tourcoing, Dunkerque, Villeneuve-d'Ascq, Valenciennes]
+
+  - code: "60"
+    id: oise
+    name: Oise
+    region: hauts-de-france
+    prefecture_name: Préfecture de l'Oise
+    cities: [Beauvais, Compiègne, Creil]
+
+  - code: "61"
+    id: orne
+    name: Orne
+    region: normandie
+    prefecture_name: Préfecture de l'Orne
+    cities: [Alençon, Flers, Argentan]
+
+  - code: "62"
+    id: pas-de-calais
+    name: Pas-de-Calais
+    region: hauts-de-france
+    prefecture_name: Préfecture du Pas-de-Calais
+    cities: [Arras, Calais, Boulogne-sur-Mer, Lens, Liévin]
+
+  - code: "63"
+    id: puy-de-dome
+    name: Puy-de-Dôme
+    region: auvergne-rhone-alpes
+    prefecture_name: Préfecture du Puy-de-Dôme
+    cities: [Clermont-Ferrand, Riom, Cournon-d'Auvergne]
+
+  - code: "64"
+    id: pyrenees-atlantiques
+    name: Pyrénées-Atlantiques
+    region: nouvelle-aquitaine
+    prefecture_name: Préfecture des Pyrénées-Atlantiques
+    cities: [Pau, Bayonne, Anglet, Biarritz]
+
+  - code: "65"
+    id: hautes-pyrenees
+    name: Hautes-Pyrénées
+    region: occitanie
+    prefecture_name: Préfecture des Hautes-Pyrénées
+    cities: [Tarbes, Lourdes]
+
+  - code: "66"
+    id: pyrenees-orientales
+    name: Pyrénées-Orientales
+    region: occitanie
+    prefecture_name: Préfecture des Pyrénées-Orientales
+    cities: [Perpignan, Canet-en-Roussillon]
+
+  - code: "67"
+    id: bas-rhin
+    name: Bas-Rhin
+    region: grand-est
+    prefecture_name: Préfecture du Bas-Rhin
+    cities: [Strasbourg, Haguenau, Schiltigheim, Illkirch-Graffenstaden]
+
+  - code: "68"
+    id: haut-rhin
+    name: Haut-Rhin
+    region: grand-est
+    prefecture_name: Préfecture du Haut-Rhin
+    cities: [Colmar, Mulhouse, Saint-Louis]
+
+  - code: "69"
+    id: rhone
+    name: Rhône
+    region: auvergne-rhone-alpes
+    prefecture_source: prefecture-rhone
+    prefecture_name: Préfecture du Rhône
+    cities: [Lyon, Villeurbanne, Vénissieux, Caluire-et-Cuire, Bron, Saint-Priest, Vaulx-en-Velin]
+
+  - code: "70"
+    id: haute-saone
+    name: Haute-Saône
+    region: bourgogne-franche-comte
+    prefecture_name: Préfecture de la Haute-Saône
+    cities: [Vesoul, Héricourt]
+
+  - code: "71"
+    id: saone-et-loire
+    name: Saône-et-Loire
+    region: bourgogne-franche-comte
+    prefecture_name: Préfecture de Saône-et-Loire
+    cities: [Mâcon, Chalon-sur-Saône, Le Creusot]
+
+  - code: "72"
+    id: sarthe
+    name: Sarthe
+    region: pays-de-la-loire
+    prefecture_name: Préfecture de la Sarthe
+    cities: [Le Mans, La Flèche]
+
+  - code: "73"
+    id: savoie
+    name: Savoie
+    region: auvergne-rhone-alpes
+    prefecture_name: Préfecture de la Savoie
+    cities: [Chambéry, Aix-les-Bains, Albertville]
+
+  - code: "74"
+    id: haute-savoie
+    name: Haute-Savoie
+    region: auvergne-rhone-alpes
+    prefecture_name: Préfecture de la Haute-Savoie
+    cities: [Annecy, Thonon-les-Bains, Annemasse, Cluses]
 
   - code: "75"
     id: paris
@@ -73,3 +604,179 @@ departments:
       Paris is not served by a "paris.gouv.fr"; that host does not resolve.
       Foreign-national procedures in Paris are handled by the Préfecture de
       police. Checked 2026-09-15.
+
+  - code: "76"
+    id: seine-maritime
+    name: Seine-Maritime
+    region: normandie
+    prefecture_name: Préfecture de la Seine-Maritime
+    cities: [Rouen, Le Havre, Dieppe, Sotteville-lès-Rouen]
+
+  - code: "77"
+    id: seine-et-marne
+    name: Seine-et-Marne
+    region: ile-de-france
+    prefecture_name: Préfecture de Seine-et-Marne
+    cities: [Melun, Meaux, Chelles, Torcy]
+
+  - code: "78"
+    id: yvelines
+    name: Yvelines
+    region: ile-de-france
+    prefecture_name: Préfecture des Yvelines
+    cities: [Versailles, Sartrouville, Mantes-la-Jolie, Saint-Germain-en-Laye, Poissy]
+
+  - code: "79"
+    id: deux-sevres
+    name: Deux-Sèvres
+    region: nouvelle-aquitaine
+    prefecture_name: Préfecture des Deux-Sèvres
+    cities: [Niort, Bressuire, Thouars]
+
+  - code: "80"
+    id: somme
+    name: Somme
+    region: hauts-de-france
+    prefecture_name: Préfecture de la Somme
+    cities: [Amiens, Abbeville]
+
+  - code: "81"
+    id: tarn
+    name: Tarn
+    region: occitanie
+    prefecture_name: Préfecture du Tarn
+    cities: [Albi, Castres, Gaillac]
+
+  - code: "82"
+    id: tarn-et-garonne
+    name: Tarn-et-Garonne
+    region: occitanie
+    prefecture_name: Préfecture de Tarn-et-Garonne
+    cities: [Montauban, Castelsarrasin]
+
+  - code: "83"
+    id: var
+    name: Var
+    region: provence-alpes-cote-azur
+    prefecture_name: Préfecture du Var
+    cities: [Toulon, La Seyne-sur-Mer, Hyères, Fréjus, Draguignan]
+
+  - code: "84"
+    id: vaucluse
+    name: Vaucluse
+    region: provence-alpes-cote-azur
+    prefecture_name: Préfecture de Vaucluse
+    cities: [Avignon, Orange, Carpentras, Cavaillon]
+
+  - code: "85"
+    id: vendee
+    name: Vendée
+    region: pays-de-la-loire
+    prefecture_name: Préfecture de la Vendée
+    cities: [La Roche-sur-Yon, Les Sables-d'Olonne]
+
+  - code: "86"
+    id: vienne
+    name: Vienne
+    region: nouvelle-aquitaine
+    prefecture_name: Préfecture de la Vienne
+    cities: [Poitiers, Châtellerault]
+
+  - code: "87"
+    id: haute-vienne
+    name: Haute-Vienne
+    region: nouvelle-aquitaine
+    prefecture_name: Préfecture de la Haute-Vienne
+    cities: [Limoges, Saint-Junien]
+
+  - code: "88"
+    id: vosges
+    name: Vosges
+    region: grand-est
+    prefecture_name: Préfecture des Vosges
+    cities: [Épinal, Saint-Dié-des-Vosges]
+
+  - code: "89"
+    id: yonne
+    name: Yonne
+    region: bourgogne-franche-comte
+    prefecture_name: Préfecture de l'Yonne
+    cities: [Auxerre, Sens]
+
+  - code: "90"
+    id: territoire-de-belfort
+    name: Territoire de Belfort
+    region: bourgogne-franche-comte
+    prefecture_name: Préfecture du Territoire de Belfort
+    cities: [Belfort]
+
+  - code: "91"
+    id: essonne
+    name: Essonne
+    region: ile-de-france
+    prefecture_name: Préfecture de l'Essonne
+    cities: [Évry-Courcouronnes, Massy, Palaiseau, Savigny-sur-Orge]
+
+  - code: "92"
+    id: hauts-de-seine
+    name: Hauts-de-Seine
+    region: ile-de-france
+    prefecture_name: Préfecture des Hauts-de-Seine
+    cities: [Nanterre, Boulogne-Billancourt, Colombes, Asnières-sur-Seine, Courbevoie, Issy-les-Moulineaux]
+
+  - code: "93"
+    id: seine-saint-denis
+    name: Seine-Saint-Denis
+    region: ile-de-france
+    prefecture_name: Préfecture de la Seine-Saint-Denis
+    cities: [Bobigny, Montreuil, Saint-Denis, Aubervilliers, Aulnay-sous-Bois, Pantin]
+
+  - code: "94"
+    id: val-de-marne
+    name: Val-de-Marne
+    region: ile-de-france
+    prefecture_name: Préfecture du Val-de-Marne
+    cities: [Créteil, Vitry-sur-Seine, Champigny-sur-Marne, Saint-Maur-des-Fossés, Ivry-sur-Seine]
+
+  - code: "95"
+    id: val-d-oise
+    name: Val-d'Oise
+    region: ile-de-france
+    prefecture_name: Préfecture du Val-d'Oise
+    cities: [Cergy, Argenteuil, Sarcelles, Franconville]
+
+  - code: "971"
+    id: guadeloupe
+    name: Guadeloupe
+    region: guadeloupe
+    prefecture_name: Préfecture de la Guadeloupe
+    cities: [Basse-Terre, Pointe-à-Pitre, Les Abymes]
+
+  - code: "972"
+    id: martinique
+    name: Martinique
+    region: martinique
+    prefecture_name: Préfecture de la Martinique
+    cities: [Fort-de-France, Le Lamentin]
+
+  - code: "973"
+    id: guyane
+    name: Guyane
+    region: guyane
+    prefecture_name: Préfecture de la Guyane
+    cities: [Cayenne, Saint-Laurent-du-Maroni, Kourou]
+
+  - code: "974"
+    id: la-reunion
+    name: La Réunion
+    region: la-reunion
+    prefecture_name: Préfecture de La Réunion
+    cities: [Saint-Denis, Saint-Paul, Saint-Pierre, Le Tampon]
+
+  - code: "976"
+    id: mayotte
+    name: Mayotte
+    region: mayotte
+    prefecture_name: Préfecture de Mayotte
+    cities: [Mamoudzou, Dzaoudzi]
+

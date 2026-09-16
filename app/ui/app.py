@@ -23,6 +23,7 @@ from app.config import get_settings
 from app.ingest.embed import fetch_all, get_collection
 from app.ingest.fetch import read_manifest
 from app.llm import get_chat_provider
+from app.query import conversation
 from app.query.detect import detect
 from app.query import entity
 from app.retrieval.answerability import Answerability, classify
@@ -677,15 +678,23 @@ def looks_like_study(question: str) -> bool:
     return bool(STUDY_SIGNALS & set(tokenize(question)))
 
 
-def _context_of(result, question: str, uai: str) -> dict:
-    """What a bug report should carry: enough to reproduce, nothing about who."""
-    place = universities.by_uai(uai) if uai else None
+def _context_of(result, question: str, uai: str, *, task=None) -> dict:
+    """What a bug report should carry: enough to reproduce, nothing about who.
+
+    Two complaints motivated the last two fields. "You keep asking where I
+    live" needs the pending task and which field was requested, or it is one
+    person's word against a log. "These pages are unrelated" needs the
+    candidate list, the selected list and why the rest were dropped.
+    """
+    campus = universities.by_uai(uai) if uai else None
     return {
         "question": question,
         "answer_language": result.language,
         "refused": result.refused,
         "sources": [c.fiche_id for c in result.citations],
-        "institution": place.name if place else "",
+        "institution": campus.name if campus else "",
+        "conversation_state": (task.as_dict() if task is not None else {}),
+        "source_selection": getattr(result, "selection", {}) or {},
     }
 
 
@@ -722,15 +731,58 @@ def ask(question: str, ui_lang: str, answer_lang: str, uai: str = "",
 
     previous = turns[-1]["question"] if turns else None
 
+    # Is this message an answer to something we asked, rather than a new
+    # question? Read it against the pending task before anything else looks
+    # at it: "i live in antibes" is about nothing on its own, and treating it
+    # as a fresh question is exactly how the original task used to be lost.
+    pending = conversation.PendingTask.from_dict(
+        (turns[-1] if turns else {}).get("pending"))
+    conversation.trace("turn.received", turns=len(turns),
+                       pending=bool(pending),
+                       requested=(pending.requested_clarification
+                                  if pending else None),
+                       original=(pending.original_question if pending else None))
+    reply = None
+    if pending is not None and pending.awaiting:
+        reply = conversation.resolve_clarification_response(pending, question)
+        if reply.switched:
+            conversation.record("task_switched",
+                                requested=pending.requested_clarification)
+        elif reply.resume:
+            conversation.record("clarification_resolved", field=reply.filled)
+            conversation.record("task_resumed", field=reply.filled)
+        elif reply.unresolved:
+            conversation.record("clarification_abandoned",
+                                requested=pending.requested_clarification)
+        conversation.trace("clarification.resolved", filled=reply.filled,
+                           resume=reply.resume, switched=reply.switched,
+                           unresolved=reply.unresolved, note=reply.note)
+        pending = None if reply.switched else reply.task
+
+    history = [turn.get("question", "") for turn in turns]
+
     # Who is this about? A question leaning on "this school" is not answerable
     # until something has named one, and retrieving on the words that are left
     # returns official pages that were never about it.
-    history = [turn.get("question", "") for turn in turns]
     who = entity.resolve(question, history)
-    if classify(who, refused=False, citations=0) is Answerability.NEEDS_CLARIFICATION:
+    if (classify(who, refused=False, citations=0) is Answerability.NEEDS_CLARIFICATION
+            and conversation.may_ask_for(pending, conversation.Field.ENTITY)):
+        opened = (pending if pending is not None else conversation.start(
+            question, requested=conversation.Field.ENTITY))
+        opened.requested_clarification = conversation.Field.ENTITY.value
+        if conversation.Field.ENTITY.value not in opened.missing_fields:
+            opened.missing_fields.append(conversation.Field.ENTITY.value)
+        opened.status = conversation.Status.AWAITING_CLARIFICATION.value
+        conversation.record(
+            "clarification_count",
+            requested=conversation.Field.ENTITY.value,
+            repeated=not conversation.may_ask_for(
+                pending, conversation.Field.ENTITY))
         turns.append({"question": question, "state": "clarify",
                       "result": None, "streaming": False,
-                      "surface": who.surface})
+                      "surface": who.surface,
+                      "pending": opened.as_dict(),
+                      "turn_type": conversation.TurnType.ASSISTANT_CLARIFICATION.value})
         yield (gr.update(value=render.thread_html(turns, ui_lang, ui_lang),
                          visible=True),
                hidden, hidden, gr.update(), gr.update(), hidden, turns, {},
@@ -757,8 +809,9 @@ def ask(question: str, ui_lang: str, answer_lang: str, uai: str = "",
 
     # Where someone studies narrows the question in a way the corpus can use:
     # a number of fiches branch per departement.
-    place = universities.by_uai(uai) if uai else None
-    asked = f"{question} ({place.departement})" if place and place.departement else question
+    campus = universities.by_uai(uai) if uai else None
+    asked = (f"{question} ({campus.departement})"
+             if campus and campus.departement else question)
     if who.from_context and who.institution is not None:
         # "this school" carries nothing into a search; the name does.
         asked = f"{asked} ({who.institution.name})"
@@ -777,25 +830,70 @@ def ask(question: str, ui_lang: str, answer_lang: str, uai: str = "",
     # that question, and routing has to see both.
     # turns[-1] is the turn just appended for this question, so the one that
     # asked the clarification is the one before it.
+    # The original question, with everything the reader has since told us
+    # folded back in. Carried from the pending task rather than stitched
+    # together from the previous turn's text, so it survives several
+    # clarifications instead of only the most recent one.
     routing_question = question
-    previous_turn = turns[-2] if len(turns) >= 2 else None
-    if previous_turn and previous_turn.get("state") in ("clarify", "clarify_place"):
-        routing_question = f"{previous_turn.get('question', '')} {question}".strip()
+    if reply is not None and not reply.switched and reply.question:
+        routing_question = reply.question
+        # The corpus must search the whole question too. Searching the reply
+        # alone ("Antibes") returns pages that were never about the visa —
+        # which is how a clarification used to turn into a worse answer than
+        # no clarification at all.
+        asked = routing_question
 
     # Which authority actually speaks to this question? An institution's own
     # rule, a préfecture's counter, a national body — or none of them, in
     # which case the corpus answers as before.
-    place = resolve_place(
-        " ".join([*history, question]),
-        hint_department=(who.institution.departement
-                         if who.institution is not None else ""))
+    place = conversation.place_of(pending)
+    if place is None or not place.known:
+        place = resolve_place(
+            " ".join([*history, question]),
+            hint_department=(who.institution.departement
+                             if who.institution is not None else ""))
+    if place is not None and place.known and campus is None:
+        # Several fiches branch per département. The hint is the département,
+        # not the sentence the reader typed.
+        hint = f" ({place.department.name})"
+        if hint not in asked:
+            asked = f"{asked}{hint}"
+
+    conversation.trace("routing.input", question=routing_question,
+                       place=(place.label() if place and place.known else None),
+                       department=(place.department.name
+                                   if place and place.known else None),
+                       corpus_query=asked,
+                       structured=conversation.retrieval_context(pending))
     routing = source_route.plan(routing_question, entity_id=live_source or "",
                                 place=place)
+    conversation.trace("routing.plan",
+                       topic=(routing.topic.id if routing.topic else None),
+                       needs_place=routing.needs_place,
+                       steps=[s.source.id for s in routing.steps],
+                       corpus=routing.fall_back_to_corpus)
 
-    if routing.needs_place:
+    if routing.needs_place and conversation.may_ask_for(
+            pending, conversation.Field.LOCATION):
         # The answer genuinely differs by préfecture. Averaging the country
         # here is how somebody arrives at a counter with the wrong folder.
-        turns[-1] = {**turns[-1], "state": "clarify_place", "result": None}
+        #
+        # Guarded by may_ask_for: once someone has said where they are, this
+        # branch can never run again for them, whatever happens downstream.
+        # That is the invariant the "where in France are you?" loop violated.
+        waiting = (pending if pending is not None else conversation.start(
+            question, requested=conversation.Field.LOCATION,
+            intent=(routing.topic.id if routing.topic else "")))
+        waiting.requested_clarification = conversation.Field.LOCATION.value
+        if conversation.Field.LOCATION.value not in waiting.missing_fields:
+            waiting.missing_fields.append(conversation.Field.LOCATION.value)
+        waiting.status = conversation.Status.AWAITING_CLARIFICATION.value
+        conversation.record(
+            "clarification_count", requested=conversation.Field.LOCATION.value)
+        turns[-1] = {**turns[-1], "state": "clarify_place", "result": None,
+                     "pending": waiting.as_dict(),
+                     "turn_type":
+                         conversation.TurnType.ASSISTANT_CLARIFICATION.value}
         yield (thread(), hidden, hidden, gr.update(), gr.update(), hidden,
                turns, {},
                gr.update(value="", placeholder=t(ui_lang, "followup_ph")))
@@ -872,8 +970,11 @@ def ask(question: str, ui_lang: str, answer_lang: str, uai: str = "",
            gr.update(value="", placeholder=t(ui_lang, "followup_ph")))
 
     final = None
+    # Where the reader is, so a page scoped to somewhere else cannot be
+    # selected: the Paris senior-travel page is not an answer about Antibes.
     for result in answer_stream(asked, language=None if answer_lang == "auto"
-                                else answer_lang, previous_question=previous):
+                                else answer_lang, previous_question=previous,
+                                place=place):
         final = result
         turns[-1] = {"question": question,
                      "state": "answering" if result.text else "thinking",
@@ -881,14 +982,14 @@ def ask(question: str, ui_lang: str, answer_lang: str, uai: str = "",
                      "streaming": True, "institution": about}
         yield (thread(), hidden, hidden, render.debug_html(result, ui_lang),
                gr.update(), offer_study, turns,
-               _context_of(result, question, uai), gr.update())
+               _context_of(result, question, uai, task=pending), gr.update())
 
     if final is not None:
         turns[-1] = {"question": question, "state": "done",
                      "result": final, "streaming": False, "institution": about}
         yield (thread(), hidden, hidden, render.debug_html(final, ui_lang),
                gr.update(visible=get_settings().debug_panel), offer_study,
-               turns, _context_of(final, question, uai), gr.update())
+               turns, _context_of(final, question, uai, task=pending), gr.update())
 
 
 def reset_thread(ui_lang: str):
@@ -1041,6 +1142,8 @@ def build() -> gr.Blocks:
                 browser=(browser or "")[:300],
                 viewport=(viewport or "")[:40],
                 conversation_context=context.get("conversation", ""),
+                conversation=context.get("conversation_state") or {},
+                source_selection=context.get("source_selection") or {},
             )
 
             if report.emailed:
@@ -1203,7 +1306,16 @@ def main() -> None:
     # Host and port come from the environment so the browser suite can start
     # this same entrypoint on a free port. There is deliberately no second
     # server implementation: the tests drive the application users run.
-    build().launch(
+    demo = build()
+    # Gradio queues at a concurrency of one by default, which meant every
+    # reader waited behind every other reader for the whole of someone
+    # else's answer — and an answer here is a live source fetch plus a
+    # model streaming for tens of seconds. The work is almost entirely
+    # waiting on the network, so serialising it bought nothing and cost the
+    # second person in the queue a minute of staring at a spinner.
+    demo.queue(default_concurrency_limit=int(
+        os.environ.get("CLARE_CONCURRENCY", "8")))
+    demo.launch(
         server_name=os.environ.get("CLARE_APP_HOST", "127.0.0.1"),
         server_port=int(os.environ.get("CLARE_APP_PORT", "7860")),
         css=STYLES,

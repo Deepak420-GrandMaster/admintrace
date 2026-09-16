@@ -75,10 +75,28 @@ def test_paris_is_not_served_by_a_department_domain():
     assert source.domain == "prefecturedepolice.interieur.gouv.fr"
 
 
-def test_every_registered_department_names_an_authority_that_exists():
+def test_every_named_authority_actually_exists():
+    """A département may name a source only if that source is registered.
+
+    Most départements name none, deliberately: the table is geography, and
+    knowing where Antibes is says nothing about having read the
+    Alpes-Maritimes préfecture's page. The invariant that matters is that a
+    name here is never a page nobody has fetched.
+    """
     ids = {s.id for s in load_registry()}
     for department in jurisdiction.departments():
-        assert department.prefecture_source in ids, department.name
+        if department.prefecture_source:
+            assert department.prefecture_source in ids, department.name
+
+
+def test_geography_is_not_mistaken_for_a_registered_source():
+    """Listing a département must not quietly promise a citable page."""
+    named = [d for d in jurisdiction.departments() if d.prefecture_source]
+    assert len(named) == 5, \
+        f"a source appeared without being live-verified: {[d.code for d in named]}"
+    # Every département still says which préfecture decides, so a reader is
+    # told who is responsible even where we cannot read that office's page.
+    assert all(d.prefecture_name for d in jurisdiction.departments())
 
 
 # -------------------------------------------------------------- routing ---

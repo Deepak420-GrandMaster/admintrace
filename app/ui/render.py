@@ -269,55 +269,21 @@ def services_html(services: list[ServiceLink], lang: str = "en") -> str:
             f"</div>")
 
 
-def near_misses_html(result: AnswerResult, lang: str = "en") -> str:
-    """Where to go next when we refuse.
+def source_gap_html(result, lang: str = "en") -> str:
+    """Say that nothing official answered, and show nothing.
 
-    A refusal that ends the conversation is only half honest: the corpus was
-    searched, something came close, and the person is still standing where
-    they started. These are the passages that did not clear the bar, offered
-    as leads rather than as answers — plus the official search, so there is
-    always a next step that is not a guess.
+    This used to offer "the closest pages we found" — the passages that had
+    failed the relevance gate — plus a search link. It read as a result. A
+    reader asking about a free tram in Antibes was shown Paris senior travel
+    and RSA pages, which are official, real, and about something else
+    entirely; several of them were more confusing than an empty answer.
+
+    A page that did not clear the bar is not a lead. It is a page about
+    another subject that happened to share vocabulary, and putting it under
+    an answer lends it an authority the gate just refused it.
     """
-    if not result.refused or result.gate is None:
-        return ""
-
-    seen: dict[str, object] = {}
-    for hit in result.gate.rejected:
-        fiche = hit.metadata.get("fiche_id", "")
-        if fiche and fiche not in seen:
-            seen[fiche] = hit
-    near = list(seen.values())[:4]
-
-    query = (result.prepared.search_query if result.prepared else result.question)
-    search = (
-        "https://www.service-public.gouv.fr/particuliers/recherche?keyword="
-        + urllib.parse.quote(query or "")
-    )
-    rows = []
-    for index, hit in enumerate(near):
-        meta = hit.metadata
-        rows.append(
-            f"<a class='rp-near' style='--i:{index}' "
-            f"href='{html.escape(meta.get('source_url', ''))}' target='_blank' "
-            f"rel='noopener noreferrer'>"
-            f"<span class='rp-near-title'>"
-            f"{html.escape(meta.get('fiche_title_fr', ''))}</span>"
-            f"<span class='rp-near-meta'>"
-            f"<span class='rp-source-id'>{html.escape(meta.get('fiche_id', ''))}</span>"
-            + (f"<span>{html.escape(meta.get('last_updated', ''))}</span>"
-               if meta.get("last_updated") else "")
-            + "</span></a>"
-        )
-
-    return (
-        f"<div class='rp-near-block'>"
-        f"<div class='rp-sources-head'>{html.escape(t(lang, 'near_head'))}</div>"
-        f"<p class='rp-near-note'>{html.escape(t(lang, 'near_note'))}</p>"
-        f"{''.join(rows)}"
-        f"<a class='rp-near-search' href='{html.escape(search)}' target='_blank' "
-        f"rel='noopener noreferrer'>{html.escape(t(lang, 'search_official'))} "
-        f"&#8599;</a></div>"
-    )
+    return (f"<p class='rp-note rp-source-gap'>"
+            f"{html.escape(t(lang, 'source_gap'))}</p>")
 
 
 # ----------------------------------------------------------------- sources --
@@ -601,7 +567,7 @@ def turn_html(turn: dict, lang: str, reply_lang: str, index: int) -> str:
                 if institution:
                     body_parts.append(institution_gap_html(institution, lang))
                 else:
-                    body_parts.append(near_misses_html(result, lang))
+                    body_parts.append(source_gap_html(result, lang))
             else:
                 body_parts.append(services_html(result.services, lang))
                 body_parts.append(sources_html(result.citations, lang))

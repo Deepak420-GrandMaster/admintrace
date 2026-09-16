@@ -13,7 +13,8 @@ import time
 from dataclasses import dataclass, field, replace
 from typing import Iterator
 
-from app.answer import cite, prompts
+from app.answer import cite, prompts, relevance
+from app.sources import purpose as purpose_table
 from app.answer.cite import Citation, ServiceLink
 from app.config import Settings, get_settings
 from app.llm import ChatMessage, ProviderError, get_chat_provider
@@ -33,6 +34,8 @@ class AnswerResult:
     refused: bool
     carried_context: bool = False
     citations: list[Citation] = field(default_factory=list)
+    #: Candidate/selected split and why anything was dropped. Never displayed.
+    selection: dict = field(default_factory=dict)
     services: list[ServiceLink] = field(default_factory=list)
     prepared: PreparedQuery | None = None
     gate: GateDecision | None = None
@@ -158,7 +161,8 @@ def _retrieve(question: str, settings: Settings) -> tuple[PreparedQuery, GateDec
 
 def answer_stream(question: str, settings: Settings | None = None,
                   language: str | None = None,
-                  previous_question: str | None = None) -> Iterator[AnswerResult]:
+                  previous_question: str | None = None,
+                  place=None) -> Iterator[AnswerResult]:
     """Yield the answer as it is written, then a final complete result.
 
     ``language`` forces the language the answer is written in. Retrieval still
@@ -183,21 +187,50 @@ def answer_stream(question: str, settings: Settings | None = None,
     if wanted in {"en", "fr"} and wanted != prepared.language:
         prepared = replace(prepared, language=wanted)
 
-    citations = [] if decision.should_refuse else cite.build(decision.passed)
-    services = [] if decision.should_refuse else cite.service_links(decision.passed)
+    # What retrieval found is a candidate list, not a source list. A page has
+    # to be about this question — not merely close to its words — before a
+    # reader is shown it under an answer.
+    selection = relevance.select(decision.passed, place=place,
+                                 purposes=tuple(p.id for p in
+                                                purpose_table.detect(question)))
+    chosen = selection.selected
+    citations = [] if decision.should_refuse else cite.build(chosen)
+    services = [] if decision.should_refuse else cite.service_links(chosen)
 
     partial = AnswerResult(
         question=question, language=prepared.language, text="",
         refused=decision.should_refuse, carried_context=carried,
         citations=citations, services=services, prepared=prepared, gate=decision,
+        selection=selection.as_diagnostics(),
     )
     yield partial
+
+    if getattr(decision, "provider_limited", False):
+        # The answerability check already met the quota wall a moment ago.
+        # Asking again now buys the same refusal at the price of a second
+        # wait, so tell the reader immediately instead.
+        yield AnswerResult(
+            question=question, language=prepared.language, text="",
+            refused=decision.should_refuse, carried_context=carried,
+            citations=citations, services=services, prepared=prepared,
+            gate=decision, selection=selection.as_diagnostics(),
+            error=decision.answerability_verdict, rate_limited=True,
+            elapsed=time.time() - started,
+        )
+        return
 
     provider = get_chat_provider(settings)
     collected: list[str] = []
     try:
         for piece in provider.stream(_messages(prepared, decision),
-                                     temperature=0.0, max_tokens=2000):
+                                     temperature=0.0,
+                                     # Not a target — a ceiling, and it has to
+                                     # clear the model's reasoning tokens as
+                                     # well as the answer. Cut to 900 once to
+                                     # save quota and every answer came back
+                                     # empty: the reasoning consumed the whole
+                                     # budget before a word was written.
+                                     max_tokens=2000):
             collected.append(piece)
             partial = AnswerResult(
                 question=question, language=prepared.language,

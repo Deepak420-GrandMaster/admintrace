@@ -779,36 +779,6 @@ body.rp-answered .gradio-container button.rp-restart,
 }
 
 /* ------------------------------------------------- closest pages ------ */
-.rp-near-block { margin-top: var(--s7); max-width: var(--col); }
-.rp-near-note {
-  font-size: 14px; line-height: 1.6; color: var(--ink-muted);
-  margin: var(--s2) 0 var(--s4); max-width: 62ch;
-}
-.rp-near {
-  display: flex; flex-direction: column; gap: var(--s1);
-  padding: var(--s3) 0; border-top: 1px solid var(--border-soft);
-  text-decoration: none !important; color: inherit;
-  transition: border-color var(--fast) var(--ease);
-}
-.rp-near:hover { border-top-color: var(--accent-line); }
-.rp-near-title {
-  font-size: 14.5px; font-weight: 550; color: var(--ink-soft); line-height: 1.4;
-  transition: color var(--fast) var(--ease);
-}
-.rp-near:hover .rp-near-title { color: var(--accent); }
-.rp-near-meta {
-  display: flex; gap: var(--s3); align-items: center;
-  font-size: 11.5px; color: var(--ink-faint);
-}
-.rp-near-search {
-  display: inline-flex; align-items: center; gap: var(--s2);
-  margin-top: var(--s4); padding: var(--s3) var(--s4);
-  background: var(--accent); color: #fff !important;
-  border-radius: var(--r); font-size: 13.5px; font-weight: 600;
-  text-decoration: none !important; min-height: 44px;
-  transition: background var(--fast) var(--ease);
-}
-.rp-near-search:hover { background: var(--accent-deep); }
 
 /* The authority we could not reach, said before the answer rather than after
    it — it changes how the answer should be read. */
@@ -935,6 +905,13 @@ body.rp-answered .gradio-container button.rp-restart,
   max-width: 70ch; margin-top: var(--s4);
 }
 .rp-note a { color: var(--accent); }
+
+/* Where "the closest pages we found" used to be. Deliberately quiet: this
+   is the absence of a result, and it should not look like one. */
+.rp-source-gap {
+  border-left: 2px solid var(--line);
+  padding-left: var(--s4); margin-top: var(--s5);
+}
 
 /* ------------------------------------------------------------ errors -- */
 .rp-error {
@@ -1372,7 +1349,7 @@ footer:has(a[href*="gradio.app"]) { display: none !important; }
 .gradio-container button, .gradio-container [role="tab"] { min-height: 44px; }
 
 .rp-cat:focus-visible, .rp-action:focus-visible, .rp-source:focus-visible,
-.rp-service:focus-visible, .rp-near:focus-visible, .rp-sources-toggle:focus-visible,
+.rp-service:focus-visible, .rp-sources-toggle:focus-visible,
 .rp-copy:focus-visible, .rp-gloss:focus-visible, .rp-fr:focus-visible,
 .gradio-container button:focus-visible,
 .gradio-container .rp-switch label:has(input:focus-visible) {

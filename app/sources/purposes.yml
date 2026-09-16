@@ -37,6 +37,14 @@ purposes:
                cursus, bachelor, master, msc, mba, doctorat, phd, courses]
     page_types: [official_procedure, admissions]
 
+  public_transport:
+    keywords: [tram, tramway, bus, metro, métro, transport, transports,
+               ticket, tickets, billet, billets, abonnement, abonnements,
+               titre-de-transport, gratuit, gratuite, gratuité, gratuite,
+               free, reduction, réduction, reduit, réduit, tarif-solidaire,
+               mobilite, mobilité, reseau, réseau, navette, velo, vélo]
+    page_types: [official_procedure, requirements, fees]
+
   housing:
     keywords: [housing, accommodation, logement, logements, residence, résidence,
                hebergement, hébergement, bail, loyer, caution, colocation, apl,

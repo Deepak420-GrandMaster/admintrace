@@ -59,10 +59,22 @@ class GroqProvider:
             try:
                 return self._request_once(payload, stream)
             except _RateLimited as limited:
-                if attempt == MAX_RATE_LIMIT_RETRIES:
+                # If the server says the wait is longer than we are willing to
+                # sit through, sleeping our maximum and asking again just
+                # spends the reader's time to arrive at the same refusal. A
+                # question used to take 160 seconds to come back empty this
+                # way — two calls, each sleeping out its full retry budget
+                # against a limit that had minutes left to run. Say so now
+                # instead, with the number, so they can decide.
+                too_long = limited.retry_after > MAX_RATE_LIMIT_WAIT
+                if attempt == MAX_RATE_LIMIT_RETRIES or too_long:
+                    waited = ("still limited after "
+                              f"{attempt + 1} attempts" if not too_long else
+                              f"the limit has {limited.retry_after:.0f}s left "
+                              f"to run, which is longer than this waits")
                     raise ProviderError(
-                        f"Groq rate limit reached and still limited after "
-                        f"{attempt + 1} attempts. {limited.detail}",
+                        f"Groq rate limit reached and {waited}. "
+                        f"{limited.detail}",
                         rate_limited=True,
                         retry_after=limited.retry_after,
                     ) from None

@@ -101,6 +101,11 @@ class Report:
     viewport: str = ""
     emailed: bool = False
     email_error: str = ""
+    # Why "you keep asking where I live" and "these pages are unrelated" are
+    # answerable rather than arguable: the conversation state and the
+    # candidate/selected split at the moment the reader gave up.
+    conversation: dict = field(default_factory=dict)
+    source_selection: dict = field(default_factory=dict)
 
     @property
     def is_triaged(self) -> bool:
@@ -203,6 +208,8 @@ def as_record(report: Report) -> dict:
         "viewport": report.viewport,
         "app_version": APP_VERSION,
         "conversation_context": report.context_summary,
+        "conversation_state": report.conversation,
+        "source_selection": report.source_selection,
         "sources": report.sources,
         "environment": report.app,
         "emailed": report.emailed,
@@ -276,6 +283,8 @@ def submit(raw_text: str, *, reporter_language: str = "", question: str = "",
            sources: list[str] | None = None, institution: str = "",
            what_doing: str = "", browser: str = "", viewport: str = "",
            conversation_context: str = "",
+           conversation: dict | None = None,
+           source_selection: dict | None = None,
            settings: Settings | None = None) -> tuple[Report, Path]:
     """Take a report, triage it, store it, and try to tell someone.
 
@@ -297,6 +306,8 @@ def submit(raw_text: str, *, reporter_language: str = "", question: str = "",
         browser=browser,
         viewport=viewport,
         context_summary=conversation_context,
+        conversation=conversation or {},
+        source_selection=source_selection or {},
         app=_environment(settings),
     )
     report = triage(report, settings)

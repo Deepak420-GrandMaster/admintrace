@@ -280,3 +280,56 @@ def test_snapshots_are_kept_so_last_week_has_an_answer(tmp_path, monkeypatch):
 
     archive = tmp_path / "status_history"
     assert archive.exists() and list(archive.glob("*.json"))
+
+
+def test_a_long_rate_limit_is_reported_now_not_waited_out():
+    """Waiting 35s to be told to wait 17 minutes helps nobody.
+
+    A question used to take 160 seconds to come back empty: two model calls,
+    each sleeping out its full retry budget against a daily limit that had
+    minutes left on it. The wait is now compared against what the server
+    actually said, and a limit longer than we would sit through is reported
+    immediately, with the number.
+    """
+    import time as clock
+
+    from app.llm.base import ProviderError
+    from app.llm.groq_provider import MAX_RATE_LIMIT_WAIT, GroqProvider, _RateLimited
+
+    provider = GroqProvider.__new__(GroqProvider)
+    provider._settings = type("S", (), {"groq_base_url": "https://x",
+                                        "groq_api_key": "", "groq_model": "m"})()
+    provider.model = "m"
+
+    def always_limited(payload, stream):
+        raise _RateLimited(MAX_RATE_LIMIT_WAIT + 500, "tokens per day")
+
+    provider._request_once = always_limited
+
+    started = clock.monotonic()
+    with pytest.raises(ProviderError) as raised:
+        provider._request({}, False)
+    elapsed = clock.monotonic() - started
+
+    assert elapsed < 1.0, f"it slept for {elapsed:.0f}s before giving up"
+    assert raised.value.rate_limited
+    assert "longer than this waits" in str(raised.value)
+
+
+def test_a_short_rate_limit_is_still_retried():
+    """Failing fast must not become failing eagerly on a blip."""
+    from app.llm.groq_provider import GroqProvider, _RateLimited
+
+    provider = GroqProvider.__new__(GroqProvider)
+    provider.model = "m"
+    calls = {"n": 0}
+
+    def limited_once(payload, stream):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise _RateLimited(0.01, "tokens per minute")
+        return "ok"
+
+    provider._request_once = limited_once
+    assert provider._request({}, False) == "ok"
+    assert calls["n"] == 2, "a short limit should have been retried"

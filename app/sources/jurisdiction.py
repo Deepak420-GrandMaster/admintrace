@@ -158,6 +158,105 @@ _PLACE_HINT = re.compile(
 _DEPT_CODE = re.compile(r"\b(?:d[ée]partement\s+)?(\d{2})\b")
 
 
+#: Words that mark what follows as a place rather than a subject.
+#:
+#: Compared without folding, because folding "à" gives "a" — and admitting
+#: the English article here read "I need a nice flat" as the Alpes-Maritimes.
+#: Everything common enough to precede an ordinary noun is left out for the
+#: same reason: "de", "du" and "ville" are not evidence of a place name.
+_PLACE_WORDS = {
+    "in", "at", "near", "from", "live", "living", "lives", "based", "reside",
+    "residing", "around", "outside", "à", "au", "aux", "dans", "près", "pres",
+    "habite", "habites", "j'habite", "vis", "vit", "depuis",
+}
+_TOKEN = re.compile(r"[\w'’\-]+", re.UNICODE)
+
+
+@lru_cache(maxsize=1)
+def _gazetteer() -> dict[str, tuple[str, tuple[Department, ...]]]:
+    """Every place name we know, folded, to its spelling and its départements.
+
+    A closed list, which is the point. Matching against it is what lets a
+    lowercase "antibes" resolve: there is no capitalisation rule to get
+    wrong, and nothing that is not a real commune can match at all. The
+    canonical spelling is carried so what comes back is "Antibes" rather
+    than however the reader happened to type it.
+    """
+    index: dict[str, tuple[str, list[Department]]] = {}
+    for department in departments():
+        for name in (department.name, *department.cities):
+            key = _fold(name)
+            canonical, bucket = index.setdefault(key, (name, []))
+            if department not in bucket:
+                bucket.append(department)
+    return {key: (canonical, tuple(value))
+            for key, (canonical, value) in index.items()}
+
+
+def _place_from(hits: tuple[Department, ...], named: str) -> Place:
+    if len(hits) == 1:
+        return Place(city=named, department=hits[0],
+                     region=region_by_id(hits[0].region))
+    # Several communes share the name. Picking the biggest would be a guess
+    # with somebody's appointment on it.
+    return Place(city=named, candidates=hits, needs_clarification=True)
+
+
+def _scan_known(text: str, *, require_signal: bool) -> Place | None:
+    """Find a place we actually know inside free text.
+
+    ``require_signal`` guards ordinary questions, where a bare gazetteer hit
+    is not enough: "Nice" is also an English word, and "I need a nice flat"
+    must not resolve to the Alpes-Maritimes. In a question the name has to be
+    capitalised or introduced by a place word. A reply to "where are you?" is
+    read without that guard, because the reader was asked for a place and
+    answered with one.
+    """
+    tokens = [(m.group(0), m.start()) for m in _TOKEN.finditer(text or "")]
+    if not tokens:
+        return None
+    gazetteer = _gazetteer()
+
+    # Longest first, so Aix-en-Provence wins over a bare Aix.
+    for width in range(4, 0, -1):
+        for index in range(len(tokens) - width + 1):
+            span = [tokens[index + offset][0] for offset in range(width)]
+            entry = gazetteer.get(_fold(" ".join(span)))
+            if not entry:
+                continue
+            canonical, hits = entry
+            if require_signal:
+                capitalised = span[0][:1].isupper()
+                previous = tokens[index - 1][0].lower() if index else ""
+                if not capitalised and previous not in _PLACE_WORDS:
+                    continue
+            return _place_from(hits, canonical)
+    return None
+
+
+def resolve_reply(text: str, *, hint_department: str = "") -> Place:
+    """Read a reply to "where are you?" as the place it is.
+
+    The reader has already been asked, so "Antibes", "antibes", "I live in
+    Antibes", "Antibes France" and "06" all mean the same thing and none of
+    them has to be a sentence. Same table as :func:`resolve`; only the
+    evidence required to accept a name is different.
+    """
+    known = _scan_known(text or "", require_signal=False)
+    if known is not None:
+        return known
+
+    # A bare département number, which some readers do know. Accepted here
+    # without the "département"/"préfecture" wording that an ordinary
+    # question needs, because the question asked was about where they are.
+    code = re.search(r"\b(\d{2,3}|2[AB])\b", text or "", re.IGNORECASE)
+    if code:
+        found = department_by_code(code.group(1).upper())
+        if found:
+            return Place(department=found, region=region_by_id(found.region))
+    return resolve(text, hint_department=hint_department)
+
+
 def resolve(text: str, *, hint_department: str = "") -> Place:
     """Work out which authority a question falls under.
 
@@ -193,6 +292,12 @@ def resolve(text: str, *, hint_department: str = "") -> Place:
             if len(hits) > 1:
                 return Place(city=candidate, candidates=hits,
                              needs_clarification=True)
+
+    # A place we know, named without a preposition ("Antibes, and I need...").
+    # Guarded: in an ordinary question the name must look like a name.
+    known = _scan_known(text, require_signal=True)
+    if known is not None:
+        return known
 
     # A bare code, but only when the question is plainly about place.
     if re.search(r"\b(d[ée]partement|pr[ée]fecture)\b", text, re.IGNORECASE):

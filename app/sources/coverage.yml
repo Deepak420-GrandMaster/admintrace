@@ -62,3 +62,18 @@ topics:
     preferred: [public_body]
     required: [public_body]
     fallback: [corpus]
+
+  public_transport:
+    purposes: [public_transport]
+    preferred: [local_authority]
+    required: [local_authority]
+    fallback: []
+    note: >
+      Fares and free-travel schemes are set by the local transport authority,
+      not by the state: a tram in Antibes and a tram in Montpellier are
+      different networks under different rules, and there is no national
+      answer to average them into. `fallback` is empty on purpose — the
+      public-administration corpus has pages that share this vocabulary
+      (senior travel in Paris, RSA entitlements) and none of them answers
+      "is my tram free in Antibes". A source gap stated plainly is worth
+      more than an official page about somebody else.
