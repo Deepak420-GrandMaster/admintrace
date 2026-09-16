@@ -289,3 +289,15 @@ def test_a_provider_error_never_prints_account_details_to_a_reader():
     assert "Upgrade" not in shown
     # The useful part survives.
     assert "292s left" in shown
+
+
+def test_a_rate_limit_is_not_also_counted_as_an_empty_answer():
+    """Two counters for one event reads as two problems."""
+    from app.telemetry import provider_health
+
+    health = provider_health([
+        {"rate_limited": True, "empty_answer": True, "retry_after": 60},
+        {"rate_limited": False, "empty_answer": True},
+    ])
+    assert health["rate_limit_count"] == 1
+    assert health["empty_answers"] == 1, "a quota refusal was double-counted"

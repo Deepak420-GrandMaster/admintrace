@@ -219,6 +219,10 @@ def answer_stream(question: str, settings: Settings | None = None,
         return
 
     trace = telemetry.Trace(question_chars=len(question),
+                            # Set up front: a failed answer still belongs to a
+                            # class, and "unknown" hid which kind of question
+                            # the provider was refusing.
+                            response_class=length.classify(question).name,
                             provider=settings.llm_provider,
                             model=(settings.groq_model if settings.llm_provider == "groq"
                                    else settings.ollama_chat_model))
@@ -309,8 +313,6 @@ def answer_stream(question: str, settings: Settings | None = None,
     trace.llm_time = round(time.time() - generation_started, 3)
     trace.total_time = round(time.time() - started, 3)
     trace.word_count = len(written.split())
-    trace.response_class = length.classify(question).name if hasattr(
-        length, "classify") else ""
     if settings.llm_provider == "ollama":
         trace.provider_state = (
             telemetry.ProviderState.LOCAL_SLOW.value

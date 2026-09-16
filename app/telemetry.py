@@ -164,6 +164,12 @@ def provider_health(rows: list[dict]) -> dict:
         "rate_limit_wait_max": round(max(waits), 1) if waits else 0.0,
         "fallback_count": sum(1 for r in rows
                               if str(r.get("provider")) == "ollama"),
-        "provider_failures": sum(1 for r in rows if r.get("empty_answer")),
-        "empty_answers": sum(1 for r in rows if r.get("empty_answer")),
+        # A quota refusal also produces no text, but it is already counted
+        # above. Counting it here too reported five "empty answers" that were
+        # the same five rate limits, and sent the reader hunting a model that
+        # returns blanks when there was none.
+        "provider_failures": sum(1 for r in rows if r.get("empty_answer")
+                                 and not r.get("rate_limited")),
+        "empty_answers": sum(1 for r in rows if r.get("empty_answer")
+                             and not r.get("rate_limited")),
     }
