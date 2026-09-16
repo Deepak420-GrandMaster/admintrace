@@ -172,3 +172,42 @@ def test_no_automatic_search_link_to_service_public():
     """§25: an external search is not a result, and never offered unasked."""
     render = (PROJECT_ROOT / "app" / "ui" / "render.py").read_text(encoding="utf-8")
     assert "service-public.gouv.fr/particuliers/recherche" not in render
+
+
+# ------------------------------------------------- Alpes-Maritimes routing --
+
+def test_a_visa_question_from_antibes_reaches_its_own_prefecture():
+    """§38. Live-verified before it was registered; asserted here after."""
+    from app.sources.registry import by_id
+
+    source = by_id("prefecture-alpes-maritimes")
+    assert source.domain == "alpes-maritimes.gouv.fr"
+    assert source.verified and source.authority_level == 1
+    assert source.jurisdiction_area == "Alpes-Maritimes"
+
+    routing = plan("how to validate the visa", place=resolve_reply("Antibes"))
+    assert routing.steps[0].is_local
+    assert routing.steps[0].source.id == "prefecture-alpes-maritimes"
+
+
+def test_a_prefecture_is_not_the_authority_for_every_local_subject():
+    """§28. Being the local authority is not being it for all subjects.
+
+    A préfecture decides residence permits; it does not set tram fares.
+    Routing transport to it because it is the nearest registered local body
+    would repeat the mistake this whole layer exists to prevent.
+    """
+    routing = plan("how to get free tram in Antibes",
+                   place=resolve_reply("Antibes"))
+    assert routing.topic.id == "public_transport"
+    assert all(step.source.id != "prefecture-alpes-maritimes"
+               for step in routing.steps), \
+        "a transport question was routed to the immigration authority"
+
+
+def test_an_institution_question_stays_with_the_institution():
+    """§27. Living in Antibes does not make MBS a préfecture matter."""
+    routing = plan("What are the admission requirements at MBS?",
+                   entity_id="mbs", place=resolve_reply("Antibes"))
+    assert routing.steps[0].source.id == "mbs"
+    assert all(s.source.id != "prefecture-alpes-maritimes" for s in routing.steps)

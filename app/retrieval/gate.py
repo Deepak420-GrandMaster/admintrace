@@ -61,6 +61,15 @@ class GateDecision:
     refused_by: str = ""
     answerability_verdict: str = ""
     verdict_cached: bool = False
+    #: What the deterministic gate settled, and why. "ask_model" is the only
+    #: value that costs a model call.
+    evidence_verdict: str = ""
+    evidence_detail: str = ""
+    #: The materially relevant subset, set once selection has run. The model
+    #: is shown these and the reader is cited these — the same list.
+    selected: list = field(default_factory=list)
+    #: How many model calls this decision has spent. Asserted by tests.
+    model_calls: int = 0
     #: True when the provider refused on quota while judging. The answer call
     #: would hit the same limit, so the caller stops instead of waiting twice.
     provider_limited: bool = False
@@ -183,7 +192,8 @@ def _read_verdict(reply: str) -> tuple[bool | None, str]:
 
 
 def verify_answerable(question: str, decision: GateDecision,
-                      settings: Settings | None = None) -> GateDecision:
+                      settings: Settings | None = None,
+                      selected: list | None = None) -> GateDecision:
     """Second stage: do the surviving passages actually answer the question?
 
     Similarity cannot do this job. Measured against this corpus, a question the
@@ -198,6 +208,28 @@ def verify_answerable(question: str, decision: GateDecision,
     """
     settings = settings or get_settings()
     if decision.should_refuse or not decision.passed or not settings.answerability_check:
+        return decision
+
+    # What the backend already knows, it does not pay a model to re-decide.
+    # This used to run on every question, at ~3,200 requested tokens a time
+    # against an 8,000-per-minute budget that the answer call alone nearly
+    # filled. It still runs where it earns its place: evidence that is on
+    # topic without clearly answering is the one judgement a similarity
+    # score cannot make, and is exactly what this stage was built for.
+    from app.answer import evidence as evidence_gate
+
+    if selected is not None:
+        decision.selected = list(selected)
+    settled = evidence_gate.assess(decision, selected=selected,
+                                   settings=settings)
+    decision.evidence_verdict = settled.verdict.value
+    decision.evidence_detail = settled.detail
+    if settled.verdict is evidence_gate.Verdict.REFUSE:
+        _apply_refusal(decision, settled.detail)
+        decision.refused_by = "evidence"
+        return decision
+    if settled.verdict is evidence_gate.Verdict.ANSWER:
+        decision.answerability_verdict = f"settled without a model: {settled.detail}"
         return decision
 
     from app.answer.cite import as_passages
@@ -217,6 +249,7 @@ def verify_answerable(question: str, decision: GateDecision,
         return decision
 
     try:
+        decision.model_calls += 1
         verdict = get_chat_provider(settings).complete(
             [
                 ChatMessage("system", ANSWERABILITY_SYSTEM),

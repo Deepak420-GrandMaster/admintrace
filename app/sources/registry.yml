@@ -249,6 +249,28 @@ sources:
     entry_points:
       - https://www.herault.gouv.fr/
 
+  - id: prefecture-alpes-maritimes
+    name: Préfecture des Alpes-Maritimes
+    domain: alpes-maritimes.gouv.fr
+    base_url: https://www.alpes-maritimes.gouv.fr/
+    source_type: local_authority
+    authority_level: 1
+    refresh_priority: high
+    jurisdiction: department
+    jurisdiction_area: Alpes-Maritimes
+    health: healthy
+    supported_topics: [residence-permit, prefecture, identity, documents]
+    language: fr
+    verified: true
+    verified_at: 2026-09-16
+    live_query_enabled: true
+    entry_points:
+      - https://www.alpes-maritimes.gouv.fr/
+      # Fetched and parsed before this was written down: 200, readable, and
+      # the section a residence-permit question actually needs. Starting
+      # discovery here rather than at the homepage saves a hop.
+      - https://www.alpes-maritimes.gouv.fr/Demarches/Immigration-et-integration/Titres-de-sejour-et-documents-de-voyage/Demander-un-titre-de-sejour
+
   - id: prefecture-rhone
     name: Préfecture du Rhône
     domain: rhone.gouv.fr

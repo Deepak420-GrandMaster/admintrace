@@ -163,7 +163,13 @@ def plan(question: str, *, entity_id: str = "", place: Place | None = None,
         if place is not None and place.known and place.authority_source_id:
             local = next((s for s in load_registry()
                           if s.id == place.authority_source_id), None)
-            if local is not None:
+            # Being the local authority for a département is not being the
+            # local authority for every subject in it. A préfecture decides
+            # residence permits; it does not set tram fares, and routing a
+            # transport question to it because it is the nearest registered
+            # local body would be the same mistake as answering from the
+            # nearest official page.
+            if local is not None and _supports_topic(local, topic):
                 add(local, f"the authority for {place.department.name}", local=True)
         elif place is None or not place.known:
             # The topic turns on where you are, and nobody has said.
@@ -184,6 +190,19 @@ def plan(question: str, *, entity_id: str = "", place: Place | None = None,
 
     result.fall_back_to_corpus = topic is None or "corpus" in (topic.fallback or ())
     return result
+
+
+def _supports_topic(source: Source, topic) -> bool:
+    """Whether this source actually speaks to this topic.
+
+    A source with no declared topics is treated as general-purpose, which is
+    how the national bodies behave. One that names its topics is taken at its
+    word.
+    """
+    if not source.supported_topics:
+        return True
+    return (any(p in source.supported_topics for p in topic.purposes)
+            or any(_purpose_matches(source, p) for p in topic.purposes))
 
 
 def _purpose_matches(source: Source, purpose_id: str) -> bool:

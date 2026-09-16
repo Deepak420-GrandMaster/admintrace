@@ -210,13 +210,65 @@ def test_a_place_already_given_is_rebuilt_without_reparsing_text():
     place = place_of(reply.task)
     assert place.known
     assert place.department.name == "Alpes-Maritimes"
-    # No registered préfecture source for 06 — and none is invented.
-    assert place.authority_source_id == ""
+    assert place.authority_name == "Préfecture des Alpes-Maritimes"
+    # Live-verified and registered, so Antibes now reaches its own préfecture.
+    assert place.authority_source_id == "prefecture-alpes-maritimes"
 
 
 def test_a_department_we_cannot_read_still_names_its_authority():
-    """Knowing where Antibes is, is not the same as having read the page."""
-    reply = resolve_clarification_response(visa_task(), "Antibes")
-    place = place_of(reply.task)
-    assert place.authority_name == "Préfecture des Alpes-Maritimes"
-    assert place.authority_source_id == ""
+    """Knowing where somewhere is, is not the same as having read its page.
+
+    Most départements are geography only. They still tell a reader which
+    préfecture decides; what they must never do is name a source, because a
+    source id is a promise that a page was fetched and parsed.
+    """
+    from app.sources import jurisdiction
+
+    unread = [d for d in jurisdiction.departments() if not d.prefecture_source]
+    assert unread, "this test is meaningless once every département is read"
+    for department in unread[:20]:
+        assert department.prefecture_name, department.name
+
+
+def test_resolving_a_location_never_calls_a_model(monkeypatch):
+    """§37. "Antibes" is a lookup, not a question for a language model.
+
+    Guarded rather than assumed: the geographic resolver is deterministic and
+    must stay that way. Spending a model call — and, on a metered tier, a
+    slice of the per-minute budget — to understand one word we already have a
+    table for would be the expensive kind of wrong.
+    """
+    import app.llm as llm
+
+    def refuse(*args, **kwargs):
+        raise AssertionError("a model was called to resolve a clarification")
+
+    monkeypatch.setattr(llm, "get_chat_provider", refuse)
+
+    for said in ("Antibes", "antibes", "Antibes France", "06", "Alpes-Maritimes"):
+        reply = resolve_clarification_response(visa_task(), said)
+        assert reply.resume, said
+
+
+def test_reading_a_yes_or_a_school_name_never_calls_a_model(monkeypatch):
+    import app.llm as llm
+
+    monkeypatch.setattr(llm, "get_chat_provider", lambda *a, **k: (_ for _ in ()).throw(
+        AssertionError("a model was called to read a clarification")))
+
+    status = start("are you a student", requested=Field.USER_STATUS)
+    assert resolve_clarification_response(status, "yes").resume
+
+    named = start("what are the entry requirements", requested=Field.ENTITY)
+    assert resolve_clarification_response(named, "MBS").resume
+
+
+def test_a_topic_switch_is_detected_without_a_model(monkeypatch):
+    import app.llm as llm
+
+    monkeypatch.setattr(llm, "get_chat_provider", lambda *a, **k: (_ for _ in ()).throw(
+        AssertionError("a model was called to detect a topic switch")))
+
+    reply = resolve_clarification_response(
+        visa_task(), "Actually, how do I open a bank account?")
+    assert reply.switched

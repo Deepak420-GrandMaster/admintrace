@@ -13,7 +13,18 @@ import time
 from dataclasses import dataclass, field, replace
 from typing import Iterator
 
-from app.answer import cite, prompts, relevance
+#: How many passages the answer model is shown. Six was costing ~6,000
+#: prompt tokens a question against an 8,000-per-minute budget; four keeps
+#: the supporting detail an answer needs without paying for the tail.
+EVIDENCE_PASSAGES = 4
+#: Ceiling on one answer, in tokens. Reserved against the provider's rate
+#: limit whether or not it is spent, so it is sized to the longest answer the
+#: length policy permits (300 words) plus reasoning, not left at a round
+#: number well above anything that can occur.
+ANSWER_TOKEN_CEILING = 900
+
+from app.answer import cite, length, prompts, relevance
+from app import telemetry
 from app.sources import purpose as purpose_table
 from app.answer.cite import Citation, ServiceLink
 from app.config import Settings, get_settings
@@ -53,6 +64,19 @@ def _search(prepared: PreparedQuery, settings: Settings) -> list[Retrieved]:
     return hybrid.search_many(list(prepared.queries), settings=settings)
 
 
+def _evidence_for(decision: GateDecision) -> list:
+    """The passages the model is shown.
+
+    The selected sources, capped. These are the same passages that will be
+    cited under the answer, which was not previously guaranteed: the model
+    saw everything the similarity gate passed while the citations listed only
+    what survived relevance, so an answer could lean on a page the reader was
+    never shown.
+    """
+    chosen = getattr(decision, "selected", None) or decision.passed
+    return chosen[:EVIDENCE_PASSAGES]
+
+
 def _messages(prepared: PreparedQuery, decision: GateDecision) -> list[ChatMessage]:
     language = prompts.language_name(prepared.language)
 
@@ -75,7 +99,7 @@ def _messages(prepared: PreparedQuery, decision: GateDecision) -> list[ChatMessa
         ChatMessage("user", prompts.ANSWER_USER.format(
             language_name=language,
             question=prepared.original,
-            passages=cite.as_passages(decision.passed),
+            passages=cite.as_passages(_evidence_for(decision)),
         )),
     ]
 
@@ -152,11 +176,25 @@ def resolve_followup(question: str, previous: str | None) -> tuple[str, bool]:
     return f"{previous.strip()} — {asked}", True
 
 
-def _retrieve(question: str, settings: Settings) -> tuple[PreparedQuery, GateDecision]:
+def _retrieve(question: str, settings: Settings, *, place=None
+              ) -> tuple[PreparedQuery, GateDecision, "relevance.Selection"]:
+    """Retrieve, select, then judge — in that order.
+
+    Selection runs before the answerability stage on purpose: a page that is
+    about somewhere else or some other subject should not be part of what a
+    model is asked to judge, and it should not be part of what the model is
+    shown either. Judging first meant paying for an opinion about evidence we
+    were about to drop.
+    """
     prepared = prepare(question, settings)
     candidates = _search(prepared, settings)
     decision = apply_gate(candidates, settings)
-    return prepared, verify_answerable(question, decision, settings)
+    selection = relevance.select(
+        decision.passed, place=place,
+        purposes=tuple(p.id for p in purpose_table.detect(question)))
+    decision = verify_answerable(question, decision, settings,
+                                 selected=selection.selected)
+    return prepared, decision, selection
 
 
 def answer_stream(question: str, settings: Settings | None = None,
@@ -180,8 +218,16 @@ def answer_stream(question: str, settings: Settings | None = None,
                            error="Ask a question to get started.")
         return
 
+    trace = telemetry.Trace(question_chars=len(question),
+                            provider=settings.llm_provider,
+                            model=(settings.groq_model if settings.llm_provider == "groq"
+                                   else settings.ollama_chat_model))
     searchable, carried = resolve_followup(question, previous_question)
-    prepared, decision = _retrieve(searchable, settings)
+    with trace.phase("retrieval"):
+        prepared, decision, selection = _retrieve(searchable, settings, place=place)
+    trace.model_calls = getattr(decision, "model_calls", 0)
+    trace.evidence_verdict = getattr(decision, "evidence_verdict", "")
+    trace.refused = decision.should_refuse
 
     wanted = language or settings.answer_language
     if wanted in {"en", "fr"} and wanted != prepared.language:
@@ -189,10 +235,8 @@ def answer_stream(question: str, settings: Settings | None = None,
 
     # What retrieval found is a candidate list, not a source list. A page has
     # to be about this question — not merely close to its words — before a
-    # reader is shown it under an answer.
-    selection = relevance.select(decision.passed, place=place,
-                                 purposes=tuple(p.id for p in
-                                                purpose_table.detect(question)))
+    # reader is shown it under an answer. Selected upstream, in _retrieve, so
+    # the same list is what the model is shown and what is cited beneath it.
     chosen = selection.selected
     citations = [] if decision.should_refuse else cite.build(chosen)
     services = [] if decision.should_refuse else cite.service_links(chosen)
@@ -220,17 +264,22 @@ def answer_stream(question: str, settings: Settings | None = None,
         return
 
     provider = get_chat_provider(settings)
+    generation_started = time.time()
     collected: list[str] = []
     try:
         for piece in provider.stream(_messages(prepared, decision),
                                      temperature=0.0,
-                                     # Not a target — a ceiling, and it has to
-                                     # clear the model's reasoning tokens as
-                                     # well as the answer. Cut to 900 once to
-                                     # save quota and every answer came back
-                                     # empty: the reasoning consumed the whole
-                                     # budget before a word was written.
-                                     max_tokens=2000):
+                                     # Groq reserves max_tokens against the
+                                     # per-minute budget as well as charging
+                                     # the prompt — a 429 reads "Limit 8000,
+                                     # Used 5445, Requested 6193" — so this
+                                     # ceiling is paid for whether or not it
+                                     # is used. Measured: a full answer to a
+                                     # procedural question finishes in 546
+                                     # completion tokens including reasoning,
+                                     # with finish_reason "stop". 900 leaves
+                                     # room and stops reserving 2000.
+                                     max_tokens=ANSWER_TOKEN_CEILING):
             collected.append(piece)
             partial = AnswerResult(
                 question=question, language=prepared.language,
@@ -240,6 +289,11 @@ def answer_stream(question: str, settings: Settings | None = None,
             )
             yield partial
     except ProviderError as exc:
+        trace.rate_limited = getattr(exc, "rate_limited", False)
+        trace.retry_after = float(getattr(exc, "retry_after", 0) or 0)
+        trace.total_time = round(time.time() - started, 3)
+        trace.empty_answer = not "".join(collected).strip()
+        telemetry.record(trace, settings)
         yield AnswerResult(
             question=question, language=prepared.language,
             text="".join(collected), refused=decision.should_refuse,
@@ -251,10 +305,43 @@ def answer_stream(question: str, settings: Settings | None = None,
         )
         return
 
+    written = "".join(collected).strip()
+    trace.llm_time = round(time.time() - generation_started, 3)
+    trace.total_time = round(time.time() - started, 3)
+    trace.word_count = len(written.split())
+    trace.response_class = length.classify(question).name if hasattr(
+        length, "classify") else ""
+    if settings.llm_provider == "ollama":
+        trace.provider_state = (
+            telemetry.ProviderState.LOCAL_SLOW.value
+            if trace.total_time >= telemetry.LOCAL_SLOW_SECONDS
+            else telemetry.ProviderState.LOCAL_AVAILABLE.value)
+    else:
+        trace.provider_state = telemetry.ProviderState.GROQ_AVAILABLE.value
+
+    if not written:
+        # An answer that is blank is never shown as one. The reader waited;
+        # telling them nothing happened, with the reason, is the only honest
+        # thing left. This used to render as an empty bubble under a
+        # question, which reads as the system having nothing to say.
+        trace.empty_answer = True
+        telemetry.record(trace, settings)
+        yield AnswerResult(
+            question=question, language=prepared.language, text="",
+            refused=decision.should_refuse, carried_context=carried,
+            citations=citations, services=services, prepared=prepared,
+            gate=decision, selection=selection.as_diagnostics(),
+            error="the model returned nothing", elapsed=time.time() - started,
+        )
+        return
+
+    trace.empty_answer = False
+    telemetry.record(trace, settings)
     yield AnswerResult(
-        question=question, language=prepared.language, text="".join(collected).strip(),
+        question=question, language=prepared.language, text=written,
         refused=decision.should_refuse, carried_context=carried, citations=citations, services=services,
-        prepared=prepared, gate=decision, elapsed=time.time() - started,
+        prepared=prepared, gate=decision, selection=selection.as_diagnostics(),
+        elapsed=time.time() - started,
     )
 
 

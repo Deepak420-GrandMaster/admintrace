@@ -205,6 +205,30 @@ def check_smtp() -> Layer:
                  f"configured for {settings.bug_email_to}")
 
 
+def check_performance() -> Layer:
+    """What answers have actually cost, when any have been measured."""
+    from app.telemetry import provider_health, summarise, traces
+
+    rows = traces()
+    if not rows:
+        return Layer("Performance", Outcome.SKIPPED,
+                     "no answers timed yet; ask something and re-run")
+    health = provider_health(rows)
+    overall = summarise(rows, by="provider")
+    p95 = max((stats["p95"] for stats in overall.values()), default=0.0)
+    notes = []
+    if health["rate_limit_count"]:
+        notes.append(f"rate limited on {health['rate_limit_count']} of "
+                     f"{health['answers']} answers")
+    if health["empty_answers"]:
+        notes.append(f"{health['empty_answers']} empty answer(s) from the provider")
+    # Not critical: latency is a product target, not a correctness claim, and
+    # a metered provider's quota is not something a deploy should hang on.
+    return Layer("Performance", Outcome.PASSED,
+                 f"{health['answers']} answers measured · p95 {p95:.1f}s",
+                 critical=False, notes=notes)
+
+
 def check_scorecard() -> Layer:
     from app.status import Verification, assess, write_scorecard
 
@@ -229,6 +253,7 @@ def run(quick: bool = False) -> list[Layer]:
     layers.append(check_security())
     layers.append(check_sources())
     layers.append(check_browser(quick))
+    layers.append(check_performance())
     layers.append(check_smtp())
     layers.append(check_scorecard())
     return layers

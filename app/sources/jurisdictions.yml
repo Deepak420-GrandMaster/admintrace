@@ -103,6 +103,7 @@ departments:
     id: alpes-maritimes
     name: Alpes-Maritimes
     region: provence-alpes-cote-azur
+    prefecture_source: prefecture-alpes-maritimes
     prefecture_name: Préfecture des Alpes-Maritimes
     cities: [Nice, Antibes, Cannes, Grasse, Cagnes-sur-Mer, Menton, Vallauris, Le Cannet]
 

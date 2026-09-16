@@ -90,13 +90,26 @@ def test_every_named_authority_actually_exists():
 
 
 def test_geography_is_not_mistaken_for_a_registered_source():
-    """Listing a département must not quietly promise a citable page."""
-    named = [d for d in jurisdiction.departments() if d.prefecture_source]
-    assert len(named) == 5, \
-        f"a source appeared without being live-verified: {[d.code for d in named]}"
+    """Listing a département must not quietly promise a citable page.
+
+    The count is deliberately not asserted — it grows as sources are
+    verified, and a test that has to be edited every time something improves
+    stops being read. What must hold is that a named source is a registered,
+    verified one, and that the great majority of départements name none.
+    """
+    departments = jurisdiction.departments()
+    named = [d for d in departments if d.prefecture_source]
+    registered = {s.id: s for s in load_registry()}
+    for department in named:
+        source = registered.get(department.prefecture_source)
+        assert source is not None, department.name
+        assert source.verified, f"{department.name} names an unverified source"
+
+    assert len(named) < len(departments) / 2, \
+        "sources appear to have been added without being verified"
     # Every département still says which préfecture decides, so a reader is
     # told who is responsible even where we cannot read that office's page.
-    assert all(d.prefecture_name for d in jurisdiction.departments())
+    assert all(d.prefecture_name for d in departments)
 
 
 # -------------------------------------------------------------- routing ---

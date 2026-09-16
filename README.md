@@ -77,6 +77,10 @@ uv run python -m app.sync_sources --all --due
 # Is it well? Reads only; safe from cron. Non-zero when a person is needed.
 uv run python -m app.healthcheck                # --write saves a snapshot
 
+# How fast, and what the model provider is costing. Derived from recorded
+# timings — an empty report means nothing has been measured, not that all is well.
+uv run python -m app.performance_report         # --by provider, --json
+
 # What still needs a person to look at it.
 uv run python -m app.review_queue
 
@@ -179,6 +183,7 @@ timer. Nothing below needs a second task system.
 | Daily | `app.healthcheck --write` | a snapshot, so a trend is visible before a symptom is |
 | Daily | `app.review_queue` | what is waiting on a person |
 | Weekly | `app.prune_history` | keep the archive inside its retention policy |
+| Weekly | `app.performance_report` | latency p95 against target, and how often the provider refused |
 | Every deploy | `app.verify` | the gate above, browser smoke included |
 | Every merge | `app.browser_tests` | the full interface matrix |
 
