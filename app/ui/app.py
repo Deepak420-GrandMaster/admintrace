@@ -11,6 +11,7 @@ reply in French to forward to a landlord, or the reverse.
 from __future__ import annotations
 
 import html
+import os
 import time
 from functools import lru_cache
 from pathlib import Path
@@ -1198,9 +1199,12 @@ def build() -> gr.Blocks:
 
 
 def main() -> None:
+    # Host and port come from the environment so the browser suite can start
+    # this same entrypoint on a free port. There is deliberately no second
+    # server implementation: the tests drive the application users run.
     build().launch(
-        server_name="127.0.0.1",
-        server_port=7860,
+        server_name=os.environ.get("CLARE_APP_HOST", "127.0.0.1"),
+        server_port=int(os.environ.get("CLARE_APP_PORT", "7860")),
         css=STYLES,
         head=HEAD,
         theme=gr.themes.Base(),

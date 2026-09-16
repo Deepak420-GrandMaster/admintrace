@@ -97,6 +97,34 @@ uv sync --extra render
 uv run playwright install chromium
 ```
 
+### One command before you ship
+
+```bash
+uv run python -m app.verify           # --quick skips the browser layer
+```
+
+It runs the layers in the order that fails cheapest first — configuration,
+offline suite, network suite when enabled, security, sources, browser smoke,
+SMTP, scorecard — and prints one of `PASSED`, `FAILED`, `SKIPPED`,
+`NOT CONFIGURED` or `BLOCKED` for each. Those last three are deliberately not
+interchangeable: a suite nobody ran, a capability nobody configured, and a
+site that refuses us are three different facts.
+
+The exit code is a deployment gate rather than a summary of the output, and it
+asks a narrower question than "is everything green": *is anything we are
+responsible for broken?*
+
+| | |
+|---|---|
+| **Critical** — blocks a deploy | configuration, the offline suite (core backend, security, answer validation, entity and jurisdiction resolution, localization), the security checks, browser smoke |
+| **Non-critical** — reported, never hidden, never blocking | an individual external source unavailable or blocked, SMTP not configured, history not yet deep enough, a real-world change not yet observed, the network suite |
+
+CAF being behind a bot wall does not stop Claré shipping. The system is built
+to say so at answer time, and the tests prove it does. A failing security
+check or a broken interface does stop it.
+
+### Tests
+
 Tests that leave the machine are opt-in, so the default suite stays offline,
 fast, and immune to somebody else's outage:
 
@@ -104,10 +132,10 @@ fast, and immune to somebody else's outage:
 uv run pytest                                      # offline
 CLARE_NETWORK_TESTS=1 uv run pytest                # and the live web
 
-# Browser tests drive the real interface and need the app running.
-uv run python -m app.ui.app &
-CLARE_BROWSER_TESTS=1 uv run pytest tests/browser/test_smoke.py   # ~13s, every deploy
-CLARE_BROWSER_TESTS=1 uv run pytest tests/browser                 # ~50s, every merge
+# Browser tests start the app themselves. Nothing to set up first.
+uv run python -m app.browser_tests --smoke         # ~15s, every deploy
+uv run python -m app.browser_tests                 # ~55s, every merge
+CLARE_BROWSER_TESTS=1 uv run pytest tests/browser  # same, via pytest
 ```
 
 The smoke suite is the one worth running on every deploy: if it passes, the
@@ -118,11 +146,44 @@ a nightly run. Console errors fail whichever test produced them — a page can
 look perfect in a screenshot while its JavaScript has thrown, and every
 interaction after that silently does nothing.
 
+The suite starts the real entrypoint (`app.ui.app`) on a free port, polls until
+it answers, and stops it afterwards — including when a test fails. There is no
+second server implementation to drift from production. Useful knobs:
+
+| Variable | Default | |
+|---|---|---|
+| `CLARE_TEST_PORT` | a free port | pin the port instead of allocating one |
+| `APP_START_TIMEOUT_SECONDS` | `60` | how long to wait for the app to answer |
+| `CLARE_BROWSER_URL` | unset | use a server you started yourself; the suite starts nothing |
+| `CLARE_BROWSER_TRACE` | off (on under `CI`) | record a Playwright trace for failures |
+
+When a browser test fails it writes a screenshot, the page HTML, the console,
+the failed requests, the app's own log and (with tracing on) a Playwright
+trace to `artifacts/browser/`, and prints the URL and that log to the terminal.
+The directory is gitignored: it is test output, never source.
+
 All three suites can run in one pass — `CLARE_NETWORK_TESTS=1
 CLARE_BROWSER_TESTS=1 uv run pytest`. Rendering does its browser work on a
 thread of its own precisely so that it can: Playwright's sync API refuses to
 start a second session on a thread that already holds one, which is also what
 would happen to a render called from inside the asyncio loop Clare serves on.
+
+### What to run, and how often
+
+One scheduler, already here: `scripts/refresh-sources.sh` for anything on a
+timer. Nothing below needs a second task system.
+
+| Cadence | Command | Why |
+|---|---|---|
+| Every 6h | `scripts/refresh-sources.sh` | re-read due sources, version changes, exit non-zero when something needs review |
+| Daily | `app.healthcheck --write` | a snapshot, so a trend is visible before a symptom is |
+| Daily | `app.review_queue` | what is waiting on a person |
+| Weekly | `app.prune_history` | keep the archive inside its retention policy |
+| Every deploy | `app.verify` | the gate above, browser smoke included |
+| Every merge | `app.browser_tests` | the full interface matrix |
+
+`app.healthcheck` and `app.review_queue` read only and are safe from cron. An
+empty review queue is a success, not an error.
 
 ### What "production ready" means here
 

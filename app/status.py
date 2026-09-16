@@ -386,6 +386,75 @@ def regressions(before: dict, after: dict[str, Capability]) -> list[dict]:
     return out
 
 
+def transitions(before: dict, after: dict[str, Capability]) -> list[dict]:
+    """Every capability whose status changed, in either direction.
+
+    :func:`regressions` answers "did something break". This answers "what
+    moved", which is the question you have when a capability finally earns
+    production_verified, or when a blocked source recovers. Both directions
+    are worth a record: a scorecard that only remembers bad news cannot show
+    that anything ever got better.
+    """
+    old = (before or {}).get("capabilities", {})
+    moved = []
+    for key, capability in after.items():
+        was = old.get(key, {}).get("status")
+        if was is None or was == capability.status.value:
+            continue
+        moved.append({
+            "capability": key,
+            "previous_status": was,
+            "new_status": capability.status.value,
+            "evidence": capability.evidence,
+            "direction": _direction(was, capability.status),
+        })
+    return moved
+
+
+def _direction(was: str, now: Verification) -> str:
+    """Whether a move was forwards, backwards, or merely sideways."""
+    rank = {
+        Verification.FAILED: 0,
+        Verification.BLOCKED: 0,
+        Verification.AUTHORITY_UNAVAILABLE: 0,
+        Verification.NOT_CONFIGURED: 1,
+        Verification.NOT_OBSERVED: 1,
+        Verification.INSUFFICIENT_HISTORY: 2,
+        Verification.FIXTURE_VERIFIED: 2,
+        Verification.MECHANISM_VERIFIED: 3,
+        Verification.PRODUCTION_VERIFIED: 4,
+    }
+    try:
+        before_rank = rank[Verification(was)]
+    except (ValueError, KeyError):
+        return "changed"
+    after_rank = rank.get(now, 2)
+    if after_rank > before_rank:
+        return "recovered" if before_rank == 0 else "improved"
+    if after_rank < before_rank:
+        return "degraded"
+    return "changed"
+
+
+def transition_log(settings: Settings | None = None) -> list[dict]:
+    """The recorded history of capability status changes, oldest first."""
+    settings = settings or get_settings()
+    path = settings.data_dir / "status_transitions.jsonl"
+    if not path.exists():
+        return []
+    out = []
+    try:
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                try:
+                    out.append(json.loads(line))
+                except ValueError:
+                    continue
+    except OSError:
+        return []
+    return out
+
+
 def write_scorecard(settings: Settings | None = None) -> Path:
     """Persist the derived status so nobody has to remember it.
 
@@ -418,6 +487,16 @@ def write_scorecard(settings: Settings | None = None) -> Path:
     archive.mkdir(parents=True, exist_ok=True)
     (archive / f"{stamp.replace(':', '_')}.json").write_text(
         json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    # Append-only ledger of every move, so "when did this become true" and
+    # "when did that break" both have an answer that outlives the snapshot.
+    moved = transitions(before, capabilities)
+    if moved:
+        ledger = path.parent / "status_transitions.jsonl"
+        with ledger.open("a", encoding="utf-8") as log:
+            for item in moved:
+                log.write(json.dumps({"timestamp": stamp, **item},
+                                     ensure_ascii=False) + "\n")
 
     for item in went_backwards:
         store.audit("capability.regressed", settings,
