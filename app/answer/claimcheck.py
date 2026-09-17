@@ -213,7 +213,10 @@ _META = re.compile(
     r"not (?:stated|specified|mentioned|explained)|no (?:other|further) (?:steps|details)|"
     r"ne (?:precise|precisent|dit|disent|detaille|detaillent|mentionne|mentionnent|indique|indiquent|couvre|couvrent) pas|"
     r"n'(?:indique|indiquent|explique|expliquent|evoque|evoquent) pas|"
-    r"check it against|verifiez|if you(?:'re| are) unsure|en cas de doute)\b")
+    r"check it against|verifiez|if you(?:'re| are) unsure|en cas de doute|"
+    r"that'?s (?:all|everything) (?:the|these) pages?|voila tout ce que|"
+    r"c'est tout ce que|nothing (?:else|more) (?:is|was) (?:said|stated)|"
+    r"the pages? (?:say|says|cover|covers) nothing (?:else|more))")
 
 _FACTUAL_VERBS = re.compile(
     r"\b(?:must|need(?:s)? to|needed|required|require[sd]?|have to|has to|should|"
@@ -394,7 +397,9 @@ def classify_claim(text: str, facts: Facts | None = None) -> ClaimType:
     # interview, held on campus" and "if you miss that deadline, you can't
     # continue" through unchecked for lacking a verb from a list; an
     # administrative sentence is a claim until it is plainly not one.
-    if _META.search(folded) and not (facts.hard or facts.anchors):
+    # A caveat that names a body still asserts something about it — "the page
+    # only says housing aid is run by the CAF" — and is checked like any claim.
+    if _META.search(folded) and not (facts.hard or facts.anchors or facts.entities):
         return ClaimType.NON_FACTUAL
     if not checkable:
         words = re.findall(r"[a-z]{3,}", folded)
@@ -807,6 +812,12 @@ def _link_repairs(facts: Facts, evidence: Sequence[EvidenceText]
     return remove, replace
 
 
+def _is_fragment(sentence: "_Sentence") -> bool:
+    f = sentence.facts
+    return (len(re.findall(r"\w{3,}", sentence.text)) < 4
+            and not (f.hard or f.entities or f.anchors or f.urls or f.domains))
+
+
 def validate(answer: str, evidence: Sequence[EvidenceText], *, question: str,
              on: date | None = None, place=None,
              similarity: Callable | None = None) -> Validation:
@@ -869,8 +880,13 @@ def validate(answer: str, evidence: Sequence[EvidenceText], *, question: str,
     # Incompatible ones are still searched for exact figures — that is how a
     # renewal deadline is recognised as a renewal deadline — but embedding
     # them bought nothing and was most of the cost: a renewal page is long.
+    # Navigation fragments — "Programme Bachelor", "Test d’Anglais", a third
+    # of a school's admissions page, measured — carry nothing a claim could
+    # rest on by meaning. They still complete a figure as neighbours; they
+    # are simply never embedded.
     compared = [i for i, s in enumerate(sentences)
-                if procedure_model.compatible(s.procedures, asked)]
+                if procedure_model.compatible(s.procedures, asked)
+                and not _is_fragment(s)]
     probes = list(dict.fromkeys(
         [probe for _, _, probe, _ in checkable]
         + [_URL.sub(" ", variant) for *_, variant in checkable if variant]))
@@ -935,9 +951,12 @@ def _judge(result: ClaimResult, facts: Facts, probe: str, asked: frozenset,
     def settle(support: Support, reason: str, supporters=()):
         result.support = support.value
         result.reason = reason
-        keep = support is Support.SUPPORTED or (
-            support is Support.PARTIALLY_SUPPORTED and kind not in HIGH_RISK
-            and not facts.hard)
+        # Only what the evidence supports survives. Partial support used to be
+        # enough for "low-risk" kinds, and live that let through "you'll get a
+        # confirmation that your visa is now validated" and "if you miss that
+        # deadline, you can't continue" — plausible, and stated nowhere. For an
+        # administrative answer a shorter true one beats a fuller guessed one.
+        keep = support is Support.SUPPORTED
         result.action = Action.KEPT.value if keep else Action.REMOVED.value
         for s in supporters:
             if s.evidence.source_id not in result.source_ids:

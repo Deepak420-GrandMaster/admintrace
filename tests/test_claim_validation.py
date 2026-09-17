@@ -646,3 +646,36 @@ def test_a_bare_domain_the_evidence_never_gave_is_removed():
 
 def test_a_date_is_not_read_as_a_score():
     assert extract_facts("avant le 30/09/2026").scores == frozenset()
+
+
+# ----------------------------------------- only supported claims survive --
+
+def partially(claims, sentences):
+    return [[0.62] * len(sentences) for _ in claims]
+
+
+def test_a_plausible_claim_the_evidence_only_half_supports_is_removed():
+    """§28. Live: "you'll get a confirmation that your visa is now validated"."""
+    v = validate("Once processed, you'll get a confirmation that your visa is validated.",
+                 [VALIDATION], question=VALIDATION_Q, similarity=partially)
+    claim = v.claims[0]
+    assert claim.support == Support.PARTIALLY_SUPPORTED.value
+    assert claim.action == Action.REMOVED.value
+
+
+def test_a_caveat_that_names_a_body_is_still_checked():
+    """Live: "the page only says housing aid is run by the CAF" went unchecked."""
+    crous = EvidenceText(source_id="etudiant-gouv", url="https://etudiant.gouv.fr/logement",
+                         title="Logement Crous", text="Déposez votre dossier sur messervices.")
+    sentence = ("Le site ne précise pas la démarche, il indique seulement que les "
+                "aides au logement sont gérées par la CAF.")
+    assert classify_claim(sentence) is not ClaimType.NON_FACTUAL
+    v = validate(sentence, [crous], question="aide au logement", similarity=same_subject)
+    assert v.claims[0].action == Action.REMOVED.value
+    assert "CAF" in v.claims[0].reason
+
+
+@pytest.mark.parametrize("caveat", ["Voilà tout ce que les pages couvrent à ce sujet.",
+                                     "That's all the pages cover on this."])
+def test_a_plain_caveat_is_not_a_claim(caveat):
+    assert classify_claim(caveat) is ClaimType.NON_FACTUAL
