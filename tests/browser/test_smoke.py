@@ -59,6 +59,7 @@ def test_the_report_control_is_one_circular_icon_with_no_visible_text(page):
     }""")
 
 
+@pytest.mark.needs_answers
 def test_asking_a_question_produces_an_answer_with_a_source(page):
     page.fill("#rp-question textarea",
               "What are the admission requirements at Montpellier Business School?")

@@ -71,7 +71,7 @@ def test_a_reference_with_nothing_to_resolve_to_never_routes_anywhere():
     assert canonical_ids(resolution.institution) == ()
 
 
-def test_the_school_is_carried_from_earlier_in_the_conversation():
+def test_the_school_is_carried_from_earlier_in_the_conversation(institution_register):
     resolution = resolve(QUESTION, ["I'm applying to Montpellier Business School."])
     assert resolution.institution is not None
     assert resolution.from_context

@@ -81,7 +81,7 @@ def test_an_ambiguous_commune_asks_rather_than_guessing():
 
 # ------------------------------------------------------- the other fields --
 
-def test_naming_a_school_answers_the_entity_question():
+def test_naming_a_school_answers_the_entity_question(institution_register):
     """D."""
     task = start("what are the admission requirements",
                  requested=Field.ENTITY, intent="admission")
@@ -197,7 +197,7 @@ def test_the_resumed_question_is_the_original_question():
     assert location["country"] == "France"
 
 
-def test_an_institution_does_stay_in_the_question():
+def test_an_institution_does_stay_in_the_question(institution_register):
     """An entity changes what is being asked, not merely where."""
     task = start("what are the entry requirements", requested=Field.ENTITY)
     reply = resolve_clarification_response(task, "MBS")
@@ -250,7 +250,7 @@ def test_resolving_a_location_never_calls_a_model(monkeypatch):
         assert reply.resume, said
 
 
-def test_reading_a_yes_or_a_school_name_never_calls_a_model(monkeypatch):
+def test_reading_a_yes_or_a_school_name_never_calls_a_model(monkeypatch, institution_register):
     import app.llm as llm
 
     monkeypatch.setattr(llm, "get_chat_provider", lambda *a, **k: (_ for _ in ()).throw(

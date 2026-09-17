@@ -123,6 +123,7 @@ def test_the_glossary_section_loads_in_both_languages(page):
         assert leak not in text, f"English leaked: {leak!r}"
 
 
+@pytest.mark.needs_corpus
 def test_the_sources_section_reports_the_corpus(page):
     page.locator('[role="tab"]', has_text="Sources").click()
     page.wait_for_selector(".rp-stat", timeout=40_000)
@@ -156,6 +157,7 @@ def test_start_over_returns_to_the_landing_page(page):
     assert page.locator(".rp-cat").count() >= 5
 
 
+@pytest.mark.needs_answers
 def test_switching_language_mid_conversation_keeps_it_coherent(page):
     page.fill("#rp-question textarea",
               "What are the admission requirements at Montpellier Business School?")

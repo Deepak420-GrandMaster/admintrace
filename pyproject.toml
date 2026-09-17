@@ -35,4 +35,6 @@ testpaths = ["tests"]
 pythonpath = ["."]
 markers = [
     "network: reaches the live web. Skipped unless CLARE_NETWORK_TESTS=1, so the\n    default suite stays offline, fast and immune to someone else's outage.",
+    "needs_answers: a browser test that needs a working model provider to produce an answer. Skipped as NOT CONFIGURED when CLARE_BROWSER_ANSWERS=0.",
+    "needs_corpus: a browser test that needs the locally built corpus (data/chroma). Skipped as NOT CONFIGURED when CLARE_BROWSER_CORPUS=0.",
 ]

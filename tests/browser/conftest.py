@@ -50,15 +50,35 @@ def _tracing() -> bool:
             or os.environ.get("CI", "").lower() in {"1", "true", "yes"})
 
 
+#: What an environment can declare it lacks. A CI runner has no model key
+#: unless a secret is configured, and never has the locally built corpus;
+#: rather than fail — or quietly pass — the tests that need them, it says so,
+#: and they are reported as not configured. Both default to available, so a
+#: developer's machine runs everything.
+_CAPABILITIES = {
+    "needs_answers": ("CLARE_BROWSER_ANSWERS",
+                      "NOT CONFIGURED: no model provider in this environment "
+                      "(set a GROQ_API_KEY secret to run answer tests)"),
+    "needs_corpus": ("CLARE_BROWSER_CORPUS",
+                     "NOT CONFIGURED: the corpus is built locally and is not "
+                     "available in this environment"),
+}
+
+
 def pytest_collection_modifyitems(config, items):
-    if _enabled():
+    if not _enabled():
+        skip = pytest.mark.skip(
+            reason="set CLARE_BROWSER_TESTS=1 for browser tests "
+                   "(they start the app themselves)")
+        for item in items:
+            if "browser" in str(item.fspath):
+                item.add_marker(skip)
         return
-    skip = pytest.mark.skip(
-        reason="set CLARE_BROWSER_TESTS=1 for browser tests "
-               "(they start the app themselves)")
-    for item in items:
-        if "browser" in str(item.fspath):
-            item.add_marker(skip)
+    for marker, (variable, reason) in _CAPABILITIES.items():
+        if os.environ.get(variable, "1") == "0":
+            for item in items:
+                if item.get_closest_marker(marker):
+                    item.add_marker(pytest.mark.skip(reason=reason))
 
 
 @pytest.hookimpl(hookwrapper=True)

@@ -16,6 +16,9 @@ import time
 
 import pytest
 
+# Every case here ends in an answer from the model.
+pytestmark = pytest.mark.needs_answers
+
 #: A hosted model answers in seconds; a local one on a laptop can take a
 #: minute or more for the same question. Configurable so the same suite runs
 #: against either without a number in the source being wrong for one of them.
