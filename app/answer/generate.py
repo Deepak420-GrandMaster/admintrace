@@ -88,13 +88,12 @@ def _messages(prepared: PreparedQuery, decision: GateDecision) -> list[ChatMessa
     language = prompts.language_name(prepared.language)
 
     if decision.should_refuse:
-        near = decision.rejected[:3]
-        if near:
-            related = "Related pages that did not match closely enough:\n" + "\n".join(
-                f"- {h.metadata.get('fiche_title_fr', '')}" for h in near
-            )
-        else:
-            related = "No related pages were found."
+        # The titles of pages that failed the relevance gate are not offered to
+        # the model any more. They were the "closest pages we found" list by
+        # another route: removed from the interface, they came back as prose —
+        # a free-tram answer for Antibes recommending "the pages above about RSA
+        # benefits". A page that did not clear the bar is not a lead.
+        related = "No official page answered this question."
         return [
             ChatMessage("system", prompts.REFUSAL_SYSTEM.format(language_name=language)),
             ChatMessage("user", prompts.REFUSAL_USER.format(

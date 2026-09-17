@@ -18,7 +18,7 @@ from pathlib import Path
 
 import gradio as gr
 
-from app.answer.generate import answer_stream
+from app.answer.generate import AnswerResult, answer_stream
 from app.config import get_settings
 from app.ingest.embed import fetch_all, get_collection
 from app.ingest.fetch import read_manifest
@@ -963,6 +963,23 @@ def ask(question: str, ui_lang: str, answer_lang: str, uai: str = "",
         # Otherwise fall through: the corpus is a legitimate answer for this
         # topic, and it is better than nothing.
         turns[-1] = {**turns[-1], "freshness": freshness_key(found)}
+
+    if routing.topic is not None and not routing.fall_back_to_corpus \
+            and not routing.live_steps:
+        # The topic is one the corpus must not answer — local transport fares,
+        # for one — and no source for it is registered where the reader is.
+        # "No corpus fallback" was only honoured when a live source existed,
+        # so a tram question for Antibes still fell through to the corpus and
+        # came back recommending RSA pages. Nothing to read means nothing to
+        # say, and saying so costs no model call.
+        gap = AnswerResult(question=question, language=reply_lang, text="",
+                           refused=True, unverified=True)
+        turns[-1] = {"question": question, "state": "done", "result": gap,
+                     "streaming": False, "institution": about}
+        yield (thread(), hidden, hidden, gr.update(), gr.update(), hidden,
+               turns, _context_of(gap, question, uai, task=pending),
+               gr.update(value="", placeholder=t(ui_lang, "followup_ph")))
+        return
 
     offer_study = gr.update(visible=looks_like_study(question) and not uai)
     # The landing copy steps aside once there is a conversation to read.

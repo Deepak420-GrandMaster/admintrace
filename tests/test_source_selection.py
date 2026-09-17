@@ -211,3 +211,22 @@ def test_an_institution_question_stays_with_the_institution():
                    entity_id="mbs", place=resolve_reply("Antibes"))
     assert routing.steps[0].source.id == "mbs"
     assert all(s.source.id != "prefecture-alpes-maritimes" for s in routing.steps)
+
+
+def test_a_refusal_prompt_never_recites_the_pages_that_failed():
+    """The "closest pages" list, by another route.
+
+    Removed from the interface, it came back as prose: a free-tram refusal
+    for Antibes recommended "the pages above about RSA benefits", because the
+    refusal prompt still handed the model the titles of rejected passages.
+    """
+    from app.answer.generate import _messages
+    from app.query.normalize import prepare
+    from app.retrieval.gate import GateDecision
+
+    rejected = [page("Revenu de solidarité active (RSA)", fiche="F1"),
+                page("Transport gratuit pour les seniors à Paris", fiche="F2")]
+    decision = GateDecision(passed=[], rejected=rejected, should_refuse=True)
+    prepared = prepare("how to get free tram in Antibes")
+    prompt = " ".join(m.content for m in _messages(prepared, decision))
+    assert "RSA" not in prompt and "seniors" not in prompt

@@ -576,7 +576,9 @@ def turn_html(turn: dict, lang: str, reply_lang: str, index: int) -> str:
                 institution = turn.get("institution")
                 if institution:
                     body_parts.append(institution_gap_html(institution, lang))
-                else:
+                elif not getattr(result, "unverified", False):
+                    # An unverified answer already says it could not verify
+                    # anything; a second notice beneath it would repeat it.
                     body_parts.append(source_gap_html(result, lang))
             else:
                 body_parts.append(services_html(result.services, lang))
