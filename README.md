@@ -44,16 +44,30 @@ retrieval against later.
 
 ## Setup
 
-Requires [uv](https://docs.astral.sh/uv/).
+Requires [uv](https://docs.astral.sh/uv/) and Python 3.12.
 
 ```bash
-uv sync --extra dev
-cp .env.example .env       # then set GROQ_API_KEY
-uv run python -m app.ingest.pipeline
+git clone <this repository> clare && cd clare
+cp .env.example .env                    # then set GROQ_API_KEY — never commit .env
+uv sync --extra dev --extra render      # render: Playwright, for JS-built official sites
+uv run playwright install chromium
+scripts/install_git_hooks.sh            # guards pushes against secrets and force
+
+uv run python -m app.ingest.pipeline    # download and index the corpus (large; once)
+uv run python -m app.sync_sources --all # read the official sites once
 uv run python -m app.ui.app
 ```
 
 Then open **http://localhost:7860**.
+
+The source sync matters on a fresh clone. A registered official site is only
+queried live once a version of it has been stored, so until the first sync
+every live question is — correctly — refused rather than answered from nothing.
+
+Configuration lives in `.env`, read only by `app/config.py`. `.env.example`
+lists every variable with no secrets in it. In CI, the same names come from
+GitHub Actions secrets; in production, from the deployment's secret manager.
+Never mix the three.
 
 ## Running it for real
 
@@ -189,6 +203,54 @@ timer. Nothing below needs a second task system.
 
 `app.healthcheck` and `app.review_queue` read only and are safe from cron. An
 empty review queue is a success, not an error.
+
+### Working on Claré: GitHub is the canonical history
+
+A finished change is tested, scanned, committed and pushed — in that order,
+by one command that stops at the first problem:
+
+```bash
+scripts/ship.sh "fix: preserve the task through clarification" app/query/conversation.py tests/test_conversation_state.py
+```
+
+It stages only the paths named, so unrelated work stays where it is; refuses
+on whitespace errors, conflict markers, a detected secret, a vague message or
+failing tests; fetches, and refuses to push if local and remote have diverged;
+and never force-pushes. Its exit code says what happened — pushed, refused
+before committing, or committed locally but not pushed — and it prints the
+commit, branch and push result. Claude Code follows the same procedure, set
+out in `CLAUDE.md`.
+
+```bash
+uv run python -m app.github_status --fetch   # branch, local vs remote, ahead/behind, clean/dirty
+python3 scripts/secret_scan.py --history     # locations of any finding, never values
+```
+
+`scripts/install_git_hooks.sh` installs a pre-push hook that refuses any push
+rewriting remote history and any push containing a detected secret.
+`--auto-push` adds a post-commit push as well; it is off by default because
+a hook cannot run the tests first.
+
+**What is and is not in the repository.** Source code, tests and fixtures,
+the source/jurisdiction/procedure registries under `app/`, templates, docs,
+scripts and workflows are versioned. Everything under `data/` is runtime
+state and never is: the corpus and embeddings, fetched source versions and
+the audit log, the derived production scorecard, and — most importantly —
+real user bug reports. Test fixtures are synthetic or public source text.
+
+**Continuous integration** (`.github/workflows/`):
+
+| Workflow | When | What |
+|---|---|---|
+| `ci.yml` | every push and PR | offline tests, `app.verify --quick`, browser suite (self-starting app) |
+| `security.yml` | push, PR, weekly | secret scan of tree and full history (two scanners), dependency advisories, security tests |
+| `network-tests.yml` | daily, on demand | source sync then live-web tests; model-backed browser answer tests if a `GROQ_API_KEY` secret exists |
+| `refresh-sources.yml` | every 6 hours | source health and sync; versions persist between runs in the Actions cache, never in commits |
+
+CI has no model key and no built corpus, and says so: tests that need an
+answer or the corpus are reported as *NOT CONFIGURED* rather than failed or
+silently passed. Add `GROQ_API_KEY` under *Settings → Secrets and variables →
+Actions* to run answer tests; it is never written into a workflow file.
 
 ### What "production ready" means here
 

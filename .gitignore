@@ -1,16 +1,75 @@
-# Raw feeds, extracted XML, Chroma database, caches. Never committed.
-data/
-
-# Local configuration. .env.example is the committed template.
+# ---------------------------------------------------------------- secrets --
+# Local configuration. .env.example is the committed template; every other
+# .env variant is local and may hold real credentials.
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+
+# ------------------------------------------------------------ runtime data --
+# Everything under data/ is produced by running Claré, never authored:
+#   data/raw, data/extracted   the downloaded public-administration corpus
+#   data/chroma                local embeddings (hundreds of MB)
+#   data/cache, data/sources   fetched pages, versions, hashes, the audit log
+#   data/bugs, data/reports    REAL USER BUG REPORTS — private, never published
+#   data/production_status.json, data/status_history, data/health
+#                              scorecard and health snapshots, derived on demand
+# The registries Claré needs are versioned under app/ instead (sources,
+# jurisdictions, procedures, purposes, coverage, glossary).
+data/
 
 # Evaluation output is timestamped and regenerated.
 eval/results/*
 !eval/results/.gitkeep
 
-# Python
+# -------------------------------------------------------- test and browser --
+# artifacts/ carries its own .gitignore (screenshots, HTML, traces, app logs).
+test-results/
+playwright-report/
+*.trace.zip
+.coverage
+.coverage.*
+htmlcov/
+
+# ----------------------------------------------------------------- Python --
 __pycache__/
 *.py[cod]
 .venv/
+venv/
+.python-venvs/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
 *.egg-info/
+build/
+dist/
+
+# ------------------------------------------------------- models and caches --
+# Model weights and hub caches are downloaded, never committed. Ollama keeps
+# its models outside the repository; these guard against a stray copy.
+.cache/
+.ollama/
+*.gguf
+*.safetensors
+
+# -------------------------------------------------------------------- logs --
+*.log
+logs/
+nohup.out
+
+# ------------------------------------------------------------ editors / OS --
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+
+# ---------------------------------------------------------------- tooling --
+node_modules/
+# Claude Code's machine-local settings. The project's CLAUDE.md is versioned.
+.claude/settings.local.json
