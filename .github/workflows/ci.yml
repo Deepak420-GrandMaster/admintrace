@@ -1,0 +1,97 @@
+# Every push and pull request. Needs no secrets.
+#
+# What a CI runner does not have, it declares rather than pretends to have:
+#   - no model key      LLM_PROVIDER=ollama with a placeholder model name, so
+#                       settings load; nothing here calls a model. Tests that
+#                       need an answer skip as NOT CONFIGURED.
+#   - no embedding model HF_HUB_OFFLINE=1 stops a 2 GB download on every run;
+#                       the few tests that need it skip.
+#   - no built corpus   the corpus is hundreds of MB, built locally.
+# Live-web and model-backed checks run in network-tests.yml instead.
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  LLM_PROVIDER: ollama
+  OLLAMA_CHAT_MODEL: unused-in-ci
+  OLLAMA_BASE_URL: http://127.0.0.1:9
+  HF_HUB_OFFLINE: "1"
+  TRANSFORMERS_OFFLINE: "1"
+  PYTHONUNBUFFERED: "1"
+
+jobs:
+  tests:
+    name: offline tests and deployment gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --extra dev --extra render
+
+      - name: Whitespace and conflict markers
+        if: github.event_name == 'pull_request'
+        run: git diff --check origin/${{ github.base_ref }}...HEAD
+
+      - name: Offline tests
+        run: uv run pytest -q
+
+      - name: Deployment gate (no browser, no network)
+        # app.verify exits non-zero only on a critical failure: configuration,
+        # the offline suite, security checks. An unconfigured SMTP host or an
+        # unreachable external source is reported, not fatal.
+        run: uv run python -m app.verify --quick
+
+  browser:
+    name: browser suite
+    runs-on: ubuntu-latest
+    needs: tests
+    timeout-minutes: 30
+    env:
+      CLARE_BROWSER_ANSWERS: "0"
+      CLARE_BROWSER_CORPUS: "0"
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --extra dev --extra render
+
+      - name: Install Chromium
+        # Only the one browser the suite drives.
+        run: uv run playwright install --with-deps chromium
+
+      - name: Browser suite
+        # Starts the real app on a free port, waits for it, runs Playwright,
+        # stops it — no server needs to be running first.
+        run: uv run python -m app.browser_tests -- -rs
+
+      - name: Browser failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-artifacts
+          path: artifacts/browser/
+          if-no-files-found: ignore
+          retention-days: 14

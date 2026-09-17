@@ -1,0 +1,82 @@
+# Secrets, dependencies, and Claré's own security guarantees.
+name: security
+
+on:
+  push:
+  pull_request:
+  schedule:
+    # Weekly, so a newly published advisory is noticed without a code change.
+    - cron: "41 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  LLM_PROVIDER: ollama
+  OLLAMA_CHAT_MODEL: unused-in-ci
+  HF_HUB_OFFLINE: "1"
+  TRANSFORMERS_OFFLINE: "1"
+
+jobs:
+  secrets:
+    name: secret scan (tree and full history)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the whole history, not just the latest commit
+
+      - name: Repository scanner (reports locations, never values)
+        run: |
+          python3 scripts/secret_scan.py
+          python3 scripts/secret_scan.py --history
+
+      - name: gitleaks (redacted)
+        # A second, independent scanner. --redact keeps any finding's value
+        # out of the log.
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE:/repo" zricethezav/gitleaks:v8.18.4 \
+            detect --source=/repo --redact --no-banner --exit-code 1
+
+  dependencies:
+    name: dependency advisories
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Audit locked dependencies
+        # Reported, not blocking: an advisory in a deep transitive dependency
+        # (the ML stack has many) can have no fixed release yet, and holding
+        # every push hostage to that helps nobody. Read the step summary.
+        continue-on-error: true
+        run: |
+          uv export --format requirements-txt --no-hashes --extra render > requirements-audit.txt
+          uvx pip-audit -r requirements-audit.txt --progress-spinner off --desc | tee audit.txt
+          { echo "### Dependency advisories"; echo '```'; cat audit.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+  guarantees:
+    name: security test suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --extra dev --extra render
+
+      - name: Domain, redirect, rendering, arbitrary-URL and no-hardcoded-facts tests
+        run: >
+          uv run pytest -q
+          tests/test_hardening.py tests/test_sources.py tests/test_gate.py
+          tests/test_render_health.py tests/test_no_hardcoded_facts.py

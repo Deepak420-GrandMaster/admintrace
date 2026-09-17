@@ -12,10 +12,19 @@ on:
     - cron: "17 */6 * * *"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   refresh:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      # Syncing reads official pages; it never calls a model. Settings still
+      # insist on a provider, so a placeholder satisfies them without a key.
+      LLM_PROVIDER: ollama
+      OLLAMA_CHAT_MODEL: unused-in-ci
+      HF_HUB_OFFLINE: "1"
     steps:
       - uses: actions/checkout@v4
 
@@ -27,6 +36,15 @@ jobs:
 
       - name: Install the browser used for JS-rendered sources
         run: uv run playwright install --with-deps chromium
+
+      - name: Restore stored source versions
+        # Without the previous run's versions every page looks new, and a
+        # change can never be detected. Restored from the most recent run.
+        uses: actions/cache/restore@v4
+        with:
+          path: data/sources
+          key: clare-sources-${{ github.run_id }}
+          restore-keys: clare-sources-
 
       - name: Check source health
         run: uv run python -m app.live_source_check --json > health.json
@@ -47,3 +65,12 @@ jobs:
             data/sources/index.json
           if-no-files-found: ignore
           retention-days: 30
+
+      - name: Save stored source versions
+        # Runtime state lives in the Actions cache, never in a commit: fetched
+        # pages are not repository content.
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: data/sources
+          key: clare-sources-${{ github.run_id }}

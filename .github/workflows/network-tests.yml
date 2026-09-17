@@ -1,0 +1,143 @@
+# The live web, and — when a key is configured — real model answers.
+#
+# Not on every push: these read official government sites and spend model
+# quota. Daily, and on demand.
+#
+# The model key comes only from the repository's Actions secrets
+# (Settings → Secrets and variables → Actions → GROQ_API_KEY). It is never
+# written here. Without it, answer tests report NOT CONFIGURED and the
+# workflow still succeeds; the live-source tests do not need a model.
+name: network tests
+
+on:
+  schedule:
+    - cron: "23 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: network-tests
+  cancel-in-progress: false
+
+env:
+  HF_HUB_OFFLINE: "1"
+  TRANSFORMERS_OFFLINE: "1"
+  PYTHONUNBUFFERED: "1"
+
+jobs:
+  live-sources:
+    name: live official sources
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      LLM_PROVIDER: ollama
+      OLLAMA_CHAT_MODEL: unused-in-ci
+      CLARE_NETWORK_TESTS: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --extra dev --extra render
+
+      - name: Install Chromium (JS-rendered official sites)
+        run: uv run playwright install --with-deps chromium
+
+      - name: Restore stored source versions
+        uses: actions/cache/restore@v4
+        with:
+          path: data/sources
+          key: clare-sources-${{ github.run_id }}
+          restore-keys: clare-sources-
+
+      - name: Sync sources
+        # A source may only be queried live once a version of it is stored.
+        # On a fresh runner nothing is, so sync first or every live test is
+        # correctly refused.
+        run: uv run python -m app.sync_sources --all
+
+      - name: Network tests
+        run: uv run pytest -q -rs --ignore=tests/browser
+
+      - name: Save stored source versions
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: data/sources
+          key: clare-sources-${{ github.run_id }}
+
+  answers:
+    name: browser answers (needs GROQ_API_KEY secret)
+    runs-on: ubuntu-latest
+    needs: live-sources
+    timeout-minutes: 40
+    env:
+      HAS_GROQ_KEY: ${{ secrets.GROQ_API_KEY != '' }}
+      # Claim validation needs the embedding model; without it, matching falls
+      # back to word overlap, fails closed, and correct answers are stripped.
+      HF_HUB_OFFLINE: "0"
+      TRANSFORMERS_OFFLINE: "0"
+    steps:
+      - name: Report configuration
+        run: |
+          if [ "$HAS_GROQ_KEY" != "true" ]; then
+            echo "NOT CONFIGURED: no GROQ_API_KEY secret; answer tests skipped." | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "GROQ_API_KEY secret present; running answer tests." | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - uses: actions/checkout@v4
+        if: env.HAS_GROQ_KEY == 'true'
+
+      - name: Install uv
+        if: env.HAS_GROQ_KEY == 'true'
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies and Chromium
+        if: env.HAS_GROQ_KEY == 'true'
+        run: |
+          uv sync --extra dev --extra render
+          uv run playwright install --with-deps chromium
+
+      - name: Restore stored source versions
+        if: env.HAS_GROQ_KEY == 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: data/sources
+          key: clare-sources-${{ github.run_id }}
+          restore-keys: clare-sources-
+
+      - name: Restore the embedding model
+        if: env.HAS_GROQ_KEY == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-bge-m3-v1
+
+      - name: Browser answer tests
+        if: env.HAS_GROQ_KEY == 'true'
+        env:
+          LLM_PROVIDER: groq
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GROQ_MODEL: openai/gpt-oss-120b
+          CLARE_BROWSER_CORPUS: "0"
+          CI: "true"
+        # Quota refusals stand aside as skips; a wrong answer does not.
+        run: uv run python -m app.browser_tests -- -rs
+
+      - name: Browser failure artifacts
+        if: failure() && env.HAS_GROQ_KEY == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-answer-artifacts
+          path: artifacts/browser/
+          if-no-files-found: ignore
+          retention-days: 14
