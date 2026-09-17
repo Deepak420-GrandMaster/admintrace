@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
+import threading
 from functools import lru_cache
 from typing import Callable, Iterable, Sequence
 
@@ -30,8 +31,22 @@ class IndexStats:
     seconds: float
 
 
-@lru_cache(maxsize=4)
+#: Guards loading and using the model. Two threads calling it for the first
+#: time both missed the cache and loaded it at once — the warm-up at startup
+#: and the first question — and the process died mid-request with a leaked
+#: semaphore: a native crash, not an exception anyone could catch. Encoding
+#: from several threads at once is not safe on this backend either, and with
+#: the queue running answers concurrently it would happen in normal use.
+_LOCK = threading.RLock()
+
+
 def _model(model_name: str, device: str | None, half: bool = False):
+    with _LOCK:
+        return _load_model(model_name, device, half)
+
+
+@lru_cache(maxsize=4)
+def _load_model(model_name: str, device: str | None, half: bool = False):
     from sentence_transformers import SentenceTransformer
 
     model = SentenceTransformer(model_name, device=device)
@@ -63,14 +78,15 @@ def embed_texts(texts: Sequence[str], settings: Settings | None = None,
     settings = settings or get_settings()
     if not texts:
         return []
-    model = _model(settings.embed_model, _device(), settings.embed_half_precision)
-    vectors = model.encode(
-        list(texts),
-        batch_size=batch_size or settings.embed_batch_size,
-        normalize_embeddings=True,
-        show_progress_bar=False,
-        convert_to_numpy=True,
-    )
+    with _LOCK:
+        model = _model(settings.embed_model, _device(), settings.embed_half_precision)
+        vectors = model.encode(
+            list(texts),
+            batch_size=batch_size or settings.embed_batch_size,
+            normalize_embeddings=True,
+            show_progress_bar=False,
+            convert_to_numpy=True,
+        )
     return [v.tolist() for v in vectors]
 
 

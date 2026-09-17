@@ -12,6 +12,7 @@ prove the state actually survives the round trip through Gradio.
 from __future__ import annotations
 
 import os
+import time
 
 import pytest
 
@@ -255,9 +256,15 @@ def test_the_reported_conversation_exactly(page, said):
     assert clarifications(page) == 1
     assert "where in france are you" in first.lower()
 
+    started = time.monotonic()
     ask(page, said)
     answered(page, ".rp-source-gap")
     finished(page)
+    # A diagnostic, not a speed test: generous on purpose so provider jitter
+    # cannot make this flaky, tight enough to catch a two-minute regression.
+    conversation_response_time_ms = int((time.monotonic() - started) * 1000)
+    print(f"conversation_response_time_ms={conversation_response_time_ms}")
+    assert conversation_response_time_ms < 60_000
 
     # 1. Never asked for the same thing twice.
     assert clarifications(page) == 1, \
@@ -275,6 +282,16 @@ def test_the_reported_conversation_exactly(page, said):
                    "Search service-public.gouv.fr for this",
                    "Chercher ceci sur service-public.gouv.fr"):
         assert banned not in thread, f"the old fallback is still live: {banned}"
+
+    # 3b. The original bug: validation is not renewal. No renewal timing may
+    # appear in the answer, and the renewal page may not be cited under it.
+    for renewal in ("months before", "mois avant", "before your visa expires",
+                    "before it expires", "clock starts", "day you land"):
+        assert renewal not in answer, f"a renewal rule reached the answer: {renewal!r}"
+    shown_sources = " ".join(page.locator(".rp-source").evaluate_all(
+        "els => els.map(e => e.getAttribute('href') || '')"))
+    assert "Renouvellement" not in shown_sources, \
+        "the renewal page was cited under a validation answer"
 
     # 4. Any source actually shown is about the visa, not merely nearby.
     for title in page.locator(".rp-source-title").all_text_contents():
