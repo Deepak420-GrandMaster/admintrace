@@ -679,3 +679,60 @@ def test_a_caveat_that_names_a_body_is_still_checked():
                                      "That's all the pages cover on this."])
 def test_a_plain_caveat_is_not_a_claim(caveat):
     assert classify_claim(caveat) is ClaimType.NON_FACTUAL
+
+
+# -------------------------------------------- anchors in the uncertain band --
+
+ANEF_HOME = EvidenceText(
+    source_id="anef", url="https://administration-etrangers-en-france.interieur.gouv.fr/",
+    title="Accueil | Administration numérique pour les étrangers en France (ANEF)",
+    text="Je valide mon VLS-TS\nVisa de long séjour valant titre de séjour\n"
+         "Je demande ou renouvelle un titre de séjour")
+
+
+def test_a_paraphrase_that_quotes_the_page_survives_the_uncertain_band():
+    """Live: a faithful claim quoting the service name scored 0.69 and was lost."""
+    v = validate("The ANEF portal has a service titled “Je valide mon VLS‑TS” for "
+                 "validating a long-stay visa.", [ANEF_HOME], question=VALIDATION_Q,
+                 similarity=lambda c, s: [[0.62] * len(s) for _ in c])
+    assert v.claims[0].action == Action.KEPT.value, v.claims[0].reason
+    assert "quoted" in v.claims[0].reason
+
+
+def test_a_quote_the_page_does_not_contain_anchors_nothing():
+    v = validate("The portal has a service titled “Valider mon visa en un clic”.",
+                 [ANEF_HOME], question=VALIDATION_Q,
+                 similarity=lambda c, s: [[0.62] * len(s) for _ in c])
+    assert v.claims[0].action == Action.REMOVED.value
+
+
+def test_naming_the_caf_does_not_anchor_an_invented_caf_requirement():
+    """A name shows the page is about the CAF, not that this rule is true."""
+    page = EvidenceText(source_id="etudiant-gouv", url="https://etudiant.gouv.fr/logement",
+                        title="Aides au logement",
+                        text="Les aides au logement sont versées par la CAF.")
+    v = validate("The CAF requires you to have a signed lease before applying.",
+                 [page], question="aide au logement",
+                 similarity=lambda c, s: [[0.62] * len(s) for _ in c])
+    claim = v.claims[0]
+    assert claim.claim_type == ClaimType.REQUIREMENT.value
+    assert claim.action == Action.REMOVED.value
+
+
+def test_naming_the_caf_can_anchor_a_pointer_to_it():
+    page = EvidenceText(source_id="etudiant-gouv", url="https://etudiant.gouv.fr/logement",
+                        title="Aides au logement",
+                        text="Les aides au logement sont versées par la CAF.")
+    v = validate("For the procedure itself, look at the CAF's own site.", [page],
+                 question="aide au logement",
+                 similarity=lambda c, s: [[0.62] * len(s) for _ in c])
+    assert v.claims[0].action == Action.KEPT.value, v.claims[0].reason
+
+
+@pytest.mark.parametrize("caveat", [
+    "The page doesn’t give the step‑by‑step for validating a VLS‑TS.",
+    "That's all the source says.",
+    "Le site ne donne pas la liste des pièces.",
+])
+def test_more_caveat_phrasings_are_caveats(caveat):
+    assert classify_claim(caveat) is ClaimType.NON_FACTUAL

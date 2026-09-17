@@ -214,8 +214,12 @@ _META = re.compile(
     r"ne (?:precise|precisent|dit|disent|detaille|detaillent|mentionne|mentionnent|indique|indiquent|couvre|couvrent) pas|"
     r"n'(?:indique|indiquent|explique|expliquent|evoque|evoquent) pas|"
     r"check it against|verifiez|if you(?:'re| are) unsure|en cas de doute|"
-    r"that'?s (?:all|everything) (?:the|these) pages?|voila tout ce que|"
-    r"c'est tout ce que|nothing (?:else|more) (?:is|was) (?:said|stated)|"
+    r"does ?n[o']?t (?:give|provide|list|describe|include)|"
+    r"do ?n[o']?t (?:give|provide|list|describe|include)|"
+    r"ne (?:donne|donnent|fournit|fournissent|decrit|decrivent) pas|"
+    r"that'?s (?:all|everything)(?: that)? (?:the|this|that|these) "
+    r"(?:pages?|sources?|sites?)(?: (?:says?|covers?|states?|gives?))?|"
+    r"voila tout ce que|c'est tout ce que|nothing (?:else|more) (?:is|was) (?:said|stated)|"
     r"the pages? (?:say|says|cover|covers) nothing (?:else|more))")
 
 _FACTUAL_VERBS = re.compile(
@@ -244,8 +248,8 @@ _ELIGIBILITY_WORDS = re.compile(
 _EXCEPTION_WORDS = re.compile(r"\b(?:except|unless|sauf|excepte|hormis|a l'exception)\b")
 _CONDITION_WORDS = re.compile(r"\b(?:if|when|provided|si|lorsque|a condition)\b")
 _REQUIREMENT_WORDS = re.compile(
-    r"\b(?:must|need|required|require|have to|has to|mandatory|obligatoire|"
-    r"devez|doit|doivent|il faut)\b")
+    r"\b(?:must|needs?|required|requires?|have to|has to|mandatory|obligatoire|"
+    r"devez|devrez|doit|doivent|il faut|exige|exigent|exigee?s?|requis|requise)\b")
 _AUTHORITY_VERBS = re.compile(
     r"\b(?:handles?|responsible|in charge|decides|processes|competent|competente|"
     r"gere|traite|s'adresser)\b")
@@ -1010,9 +1014,56 @@ def _judge(result: ClaimResult, facts: Facts, probe: str, asked: frozenset,
     if why:
         settle(Support.UNSUPPORTED, why)
         return ""
-    support = (Support.SUPPORTED if score >= SUPPORT_SIMILARITY
-               else Support.PARTIALLY_SUPPORTED)
-    settle(support, f"matched by meaning ({score:.2f})", [sentences[best]])
+    if score >= SUPPORT_SIMILARITY:
+        settle(Support.SUPPORTED, f"matched by meaning ({score:.2f})",
+               [sentences[best]])
+        return ""
+    # Between "same subject" and "clearly supported", meaning cannot decide:
+    # a faithful English paraphrase of a French page scored 0.69 live, and so
+    # did plausible inventions. What separates them is concrete. "The portal
+    # has a service titled 'Je valide mon VLS-TS'" quotes the page exactly;
+    # "you'll get a confirmation that your visa is validated" quotes and
+    # names nothing. A claim in this band survives only on such an anchor.
+    anchor = _anchor_in_evidence(result.text, facts, sentences, pool.neighbours[best],
+                                 compatible, high_risk=kind in HIGH_RISK)
+    if anchor:
+        settle(Support.SUPPORTED,
+               f"matched by meaning ({score:.2f}) and anchored on {anchor}",
+               [sentences[best]])
+        return ""
+    settle(Support.PARTIALLY_SUPPORTED,
+           f"matched by meaning only ({score:.2f}); nothing quoted or named "
+           f"in the evidence ties it down", [sentences[best]])
+    return ""
+
+
+_QUOTED = re.compile(r"[\"“”«»]\s*([^\"“”«»]{3,80}?)\s*[\"“”«»]")
+
+
+def _anchor_in_evidence(text: str, facts: Facts, sentences, window: list[int],
+                        compatible, *, high_risk: bool = False) -> str:
+    """A quoted phrase or named body that ties a claim to specific evidence.
+
+    Quoted phrases must appear verbatim (accents and hyphen styles aside) in
+    compatible evidence: a service name, a button label, a document title.
+    Named bodies must appear in the matching passage itself, not merely
+    somewhere on a page.
+    """
+    evidence_text = " ".join(sentences[i].folded for i in compatible)
+    for quoted in _QUOTED.findall(text or ""):
+        phrase = _fold(re.sub(r"[*_`]", "", quoted)).strip(" .,:;")
+        if len(phrase.split()) >= 2 and phrase in evidence_text:
+            return f"the quoted “{quoted.strip()}”"
+    # A named body shows the evidence is about that body — not that a
+    # requirement attributed to it is true. "The CAF requires a signed lease"
+    # names the CAF as readily as a true sentence does, so for requirements,
+    # eligibility, documents, conditions and deadlines, only a verbatim quote
+    # can anchor; a name cannot.
+    if facts.entities and not high_risk:
+        window_text = " ".join(sentences[i].folded for i in window).replace("-", " ")
+        if all(any(p.search(window_text) for p in _ENTITY_PATTERNS[name])
+               for name in facts.entities):
+            return f"the named {', '.join(sorted(facts.entities))}"
     return ""
 
 
