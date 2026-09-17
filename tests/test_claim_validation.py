@@ -528,3 +528,121 @@ def test_an_unrelated_claim_is_not_supported_by_meaning(embedder):
     v = validate("You can bring your dog on the train.", [VALIDATION],
                  question=VALIDATION_Q, similarity=embedder)
     assert v.claims[0].action == Action.REMOVED.value
+
+
+# ------------------------------------ what the live MBS answer exposed --
+
+# Lines as the MBS admissions page actually lays them out: the fee is a
+# fragment of its own, under the Parcoursup heading, beside a tuition figure.
+MBS_PAGE = EvidenceText(
+    source_id="mbs", url="https://www.mbs-education.com/admissions-bachelor",
+    title="Admissions Bachelor - MBS School of Business",
+    text=("L’admission des candidats se fait sur concours, uniquement via Parcoursup.\n"
+          "Candidater sur Parcoursup\n"
+          "60€ (30€ pour les boursiers)\n"
+          "Pas de niveau minimum exigé sauf pour le parcours anglophone, un score "
+          "minimum de 85/160 sera exigé.\n"
+          "Entretien de personnalité de 25 minutes.\n"
+          "Frais de scolarité annuels : 2000 €\n"))
+
+
+def fragments_look_unrelated(claims, sentences):
+    """Realistic: a bare fee line reads as off-subject; full sentences do not."""
+    return [[0.3 if len(s.split()) < 5 else 0.8 for s in sentences] for _ in claims]
+
+
+def test_a_fee_on_its_own_table_line_is_supported_by_its_neighbours():
+    """The €60 fee was removed live because its line was a bare fragment."""
+    v = validate("You pay the €60 contest fee (€30 for scholarship holders) on Parcoursup.",
+                 [MBS_PAGE], question="What do I need for admission?",
+                 similarity=fragments_look_unrelated)
+    assert v.claims[0].support == Support.SUPPORTED.value, v.claims[0].reason
+    assert "€60" in v.text
+
+
+def test_a_wrong_fee_is_contradicted_by_the_fee_line_not_the_tuition_line():
+    """The diagnosis must point at the figure that is actually about fees.
+
+    Live, a correct €60 fee was labelled contradicted by a 2000 € tuition line.
+    A wrong fee should be contradicted — by the 60€ line, which is on subject.
+    """
+    v = validate("You pay a €90 contest fee.", [MBS_PAGE],
+                 question="What do I need for admission?",
+                 similarity=fragments_look_unrelated)
+    claim = v.claims[0]
+    assert claim.action == Action.REMOVED.value
+    assert claim.support == Support.CONTRADICTED.value
+    assert "60 EUR" in claim.reason and "2000" not in claim.reason, claim.reason
+
+
+def test_an_unrelated_figure_alone_is_unsupported_not_contradicted():
+    """With nothing on subject stating a figure, there is no contradiction."""
+    page = dataclasses.replace(MBS_PAGE, text="Frais de scolarité annuels : 2000 €\n")
+    v = validate("You pay a €90 contest fee.", [page],
+                 question="What do I need for admission?",
+                 similarity=lambda c, s: [[0.6] * len(s) for _ in c])
+    assert v.claims[0].support == Support.UNSUPPORTED.value, v.claims[0].reason
+
+
+def test_an_invented_conversion_in_brackets_is_dropped_and_the_real_score_kept():
+    """Live: "(a score of 60/160 is roughly a 10/20)" appeared in no evidence."""
+    v = validate("The English-only track needs at least 85/160 "
+                 "(a score of 60/160 is roughly a 10/20).",
+                 [MBS_PAGE], question="What do I need for admission?",
+                 similarity=same_subject)
+    claim = v.claims[0]
+    assert claim.action == Action.CLAUSE_REMOVED.value, claim.reason
+    assert "85/160" in v.text
+    assert "10/20" not in v.text and "60/160" not in v.text
+
+
+def test_a_score_the_page_does_not_state_is_not_kept():
+    v = validate("The English-only track needs at least 90/160.", [MBS_PAGE],
+                 question="What do I need for admission?", similarity=same_subject)
+    assert v.claims[0].action == Action.REMOVED.value
+
+
+def test_minutes_are_checked_like_any_other_duration():
+    """Live: "a 25-minute interview" went unchecked; minutes were not a unit."""
+    right = validate("There is a 25‑minute personality interview.", [MBS_PAGE],
+                     question="What do I need for admission?", similarity=same_subject)
+    wrong = validate("There is a 40-minute personality interview.", [MBS_PAGE],
+                     question="What do I need for admission?", similarity=same_subject)
+    assert right.claims[0].action == Action.KEPT.value
+    assert wrong.claims[0].action == Action.REMOVED.value
+
+
+def test_a_sentence_without_a_listed_verb_is_still_checked():
+    """Live: "If you miss that deadline, you can't continue" was never checked."""
+    v = validate("If you miss that deadline, you can't continue.", [MBS_PAGE],
+                 question="What do I need for admission?",
+                 similarity=lambda c, s: [[0.2] * len(s) for _ in c])
+    assert v.claims[0].claim_type != ClaimType.NON_FACTUAL.value
+    assert v.claims[0].action == Action.REMOVED.value
+
+
+def test_a_list_introduction_is_not_a_claim():
+    for intro in ("The test has two parts:", "So, in short, you need:"):
+        assert classify_claim(intro) is ClaimType.NON_FACTUAL, intro
+
+
+def test_a_known_host_written_with_accents_is_respelled():
+    """Live: "administration‑étrangers‑en‑france…" is not a host that resolves."""
+    v = validate("Validate your VLS-TS online after you arrive in France on "
+                 "administration‑étrangers‑en‑france.interieur.gouv.fr.",
+                 [VALIDATION], question=VALIDATION_Q, similarity=same_subject)
+    assert "administration-etrangers-en-france.interieur.gouv.fr" in v.text
+    assert "étrangers‑en" not in v.text
+    assert v.claims[0].action == Action.LINK_CORRECTED.value
+
+
+def test_a_bare_domain_the_evidence_never_gave_is_removed():
+    v = validate("Validate your VLS-TS online after you arrive in France on "
+                 "visa-validation-help.com.",
+                 [VALIDATION], question=VALIDATION_Q, similarity=same_subject)
+    assert "visa-validation-help.com" not in v.text
+    assert "after you arrive" in v.text
+
+
+def test_a_date_is_not_read_as_a_score():
+    assert extract_facts("avant le 30/09/2026").scores == frozenset()

@@ -92,6 +92,10 @@ class Action(str, Enum):
     KEPT = "kept"
     REMOVED = "removed"
     URL_REMOVED = "url_removed"
+    #: A link written with the wrong spelling of a verified host, corrected.
+    LINK_CORRECTED = "link_corrected"
+    #: An unsupported parenthetical dropped from an otherwise supported claim.
+    CLAUSE_REMOVED = "clause_removed"
 
 
 #: Types whose partial support is not enough. Getting any of these slightly
@@ -110,6 +114,9 @@ def _fold(text: str) -> str:
     folded = unicodedata.normalize("NFD", (text or "").lower())
     folded = "".join(c for c in folded if unicodedata.category(c) != "Mn")
     folded = folded.replace("’", "'").replace(" ", " ").replace(" ", " ")
+    # Models write non-breaking and typographic hyphens ("25‑minute",
+    # "administration‑étrangers"); pages write plain ones. Same character.
+    folded = re.sub(r"[\u2010-\u2015\u2212]", "-", folded)
     return " ".join(folded.split())
 
 
@@ -128,10 +135,20 @@ _UNIT_CANON = {
     "an": "year", "ans": "year", "annee": "year", "annees": "year",
     "year": "year", "years": "year",
     "heure": "hour", "heures": "hour", "hour": "hour", "hours": "hour",
+    "minute": "minute", "minutes": "minute", "min": "minute",
 }
 _UNIT = "|".join(sorted(_UNIT_CANON, key=len, reverse=True))
 _QUANTITY = re.compile(
-    rf"\b({_NUM})(?:\s*(?:-|–|to|a|ou|or|and|et)\s*({_NUM}))?\s+({_UNIT})\b")
+    rf"\b({_NUM})(?:\s*(?:-|–|to|a|ou|or|and|et)\s*({_NUM}))?(?:\s+|\s*-\s*)({_UNIT})\b")
+#: "85/160", "10/20": a score out of a total. Never a date — those need a year.
+_SCORE = re.compile(r"(?<![\d/])\b(\d{1,4})\s*/\s*(\d{1,4})\b(?!\s*/)")
+#: Any other figure. Every number a claim states must be found in evidence;
+#: an unchecked number is how "60/160 is roughly 10/20" reached a reader.
+_BARE_NUMBER = re.compile(r"(?<![\w.,/])(\d+(?:[.,]\d+)?)(?:st|nd|rd|th|er|ere|eme|e)?(?![\w/])")
+#: A domain written without a scheme, as models like to.
+_BARE_DOMAIN = re.compile(
+    r"(?<![@/\w.-])((?:[a-z0-9\u00e0-\u017f]+[-.])+(?:gouv\.fr|fr|com|org|eu|net))\b(/[^\s)]*)?",
+    re.IGNORECASE)
 
 _THOUSANDS = r"\d{1,3}(?:[ .]\d{3})+(?:,\d+)?|\d+(?:[.,]\d+)?"
 _AMOUNT_AFTER = re.compile(rf"({_THOUSANDS})\s*(?:€|eur\b|euros?\b)")
@@ -246,6 +263,9 @@ class Facts:
     dates: frozenset = frozenset()
     months: frozenset = frozenset()
     urls: tuple = ()
+    scores: frozenset = frozenset()
+    numbers: frozenset = frozenset()
+    domains: tuple = ()
     emails: frozenset = frozenset()
     phones: frozenset = frozenset()
     entities: frozenset = frozenset()
@@ -254,7 +274,7 @@ class Facts:
     @property
     def hard(self) -> bool:
         return bool(self.quantities or self.amounts or self.dates or self.months
-                    or self.emails or self.phones)
+                    or self.scores or self.numbers or self.emails or self.phones)
 
 
 def _number(token: str) -> str:
@@ -312,26 +332,74 @@ def extract_facts(text: str) -> Facts:
     urls = tuple(u.rstrip(".,;:!?") for u in _URL.findall(text or ""))
     emails = {e.lower() for e in _EMAIL.findall(text or "")}
     phones = {re.sub(r"\D", "", p)[-9:] for p in _PHONE.findall(text or "")}
+    scores = {f"{int(a)}/{int(b)}" for a, b in _SCORE.findall(folded)}
+
+    # Whatever figures remain once the structured ones are taken out.
+    residue = _EMAIL.sub(" ", _URL.sub(" ", text or ""))
+    residue = _PHONE.sub(" ", _fold(residue))
+    for pattern in (_DATE_DAY_MONTH, _DATE_MONTH_DAY, _DATE_SLASH, _DATE_ISO,
+                    _MONTH_YEAR, _AMOUNT_AFTER, _AMOUNT_BEFORE, _QUANTITY, _SCORE):
+        residue = pattern.sub(" ", residue)
+    numbers = set()
+    for token in _BARE_NUMBER.findall(residue):
+        try:
+            number = float(token.replace(",", "."))
+        except ValueError:
+            continue
+        numbers.add(str(int(number)) if number == int(number) else str(number))
+    domains = _bare_domains(text)
 
     entity_text = _fold(_URL.sub(" ", text or "")).replace("-", " ")
     entities = {name for name, pats in _ENTITY_PATTERNS.items()
                 if any(p.search(entity_text) for p in pats)}
     anchors = {name for name, pats in _ANCHOR_PATTERNS.items()
                if any(p.search(entity_text) for p in pats)}
-    return Facts(frozenset(quantities), frozenset(amounts), frozenset(dates),
-                 frozenset(months), urls, frozenset(emails), frozenset(phones),
-                 frozenset(entities), frozenset(anchors))
+    return Facts(quantities=frozenset(quantities), amounts=frozenset(amounts),
+                 dates=frozenset(dates), months=frozenset(months), urls=urls,
+                 scores=frozenset(scores), numbers=frozenset(numbers),
+                 domains=domains, emails=frozenset(emails),
+                 phones=frozenset(phones), entities=frozenset(entities),
+                 anchors=frozenset(anchors))
+
+
+_HYPHENS = re.compile(r"[\u2010-\u2015\u2212]")
+
+
+def _bare_domains(text: str) -> tuple[str, ...]:
+    """Domains written without a scheme, exactly as they appear in the text.
+
+    Matched on a copy with typographic hyphens made plain — one character for
+    one, so positions still line up — and returned as the original spelling,
+    so a correction can replace precisely what the reader would have seen.
+    """
+    raw = text or ""
+    masked = _HYPHENS.sub("-", raw)
+    masked = _URL.sub(lambda m: " " * len(m.group(0)), masked)
+    masked = _EMAIL.sub(lambda m: " " * len(m.group(0)), masked)
+    return tuple(raw[m.start(1):m.end(1)] for m in _BARE_DOMAIN.finditer(masked))
+
+
+def _host_key(host: str) -> str:
+    """A host reduced to what identifies it: accents and hyphen styles aside."""
+    return _fold(host).removeprefix("www.")
 
 
 def classify_claim(text: str, facts: Facts | None = None) -> ClaimType:
     """What kind of claim a sentence makes, or that it makes none."""
     facts = facts or extract_facts(text)
     folded = _fold(text).replace("-", " ")
-    if not (facts.hard or facts.urls or facts.entities or facts.anchors
-            or _FACTUAL_VERBS.search(folded)):
-        return ClaimType.NON_FACTUAL
+    checkable = (facts.hard or facts.urls or facts.domains or facts.entities
+                 or facts.anchors)
+    # Factual unless shown otherwise. The opposite default let "a 25-minute
+    # interview, held on campus" and "if you miss that deadline, you can't
+    # continue" through unchecked for lacking a verb from a list; an
+    # administrative sentence is a claim until it is plainly not one.
     if _META.search(folded) and not (facts.hard or facts.anchors):
         return ClaimType.NON_FACTUAL
+    if not checkable:
+        words = re.findall(r"[a-z]{3,}", folded)
+        if len(words) < 3 or folded.rstrip().endswith(":"):
+            return ClaimType.NON_FACTUAL
     if facts.amounts:
         return ClaimType.FEE
     if (facts.quantities or facts.anchors) and (facts.anchors or _DEADLINE_WORDS.search(folded)):
@@ -340,9 +408,11 @@ def classify_claim(text: str, facts: Facts | None = None) -> ClaimType:
         return ClaimType.DATE
     if facts.quantities:
         return ClaimType.DURATION
+    if facts.scores:
+        return ClaimType.ELIGIBILITY
     if facts.emails or facts.phones:
         return ClaimType.CONTACT
-    if facts.urls:
+    if facts.urls or facts.domains:
         return ClaimType.PORTAL
     if facts.entities and _AUTHORITY_VERBS.search(folded):
         return ClaimType.AUTHORITY
@@ -365,7 +435,7 @@ def classify_claim(text: str, facts: Facts | None = None) -> ClaimType:
 
 # ------------------------------------------------------------- evidence ----
 
-_SENTENCE_BREAK = re.compile(r"(?<=[.!?;:])\s+(?=[\"“«(]?[A-ZÀ-ÖØ-Þ0-9])")
+_SENTENCE_BREAK = re.compile(r"(?<=[.!?:])\s+(?=[\"“«(]?[A-ZÀ-ÖØ-Þ0-9])|(?<=;)\s+")
 
 
 def sentences_of(text: str) -> list[str]:
@@ -405,6 +475,8 @@ class _Sentence:
     procedures: frozenset
     facts: Facts
     folded: str
+    item: int = 0
+    position: int = 0
 
 
 def from_live(items) -> list[EvidenceText]:
@@ -631,6 +703,110 @@ def _conditional(text: str) -> bool:
     return any(marker in folded for marker in _CONDITIONS)
 
 
+#: How many neighbouring lines of the same page count as context. Official
+#: pages break facts across table cells and list items — a school's fee, with
+#: its reduced rate for scholarship holders, sat on a line of its own under
+#: "Candidater sur Parcoursup" — and a fragment on its own is too short to be
+#: recognised as on-subject.
+WINDOW = 2
+
+_PARENTHETICAL = re.compile(r"\s*\(([^()]*)\)")
+
+
+@dataclass
+class _Pool:
+    sentences: list
+    neighbours: list
+    window: list
+
+
+def _merge(facts: Sequence[Facts]) -> Facts:
+    def union(name):
+        out = set()
+        for f in facts:
+            out |= set(getattr(f, name))
+        return frozenset(out)
+    return Facts(
+        quantities=union("quantities"), amounts=union("amounts"),
+        dates=union("dates"), months=union("months"),
+        urls=tuple(u for f in facts for u in f.urls),
+        scores=union("scores"), numbers=union("numbers"),
+        domains=tuple(d for f in facts for d in f.domains),
+        emails=union("emails"), phones=union("phones"),
+        entities=union("entities"), anchors=union("anchors"))
+
+
+def _all_numbers(f: Facts) -> set[str]:
+    """Every figure in a span, however it was structured.
+
+    A claim's bare "85" is supported by "85/160"; a bare figure by the same
+    figure given as an amount; "2026" by a date in 2026.
+    """
+    out = set(f.numbers) | set(f.amounts) | {v for v, _ in f.quantities}
+    for score in f.scores:
+        out |= set(score.split("/"))
+    for iso in f.dates:
+        year, month, day = iso.split("-")
+        out |= {year, str(int(month)), str(int(day))}
+    out |= {str(y) for y, _ in f.months}
+    return out
+
+
+def _shares_fact(claim: Facts, sentence: Facts) -> bool:
+    return bool((claim.quantities & sentence.quantities)
+                or (claim.amounts & sentence.amounts)
+                or (claim.dates & sentence.dates) or (claim.months & sentence.months)
+                or (claim.scores & sentence.scores)
+                or (claim.emails & sentence.emails) or (claim.phones & sentence.phones)
+                or (claim.numbers & _all_numbers(sentence)))
+
+
+def _fact_parentheticals_removed(text: str) -> str:
+    """The sentence without any parenthetical that itself states a fact.
+
+    "(free)" stays. "(a score of 60/160 is roughly a 10/20)" goes — it makes
+    its own claim, and when it is the only part the evidence does not support,
+    losing the correct sentence around it would be the wrong repair.
+    """
+    def drop(match):
+        inner = match.group(1)
+        f = extract_facts(inner)
+        return "" if (f.hard or f.urls or f.domains or f.entities or f.anchors) \
+            else match.group(0)
+    cleaned = _PARENTHETICAL.sub(drop, text or "")
+    return re.sub(r"\s{2,}", " ", re.sub(r"\s+([.,;:])", r"\1", cleaned)).strip()
+
+
+def _link_repairs(facts: Facts, evidence: Sequence[EvidenceText]
+                  ) -> tuple[list[str], dict[str, str]]:
+    """URLs and bare domains to remove, and domains to respell.
+
+    A domain the evidence knows, written with accents or typographic hyphens
+    ("administration‑étrangers‑en‑france…"), would fail when typed; it is
+    corrected to the host the evidence actually uses. A URL or domain the
+    evidence never gave is removed.
+    """
+    remove = [u for u in facts.urls if not _url_verified(u, evidence)]
+    replace: dict[str, str] = {}
+    hosts: dict[str, str] = {}
+    corpus = " ".join(_fold(item.text) for item in evidence)
+    for item in evidence:
+        for known in (item.url, item.canonical_url):
+            if known:
+                host = urlsplit(known).netloc.lower().removeprefix("www.")
+                if host:
+                    hosts[_host_key(host)] = host
+    for written in facts.domains:
+        host_part = written.split("/")[0]
+        key = _host_key(host_part)
+        if key in hosts:
+            if host_part != hosts[key]:
+                replace[host_part] = hosts[key]
+        elif key not in corpus:
+            remove.append(written)
+    return remove, replace
+
+
 def validate(answer: str, evidence: Sequence[EvidenceText], *, question: str,
              on: date | None = None, place=None,
              similarity: Callable | None = None) -> Validation:
@@ -638,7 +814,8 @@ def validate(answer: str, evidence: Sequence[EvidenceText], *, question: str,
     started = time.perf_counter()
     asked = procedure_model.detect(question)
 
-    # Evidence a reader may lean on: the right procedure, the right place.
+    # Evidence a reader may lean on: the right place. (Procedure is judged
+    # per sentence below, so a renewal figure can still be *recognised*.)
     usable: list[EvidenceText] = []
     for item in evidence:
         if place is not None and getattr(place, "known", False) and item.is_local \
@@ -647,22 +824,34 @@ def validate(answer: str, evidence: Sequence[EvidenceText], *, question: str,
             continue
         usable.append(item)
 
-    all_sentences: list[_Sentence] = []
-    for item in usable:
+    sentences: list[_Sentence] = []
+    for item_index, item in enumerate(usable):
         page = item.procedures
+        position = 0
         for sentence in [item.title, *sentences_of(item.text)]:
             if not sentence:
                 continue
             own = procedure_model.detect(sentence)
-            all_sentences.append(_Sentence(
+            sentences.append(_Sentence(
                 text=sentence, evidence=item, procedures=own or page,
-                facts=extract_facts(sentence), folded=_fold(sentence)))
+                facts=extract_facts(sentence), folded=_fold(sentence),
+                item=item_index, position=position))
+            position += 1
+    by_item: dict[int, list[int]] = {}
+    for index, sentence in enumerate(sentences):
+        by_item.setdefault(sentence.item, []).append(index)
+    neighbours = []
+    for sentence in sentences:
+        neighbours.append([j for j in by_item[sentence.item]
+                           if abs(sentences[j].position - sentence.position) <= WINDOW])
+    pool = _Pool(sentences=sentences, neighbours=neighbours,
+                 window=[_merge([sentences[j].facts for j in ns]) for ns in neighbours])
 
     units = _units(answer)
     claims: list[ClaimResult] = []
-    checkable: list[tuple[int, int, ClaimResult, Facts, str]] = []
-    for u_index, (_, sentences) in enumerate(units):
-        for s_index, sentence in enumerate(sentences):
+    checkable: list[tuple[ClaimResult, Facts, str, str]] = []
+    for _, unit_sentences in units:
+        for sentence in unit_sentences:
             facts = extract_facts(sentence)
             kind = classify_claim(sentence, facts)
             result = ClaimResult(claim_id=claim_id_for(sentence), text=sentence,
@@ -670,38 +859,57 @@ def validate(answer: str, evidence: Sequence[EvidenceText], *, question: str,
             claims.append(result)
             if kind is ClaimType.NON_FACTUAL:
                 continue
-            probe = _URL.sub(" ", sentence)
-            checkable.append((u_index, s_index, result, facts, probe))
+            variant = _fact_parentheticals_removed(sentence)
+            checkable.append((result, facts, _URL.sub(" ", sentence),
+                              variant if variant and variant != sentence else ""))
 
     backend = "none"
-    matrix: list[list[float]] = []
+    rows: dict[str, list[float]] = {}
     # Only sentences from compatible procedures are ever compared by meaning.
     # Incompatible ones are still searched for exact figures — that is how a
     # renewal deadline is recognised as a renewal deadline — but embedding
     # them bought nothing and was most of the cost: a renewal page is long.
-    compared = [i for i, s in enumerate(all_sentences)
+    compared = [i for i, s in enumerate(sentences)
                 if procedure_model.compatible(s.procedures, asked)]
-    if checkable and compared:
-        texts = [probe for *_, probe in checkable]
-        pool = [all_sentences[i].text for i in compared]
+    probes = list(dict.fromkeys(
+        [probe for _, _, probe, _ in checkable]
+        + [_URL.sub(" ", variant) for *_, variant in checkable if variant]))
+    if probes and compared:
+        texts = [sentences[i].text for i in compared]
         if similarity is not None:
-            partial, backend = similarity(texts, pool), "injected"
+            partial, backend = similarity(probes, texts), "injected"
         else:
             try:
-                partial, backend = embedding_similarity(texts, pool), "embedding"
+                partial, backend = embedding_similarity(probes, texts), "embedding"
             except Exception:  # noqa: BLE001 - a missing model must fail closed
-                partial, backend = lexical_similarity(texts, pool), "lexical"
-        matrix = [[0.0] * len(all_sentences) for _ in checkable]
-        for row, values in enumerate(partial):
+                partial, backend = lexical_similarity(probes, texts), "lexical"
+        for probe, values in zip(probes, partial):
+            row = [0.0] * len(sentences)
             for column, value in zip(compared, values):
-                matrix[row][column] = value
+                row[column] = value
+            rows[probe] = row
 
     conflicting = False
-    for row, (_, _, result, facts, probe) in enumerate(checkable):
-        sims = matrix[row] if matrix else [0.0] * len(all_sentences)
-        verdict = _judge(result, facts, probe, asked, all_sentences, sims, on, usable)
-        if verdict == "conflict":
+    for result, facts, probe, variant in checkable:
+        sims = rows.get(probe, [0.0] * len(sentences))
+        if _judge(result, facts, probe, asked, pool, sims, on, usable) == "conflict":
             conflicting = True
+        if result.action == Action.REMOVED.value and variant:
+            trial = ClaimResult(claim_id=result.claim_id, text=variant,
+                                claim_type=classify_claim(variant).value,
+                                final_text=variant)
+            variant_probe = _URL.sub(" ", variant)
+            _judge(trial, extract_facts(variant), variant_probe, asked, pool,
+                   rows.get(variant_probe, [0.0] * len(sentences)), on, usable)
+            if trial.action != Action.REMOVED.value:
+                original_reason = result.reason
+                result.support = trial.support
+                result.final_text = trial.final_text
+                result.source_ids, result.source_urls = trial.source_ids, trial.source_urls
+                result.versions, result.similarity = trial.versions, trial.similarity
+                result.action = Action.CLAUSE_REMOVED.value
+                result.reason = (f"{trial.reason}; unsupported parenthetical removed "
+                                 f"({original_reason})")
 
     text = _rebuild(units, claims)
     validation = Validation(
@@ -715,12 +923,14 @@ def validate(answer: str, evidence: Sequence[EvidenceText], *, question: str,
 
 
 def _judge(result: ClaimResult, facts: Facts, probe: str, asked: frozenset,
-           pool: list[_Sentence], sims: list[float], on: date | None,
+           pool: _Pool, sims: list[float], on: date | None,
            evidence: Sequence[EvidenceText]) -> str:
     """Decide one claim. Mutates ``result``; returns "conflict" when relevant."""
     kind = ClaimType(result.claim_type)
     own = procedure_model.detect(probe)
     result.procedures = sorted(own)
+    sentences = pool.sentences
+    remove_links, respell = _link_repairs(facts, evidence)
 
     def settle(support: Support, reason: str, supporters=()):
         result.support = support.value
@@ -737,6 +947,8 @@ def _judge(result: ClaimResult, facts: Facts, probe: str, asked: frozenset,
                 result.source_urls.append(url)
             if s.evidence.version_id and s.evidence.version_id not in result.versions:
                 result.versions.append(s.evidence.version_id)
+        if keep:
+            _repair_links(result, remove_links, respell)
 
     # Procedure mixing: the claim itself names a procedure the reader did not
     # ask about. "Validate your VLS-TS by filing the renewal request" names
@@ -747,16 +959,13 @@ def _judge(result: ClaimResult, facts: Facts, probe: str, asked: frozenset,
                f"question is about {procedure_model.label(asked)}")
         return ""
 
-    compatible = [i for i, s in enumerate(pool)
+    compatible = [i for i, s in enumerate(sentences)
                   if procedure_model.compatible(s.procedures, asked)]
-
-    # URLs are stripped rather than trusted, and the sentence judged without
-    # them. A portal address the evidence never gave is an invented one.
-    bad_urls = [u for u in facts.urls if not _url_verified(u, evidence)]
+    compatible_set = set(compatible)
 
     # Named bodies and portals must be named by compatible evidence — not
     # inferred from which government domain a page happens to sit on.
-    compatible_text = " ".join(pool[i].folded for i in compatible).replace("-", " ")
+    compatible_text = " ".join(sentences[i].folded for i in compatible).replace("-", " ")
     missing = sorted(name for name in facts.entities
                      if not any(p.search(compatible_text)
                                 for p in _ENTITY_PATTERNS[name]))
@@ -765,9 +974,11 @@ def _judge(result: ClaimResult, facts: Facts, probe: str, asked: frozenset,
                f"entity_not_in_evidence: {', '.join(missing)}")
         return ""
 
-    if facts.hard or facts.anchors:
-        return _judge_facts(result, facts, asked, pool, sims, compatible, on,
-                            settle, bad_urls)
+    if facts.anchors and not facts.hard:
+        return _judge_anchor(result, facts, pool, sims, compatible_set, settle)
+    if facts.hard:
+        return _judge_facts(result, facts, asked, pool, sims, compatible_set,
+                            on, settle)
 
     best = max(compatible, key=lambda i: sims[i], default=None)
     score = sims[best] if best is not None else 0.0
@@ -776,114 +987,118 @@ def _judge(result: ClaimResult, facts: Facts, probe: str, asked: frozenset,
         settle(Support.UNSUPPORTED, f"no evidence on this subject (best {score:.2f})")
         return ""
     why = _out_of_force([i for i in compatible if sims[i] >= SUBJECT_SIMILARITY],
-                        pool, sims, on)
+                        sentences, sims, on)
     if why:
         settle(Support.UNSUPPORTED, why)
         return ""
     support = (Support.SUPPORTED if score >= SUPPORT_SIMILARITY
                else Support.PARTIALLY_SUPPORTED)
-    settle(support, f"matched by meaning ({score:.2f})", [pool[best]])
-    _strip_urls(result, bad_urls)
+    settle(support, f"matched by meaning ({score:.2f})", [sentences[best]])
     return ""
 
 
-def _judge_facts(result, facts: Facts, asked, pool, sims, compatible, on,
-                 settle, bad_urls) -> str:
-    # A claim with a timing anchor but no figure ("the clock starts the day
-    # you land") is judged on the anchor alone. It must be checked first:
-    # with no figures to carry, every sentence vacuously "carries" them, and
-    # the claim was once filed as a renewal figure it never contained.
-    if facts.anchors and not facts.hard:
-        return _judge_anchor(result, facts, pool, sims, compatible, settle,
-                             bad_urls)
+def _judge_facts(result, facts: Facts, asked, pool: _Pool, sims, compatible,
+                 on, settle) -> str:
+    sentences = pool.sentences
 
-    def carries(sentence: _Sentence) -> bool:
-        f = sentence.facts
-        return (facts.quantities <= f.quantities and facts.amounts <= f.amounts
-                and facts.dates <= f.dates and facts.months <= f.months
-                and facts.emails <= f.emails and facts.phones <= f.phones)
+    def carries(i: int) -> bool:
+        w = pool.window[i]
+        return (facts.quantities <= w.quantities and facts.amounts <= w.amounts
+                and facts.dates <= w.dates and facts.months <= w.months
+                and facts.scores <= w.scores and facts.emails <= w.emails
+                and facts.phones <= w.phones
+                and facts.numbers <= _all_numbers(w))
 
-    def anchored(sentence: _Sentence) -> bool:
-        return not facts.anchors or bool(facts.anchors & sentence.facts.anchors)
+    def anchored(i: int) -> bool:
+        return not facts.anchors or bool(facts.anchors & pool.window[i].anchors)
 
-    exact = [i for i, s in enumerate(pool) if carries(s)]
-    good = [i for i in exact if i in compatible and anchored(pool[i])
-            and sims[i] >= SUBJECT_SIMILARITY]
+    def wsim(i: int) -> float:
+        return max(sims[j] for j in pool.neighbours[i])
+
+    # A window is anchored on a sentence that itself holds one of the facts,
+    # so its neighbours complete the figure rather than stand in for it.
+    exact = [i for i, s in enumerate(sentences)
+             if _shares_fact(facts, s.facts) and carries(i)]
+    good = [i for i in exact if i in compatible and anchored(i)
+            and wsim(i) >= SUBJECT_SIMILARITY]
     if good:
-        best = max(good, key=lambda i: sims[i])
-        result.similarity = round(sims[best], 3)
-        why = _out_of_force(good, pool, sims, on)
+        best = max(good, key=wsim)
+        result.similarity = round(wsim(best), 3)
+        why = _out_of_force(good, sentences, sims, on)
         if why:
             settle(Support.UNSUPPORTED, why)
             return ""
         # Another authoritative, same-subject, unconditional sentence giving a
         # different figure for the same unit is a conflict, not a detail.
-        rivals = _rivals(facts, pool[best], pool, sims, compatible)
+        rivals = _rivals(facts, sentences[best], sentences, sims, compatible)
         if rivals:
-            winner = _resolve(pool[best], rivals[0])
+            winner = _resolve(sentences[best], rivals[0])
             if winner is None:
                 settle(Support.CONTRADICTED,
                        "conflicting_sources: official sources give different "
                        "figures and neither clearly governs")
                 return "conflict"
-            if winner is not pool[best]:
+            if winner is not sentences[best]:
                 settle(Support.CONTRADICTED,
                        f"superseded by {winner.evidence.source_id}")
                 return "conflict"
-        settle(Support.SUPPORTED, "facts match the evidence exactly", [pool[best]])
-        _strip_urls(result, bad_urls)
+        supporters = [sentences[j] for j in pool.neighbours[best]
+                      if _shares_fact(facts, sentences[j].facts)] or [sentences[best]]
+        settle(Support.SUPPORTED, "facts match the evidence exactly", supporters)
         return ""
 
     # The figure exists, but only in another procedure's sentence, or counted
     # from a different moment. This is precisely the Antibes bug.
     elsewhere = [i for i in exact if i not in compatible]
     if elsewhere:
-        source = pool[elsewhere[0]]
+        source = sentences[elsewhere[0]]
         settle(Support.CONTRADICTED,
                f"procedure_mix: this figure belongs to "
                f"{procedure_model.label(source.procedures)} "
                f"({source.evidence.source_id}), question is about "
                f"{procedure_model.label(asked) or 'another procedure'}")
         return ""
-    misanchored = [i for i in exact if i in compatible and not anchored(pool[i])]
+    misanchored = [i for i in exact if i in compatible and not anchored(i)]
     if misanchored:
-        source = pool[misanchored[0]]
+        source = pool.window[misanchored[0]]
         settle(Support.CONTRADICTED,
                f"anchor_mismatch: evidence counts from "
-               f"{', '.join(sorted(source.facts.anchors)) or 'something else'}, "
+               f"{', '.join(sorted(source.anchors)) or 'something else'}, "
                f"claim counts from {', '.join(sorted(facts.anchors))}")
         return ""
 
-    differing = [i for i in compatible if sims[i] >= SUBJECT_SIMILARITY
-                 and _same_dimension(facts, pool[i].facts)]
+    # Called a contradiction only when the evidence is plainly about the same
+    # thing and says something else. Merely on the same page is not enough:
+    # a tuition figure beside an application fee once had a correct fee
+    # labelled "contradicted" — removed either way, but misdiagnosed.
+    differing = [i for i in compatible if sims[i] >= SUPPORT_SIMILARITY
+                 and _same_dimension(facts, sentences[i].facts) and not carries(i)]
     if differing:
         settle(Support.CONTRADICTED,
                f"value_mismatch: evidence on this subject states "
-               f"{_describe(pool[differing[0]].facts)}")
+               f"{_describe(sentences[differing[0]].facts)}")
         return ""
     settle(Support.UNSUPPORTED, "no evidence states these figures")
     return ""
 
 
-def _judge_anchor(result, facts: Facts, pool, sims, compatible, settle,
-                  bad_urls=()) -> str:
+def _judge_anchor(result, facts: Facts, pool: _Pool, sims, compatible, settle) -> str:
     """A timing claim with no figure: its anchor must be in the evidence."""
-    same = [i for i in compatible if facts.anchors & pool[i].facts.anchors
-            and sims[i] >= SUBJECT_SIMILARITY]
+    sentences = pool.sentences
+    same = [i for i in compatible if facts.anchors & pool.window[i].anchors
+            and facts.anchors & sentences[i].facts.anchors
+            and max(sims[j] for j in pool.neighbours[i]) >= SUBJECT_SIMILARITY]
     if same:
         best = max(same, key=lambda i: sims[i])
         result.similarity = round(sims[best], 3)
-        settle(Support.SUPPORTED, "timing matches the evidence", [pool[best]])
-        # Every supported path strips unverified URLs; this one once did not,
-        # and kept an invented portal address because the timing was right.
-        _strip_urls(result, list(bad_urls))
+        settle(Support.SUPPORTED, "timing matches the evidence", [sentences[best]])
         return ""
-    other = [i for i, s in enumerate(pool)
+    other = [i for i, s in enumerate(sentences)
              if facts.anchors & s.facts.anchors and i not in compatible]
     if other:
         settle(Support.CONTRADICTED,
                f"procedure_mix: this timing belongs to "
-               f"{procedure_model.label(pool[other[0]].procedures)}")
+               f"{procedure_model.label(sentences[other[0]].procedures)}")
         return ""
     settle(Support.UNSUPPORTED,
            f"timing ({', '.join(sorted(facts.anchors))}) is not stated in any evidence")
@@ -894,23 +1109,24 @@ def _same_dimension(claim: Facts, other: Facts) -> bool:
     units = {u for _, u in claim.quantities}
     return bool((units and units & {u for _, u in other.quantities})
                 or (claim.amounts and other.amounts)
+                or (claim.scores and other.scores)
                 or ((claim.dates or claim.months) and (other.dates or other.months)))
 
 
 def _describe(facts: Facts) -> str:
     parts = [f"{v} {u}" for v, u in sorted(facts.quantities)]
     parts += [f"{a} EUR" for a in sorted(facts.amounts)]
-    parts += sorted(facts.dates)
+    parts += sorted(facts.scores) + sorted(facts.dates)
     return ", ".join(parts) or "different figures"
 
 
-def _rivals(facts: Facts, chosen: _Sentence, pool, sims, compatible) -> list[_Sentence]:
+def _rivals(facts: Facts, chosen: _Sentence, sentences, sims, compatible) -> list[_Sentence]:
     if _conditional(chosen.text) or not (facts.quantities or facts.amounts):
         return []
     units = {u for _, u in facts.quantities}
     out = []
     for i in compatible:
-        other = pool[i]
+        other = sentences[i]
         if other is chosen or other.evidence.source_id == chosen.evidence.source_id:
             continue
         if sims[i] < SUPPORT_SIMILARITY or _conditional(other.text):
@@ -942,20 +1158,28 @@ def _resolve(a: _Sentence, b: _Sentence) -> _Sentence | None:
     return None
 
 
-def _strip_urls(result: ClaimResult, bad_urls: list[str]) -> None:
-    if not bad_urls or result.action == Action.REMOVED.value:
+def _repair_links(result: ClaimResult, remove: list[str], respell: dict[str, str]) -> None:
+    """Respell known hosts and strip links the evidence never gave."""
+    if not remove and not respell:
         return
     text = result.final_text
-    for url in bad_urls:
-        text = text.replace(url, "")
+    for written, host in respell.items():
+        text = text.replace(written, host)
+    for link in remove:
+        text = text.replace(link, "")
     text = re.sub(r"\s+(?:at|via|on|sur|à|a|:)\s*(?=[.,;]|$)", "", text)
     text = re.sub(r"\(\s*\)", "", text)
     text = re.sub(r"\s{2,}", " ", text).strip()
     text = re.sub(r"\s+([.,;:])", r"\1", text)
     result.final_text = text
-    result.action = Action.URL_REMOVED.value
-    result.reason = (result.reason + "; " if result.reason else "") + \
-        "unverified URL removed"
+    notes = []
+    if respell:
+        notes.append("link respelled to the verified host")
+        result.action = Action.LINK_CORRECTED.value
+    if remove:
+        notes.append("unverified link removed")
+        result.action = Action.URL_REMOVED.value
+    result.reason = "; ".join(filter(None, [result.reason, *notes]))
 
 
 # -------------------------------------------------------------- rebuild ----

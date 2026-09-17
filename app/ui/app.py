@@ -1304,11 +1304,32 @@ def build() -> gr.Blocks:
     return demo
 
 
+def _warm_embedder() -> None:
+    """Load the embedding model now, off the request path.
+
+    Every answer's claims are checked against its evidence with this model,
+    and loading it takes about ten seconds. Measured live, the first answer
+    after a restart spent almost all of its validation time on that load. A
+    background thread at startup moves the cost to where no reader waits.
+    """
+    import threading
+
+    def load():
+        try:
+            from app.ingest.embed import embed_texts
+            embed_texts(["warm"])
+        except Exception:  # noqa: BLE001 - validation falls back; never block startup
+            pass
+
+    threading.Thread(target=load, name="clare-warm-embedder", daemon=True).start()
+
+
 def main() -> None:
     # Host and port come from the environment so the browser suite can start
     # this same entrypoint on a free port. There is deliberately no second
     # server implementation: the tests drive the application users run.
     demo = build()
+    _warm_embedder()
     # Gradio queues at a concurrency of one by default, which meant every
     # reader waited behind every other reader for the whole of someone
     # else's answer — and an answer here is a live source fetch plus a
