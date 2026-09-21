@@ -189,7 +189,13 @@ _HEAD_TEMPLATE = r"""
     // answer actually drew on, so the reader can check it without leaving.
     if (event.target.closest(".rp-source-link")) return;
     const card = event.target.closest("[data-expandable]");
-    if (card) card.classList.toggle("rp-open");
+    if (card) {
+      // A source card is a link. Without this the browser follows the href
+      // and the reader loses the answer to a new tab instead of seeing the
+      // passage it was drawn from.
+      event.preventDefault();
+      card.classList.toggle("rp-open");
+    }
   });
 
   // --- a category is a question --------------------------------------------

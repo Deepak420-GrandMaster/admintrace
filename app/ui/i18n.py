@@ -15,7 +15,7 @@ from __future__ import annotations
 STRINGS: dict[str, dict[str, str]] = {
     "en": {
         "headline": "What do you need help with?",
-        "promise": "French administration, made clear.",
+        "promise": "Official-source AI for navigating French administration.",
         "subhead": "Ask in English or French. Every answer comes from an "
                    "official government page.",
         "eyebrow": "Official sources only",
@@ -149,13 +149,13 @@ STRINGS: dict[str, dict[str, str]] = {
         "cat_permit": "Residence permits",
         "cat_permit_sub": "Renewals, first applications, changes",
         "cat_housing": "Housing",
-        "cat_housing_sub": "Deposits, leases, what a landlord may ask",
+        "cat_housing_sub": "Insurance, deposits, leases, what a landlord may ask",
         "cat_docs": "Documents",
         "cat_docs_sub": "Proof of address, civil status, translations",
         "cat_student": "Studying in France",
         "cat_student_sub": "Student work, CROUS, enrolment",
         "cat_work": "Work",
-        "cat_work_sub": "CDI, CDD, trial period, payslips",
+        "cat_work_sub": "Registering as a jobseeker, CDI, CDD, payslips",
         "cat_appt": "Appointments",
         "cat_appt_sub": "Prefecture slots, and what to do without one",
         "err_network": "We couldn't reach the service. Try again in a moment.",
@@ -212,7 +212,7 @@ STRINGS: dict[str, dict[str, str]] = {
     },
     "fr": {
         "headline": "De quoi avez-vous besoin ?",
-        "promise": "L'administration française, en clair.",
+        "promise": "L'IA qui navigue l'administration française à partir des sources officielles.",
         "subhead": "Posez votre question en français ou en anglais. Chaque "
                    "réponse vient d'une page officielle.",
         "eyebrow": "Uniquement des sources officielles",
@@ -352,13 +352,13 @@ STRINGS: dict[str, dict[str, str]] = {
         "cat_permit": "Titres de séjour",
         "cat_permit_sub": "Renouvellement, première demande, changement",
         "cat_housing": "Logement",
-        "cat_housing_sub": "Dépôt de garantie, bail, ce qu'un propriétaire exige",
+        "cat_housing_sub": "Assurance, dépôt de garantie, bail, ce qu'un propriétaire exige",
         "cat_docs": "Papiers",
         "cat_docs_sub": "Justificatif de domicile, état civil, traductions",
         "cat_student": "Études en France",
         "cat_student_sub": "Travail étudiant, CROUS, inscription",
         "cat_work": "Travail",
-        "cat_work_sub": "CDI, CDD, période d'essai, bulletin de paie",
+        "cat_work_sub": "Inscription comme demandeur d'emploi, CDI, CDD, paie",
         "cat_appt": "Rendez-vous",
         "cat_appt_sub": "Créneaux en préfecture, et que faire sans",
         "err_network": "Le service est injoignable. Réessayez dans un instant.",
@@ -424,18 +424,18 @@ STRINGS: dict[str, dict[str, str]] = {
 CATEGORIES = {
     "en": [
         ("cat_permit",  "permit",  "How do I renew my residence permit, and what do I need?"),
-        ("cat_housing", "housing", "How much deposit can a landlord ask for, and when do I get it back?"),
+        ("cat_housing", "housing", "Is home insurance compulsory when I rent a flat in France?"),
         ("cat_docs",    "docs",    "What counts as proof of address when I have just arrived?"),
         ("cat_student", "student", "I am a student in France — what am I allowed to work?"),
-        ("cat_work",    "work",    "What is the difference between a CDI and a CDD?"),
+        ("cat_work",    "work",    "How do I register as a jobseeker with France Travail?"),
         ("cat_appt",    "appt",    "There are no appointment slots at my préfecture. What can I do?"),
     ],
     "fr": [
         ("cat_permit",  "permit",  "Comment renouveler mon titre de séjour, et que faut-il fournir ?"),
-        ("cat_housing", "housing", "Quel dépôt de garantie un propriétaire peut-il demander, et quand est-il rendu ?"),
+        ("cat_housing", "housing", "L'assurance habitation est-elle obligatoire quand on est locataire ?"),
         ("cat_docs",    "docs",    "Qu'est-ce qui est accepté comme justificatif de domicile quand on vient d'arriver ?"),
         ("cat_student", "student", "Je suis étudiant en France — combien puis-je travailler ?"),
-        ("cat_work",    "work",    "Quelle est la différence entre un CDI et un CDD ?"),
+        ("cat_work",    "work",    "Comment s'inscrire comme demandeur d'emploi à France Travail ?"),
         ("cat_appt",    "appt",    "Il n'y a aucun créneau à ma préfecture. Que puis-je faire ?"),
     ],
 }

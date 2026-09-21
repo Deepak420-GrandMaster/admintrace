@@ -334,6 +334,11 @@ def sources_html(citations: list[Citation], lang: str = "en") -> str:
             f"<a class='rp-source' style='--i:{index}' "
             f"href='{html.escape(citation.url)}' target='_blank' "
             f"rel='noopener noreferrer' title='{html.escape(citation.url)}' "
+            # The card is what expands, because the stylesheet reveals the
+            # excerpt through `.rp-source.rp-open`. Marking the "see the exact
+            # wording" label instead put the class on the label, where nothing
+            # matched it: the control looked live and did nothing.
+            + ("data-expandable " if citation.excerpt else "") +
             f"data-pop-label=\"{html.escape(t(lang, 'pop_source'), quote=True)}\">"
             f"<span class='rp-source-link'>&#8599;</span>"
             f"<div class='rp-source-title'>{html.escape(citation.title_fr)}</div>"
@@ -343,7 +348,7 @@ def sources_html(citations: list[Citation], lang: str = "en") -> str:
             f"<span{date_class}>"
             f"{html.escape(_updated_label(citation, lang))}</span>"
             f"</div>"
-            + (f"<span class='rp-peek' data-expandable>"
+            + (f"<span class='rp-peek'>"
                f"{html.escape(t(lang, 'peek'))}</span>"
                f"<span class='rp-excerpt'>{html.escape(citation.excerpt)}</span>"
                if citation.excerpt else "")

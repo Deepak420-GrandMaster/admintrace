@@ -146,3 +146,48 @@ def test_the_answer_is_not_wrapped_in_a_card():
     body = match.group(1)
     assert "background: none" in body
     assert "border: 0" in body
+
+
+# ------------------------------------------------ the evidence a reader opens --
+
+def test_the_source_card_is_what_expands_not_its_label():
+    """"See the exact wording" was a control that did nothing.
+
+    The stylesheet reveals the passage through ``.rp-source.rp-open``, but
+    ``data-expandable`` sat on the label inside the card, so the click handler
+    toggled the class onto the label, where no rule matched it. The card
+    carries the hook now; the label is only a label.
+    """
+    from app.answer.cite import Citation
+
+    with_excerpt = Citation(
+        fiche_id="F1", title_fr="Accueil", url="https://francetravail.fr/",
+        last_updated="2026-01-01", last_updated_is_plausible=True,
+        situation_fr="", section_title_fr="", score=0.9,
+        excerpt="S'inscrire comme demandeur d'emploi")
+    markup = render.sources_html([with_excerpt])
+
+    card = re.search(r"<a class='rp-source'[^>]*>", markup)
+    assert card, "no source card was rendered"
+    assert "data-expandable" in card.group(0), "the card itself must carry the hook"
+    assert "rp-peek' data-expandable" not in markup
+    assert "rp-excerpt" in markup
+
+    assert re.search(r"\.rp-source\.rp-open \.rp-excerpt", STYLES), \
+        "the rule the hook depends on"
+
+
+def test_a_source_with_no_passage_to_show_is_not_expandable():
+    from app.answer.cite import Citation
+
+    bare = Citation(fiche_id="F1", title_fr="Accueil", url="https://x.gouv.fr/",
+                    last_updated="2026-01-01", last_updated_is_plausible=True,
+                    situation_fr="", section_title_fr="", score=0.9)
+    assert "data-expandable" not in render.sources_html([bare])
+
+
+def test_opening_a_passage_does_not_follow_the_source_link():
+    """The card is an anchor: without preventDefault the tab navigates away."""
+    handler = re.search(r"data-expandable[^;]*;(.{0,400})", HEAD, re.S)
+    assert handler, "the expandable handler is missing from the page script"
+    assert "preventDefault" in handler.group(1)

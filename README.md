@@ -469,6 +469,32 @@ Flattening them would let the rules for one situation be read as the rules for
 another. Every chunk therefore belongs to exactly one branch and carries its
 label, and no chunk mixes two.
 
+### What retrieval still misses
+
+A fiche answers a question across its sections: the amount in one, the refund
+in another. Evidence selection therefore keeps distinct *sections* of a page —
+up to three of them — rather than treating the page as a single candidate,
+which used to discard every section but the first.
+
+That is not the whole problem. A compound question — "how much deposit can a
+landlord ask for, **and when do I get it back**" — becomes one search query in
+which the second half dominates, and the passage carrying the amount never
+enters the results. The answer then covers the half that was retrieved and says
+plainly that the sources it has do not state the other. The gate is behaving
+correctly on the evidence it was given; the evidence is what is wrong, and
+fixing it means multi-query retrieval rather than a threshold change. Until
+then, one question at a time retrieves better than two.
+
+A second limit is routing, not retrieval. When a topic has a registered live
+authority, the question goes there — so a question about employment contract
+law is put to France Travail, whose pages are about its own services, and is
+refused even though the corpus answers it. Asking the library directly answers
+it; asking through the interface does not. The refusal is honest, and the
+routing is defensible — France Travail *is* the authority for work — but the
+reader loses an answer the system holds. Falling back to the corpus when the
+authority's own pages do not cover the question is the obvious fix and is not
+in this release.
+
 ## No administrative fact lives in code
 
 Deadlines, fees, hour limits, document lists and eligibility conditions reach a
@@ -545,20 +571,23 @@ against which a requested `max_tokens` is *reserved*, not merely counted — two
 calls were enough to hit a 429 on consecutive questions.
 
 The evidence gate now decides the same thing from retrieval scores, and reaches
-the model only when those scores are ambiguous. Over the last 70 recorded
-answers on one machine that is a mean of 1.00 model calls per answer (maximum
-2), with a median answer time of 0.8s for procedural questions.
+the model only when those scores are ambiguous, so the common path is one call
+rather than two. That is a property of the code, which you can read; it is not
+a latency promise, and this README deliberately quotes no median response time.
+Speed depends on the provider, the plan, the question and the machine.
 
-The limit has not gone away, it has moved: 9 of those 70 answers were still
-rate-limited, because they were asked back to back by an automated script
-rather than by a person reading the replies. When the provider does refuse,
-the reported interval is waited out and retried twice, up to 35 seconds; a
-longer wait fails immediately and the interface says the provider is
-rate-limited, rather than spending two minutes to produce nothing.
+The limit has not gone away either. Asked back to back by a script, answers
+here are still rate-limited a noticeable fraction of the time on the free tier
+— a person reading each reply before asking the next hits it far less. When the
+provider does refuse, the reported interval is waited out and retried twice, up
+to 35 seconds; a longer wait fails immediately and the interface says the
+provider is rate-limited, rather than spending two minutes to produce nothing.
 
-(Those figures are local telemetry, printed by `app.performance_report`. They
-are not committed — `data/` is runtime state — so they are reproducible on your
-own machine, not verifiable from this repository.)
+Run `app.performance_report` to see what your own installation does: calls per
+answer, latency by response class, how often the provider refused, and what
+claim validation cost. Those numbers live in `data/`, which is runtime state
+and is never committed, so nothing here can be taken on trust from the
+repository — measure it yourself.
 
 ## Known gaps
 

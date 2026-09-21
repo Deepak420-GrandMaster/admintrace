@@ -230,3 +230,66 @@ def test_a_refusal_prompt_never_recites_the_pages_that_failed():
     prepared = prepare("how to get free tram in Antibes")
     prompt = " ".join(m.content for m in _messages(prepared, decision))
     assert "RSA" not in prompt and "seniors" not in prompt
+
+
+# ------------------------------------- one page, several sections (launch) --
+
+def section(title: str, *, fiche: str = "F31269", path: str = "",
+           situation: str = "", chunk: str = ""):
+    """A passage from one section of a fiche, as the corpus stores them."""
+    return Retrieved(chunk_id=chunk or f"{fiche}#{abs(hash(path)) % 999:03}#01",
+                     text=f"{title} {path} {situation}",
+                     metadata={"fiche_title_fr": title, "fiche_id": fiche,
+                               "section_path": path, "situation_fr": situation,
+                               "source_url": "https://service-public.gouv.fr/x"},
+                     dense_score=0.8)
+
+
+def test_two_sections_of_one_page_both_survive_selection():
+    """The deposit refusal: the amount and the refund are different sections.
+
+    Keying the duplicate rule on the page alone kept whichever section
+    retrieval happened to rank first and discarded the rest, so the passage
+    carrying the number never reached the model — and the answerability check
+    then refused, correctly, on the passages it had been given.
+    """
+    passages = [
+        section("Dépôt de garantie", path="Comment récupérer le dépôt"),
+        section("Dépôt de garantie", path="Quel est le montant du dépôt"),
+    ]
+    selection = select(passages)
+    assert len(selection.selected) == 2, [v.detail for _, v in selection.rejected]
+    assert {p.metadata["section_path"] for p in selection.selected} == {
+        "Comment récupérer le dépôt", "Quel est le montant du dépôt"}
+
+
+def test_the_same_section_twice_is_still_a_duplicate():
+    twice = [section("Dépôt de garantie", path="Quel est le montant du dépôt"),
+             section("Dépôt de garantie", path="Quel est le montant du dépôt")]
+    selection = select(twice)
+    assert len(selection.selected) == 1
+    assert selection.rejected[0][1].reason == Rejection.DUPLICATE.value
+
+
+def test_one_page_cannot_fill_every_slot():
+    """Diversity was the point of the old rule, and it is kept."""
+    from app.answer.relevance import PASSAGES_PER_PAGE
+
+    many = [section("Dépôt de garantie", path=f"Section {i}")
+            for i in range(PASSAGES_PER_PAGE + 2)]
+    selection = select(many)
+    assert len(selection.selected) == PASSAGES_PER_PAGE
+    assert all(verdict.reason == Rejection.DUPLICATE.value
+               for _, verdict in selection.rejected)
+
+
+def test_a_second_page_is_still_reachable_behind_a_long_page():
+    """The cap exists so the next source is not crowded out."""
+    from app.answer.relevance import PASSAGES_PER_PAGE
+
+    candidates = [section("Dépôt de garantie", path=f"Section {i}")
+                  for i in range(PASSAGES_PER_PAGE + 1)]
+    candidates.append(section("Colocation", fiche="F34661", path="Les règles"))
+    selection = select(candidates)
+    assert {p.metadata["fiche_id"] for p in selection.selected} == {"F31269",
+                                                                    "F34661"}

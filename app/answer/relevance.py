@@ -137,21 +137,59 @@ def is_source_materially_relevant(hit, *, place=None, purposes: tuple = ()) -> b
     return check(hit, place=place, purposes=purposes).ok
 
 
+#: How many passages a single page may contribute.
+#:
+#: A fiche answers a question across its sections — the amount in one, the
+#: deadline in another — so treating the whole page as one candidate drops
+#: every section but the first. That is what refused "how much deposit can a
+#: landlord ask for": the page was retrieved, the section stating the amount
+#: was discarded as a duplicate of the section about getting it back, and the
+#: gate correctly reported that the passages it had did not answer the
+#: question. The cap still stops one page filling every slot.
+PASSAGES_PER_PAGE = 3
+
+
+def _page_of(hit) -> str:
+    return (getattr(hit, "metadata", {}) or {}).get("fiche_id") or \
+        getattr(hit, "url", "")
+
+
+def _section_of(hit) -> str:
+    """Which part of the page this is, as precisely as the metadata allows.
+
+    Falling back to the chunk id keeps two passages distinct when a source
+    carries no section metadata at all, so this can only ever be as strict as
+    the page-level key it replaced.
+    """
+    metadata = getattr(hit, "metadata", {}) or {}
+    for key in ("section_path", "section_title_fr"):
+        if metadata.get(key):
+            return f"{metadata[key]}|{metadata.get('situation_fr') or ''}"
+    return metadata.get("chunk_id") or getattr(hit, "chunk_id", "") or ""
+
+
 def select(candidates: list, *, place=None, purposes: tuple = ()) -> Selection:
     """Split what retrieval found into what may be shown and what may not."""
     chosen, refused, seen = [], [], set()
+    per_page: dict[str, int] = {}
     for hit in candidates:
-        key = (getattr(hit, "metadata", {}) or {}).get("fiche_id") or \
-            getattr(hit, "url", "")
-        if key and key in seen:
-            refused.append((hit, Verdict(False, Rejection.DUPLICATE.value,
-                                         "same page already selected")))
+        page, section = _page_of(hit), _section_of(hit)
+        if page and (page, section) in seen:
+            refused.append((hit, Verdict(
+                False, Rejection.DUPLICATE.value,
+                "same section of the same page already selected")))
+            continue
+        if page and per_page.get(page, 0) >= PASSAGES_PER_PAGE:
+            refused.append((hit, Verdict(
+                False, Rejection.DUPLICATE.value,
+                f"already showing {PASSAGES_PER_PAGE} passages from this page")))
             continue
         verdict = check(hit, place=place, purposes=purposes)
         if verdict.ok:
             chosen.append(hit)
-            if key:
-                seen.add(key)
+            if page:
+                seen.add((page, section))
+                per_page[page] = per_page.get(page, 0) + 1
         else:
             refused.append((hit, verdict))
     return Selection(candidates=list(candidates), selected=chosen,
