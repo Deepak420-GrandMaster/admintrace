@@ -17,7 +17,7 @@ from tests.browser.conftest import wait_for_answer, no_horizontal_overflow, \
 #: A hosted model answers in seconds; a local one on a laptop takes a minute
 #: or more for the same question. Configurable so one suite runs against
 #: either without a number in the source being wrong for one of them.
-ANSWER_TIMEOUT = int(os.environ.get("CLARE_ANSWER_TIMEOUT_MS", "90000"))
+ANSWER_TIMEOUT = int(os.environ.get("ADMINTRACE_ANSWER_TIMEOUT_MS", "90000"))
 
 VIEWPORTS = [320, 390, 768, 1024, 1280, 1440, 1920]
 
@@ -197,14 +197,14 @@ def test_the_report_control_opens_from_the_keyboard(page):
 
 # -------------------------------------------------------------- network ---
 
-def test_the_page_does_not_call_anything_unexpected(browser_context, clare_app):
+def test_the_page_does_not_call_anything_unexpected(browser_context, admintrace_app):
     """A landing page should talk to itself and to its font provider."""
     page = browser_context.new_page()
     seen: list[str] = []
     page.on("request", lambda r: seen.append(r.url))
     # Not networkidle: Gradio keeps an event stream open, so the page never
     # goes idle and the wait would always time out.
-    page.goto(clare_app.base_url, wait_until="domcontentloaded")
+    page.goto(admintrace_app.base_url, wait_until="domcontentloaded")
     page.wait_for_selector("#rp-question textarea", timeout=20_000)
     page.wait_for_timeout(1500)
 
@@ -215,12 +215,12 @@ def test_the_page_does_not_call_anything_unexpected(browser_context, clare_app):
     assert not unexpected, f"unexpected outbound requests: {unexpected[:5]}"
 
 
-def test_no_application_request_fails(browser_context, clare_app):
+def test_no_application_request_fails(browser_context, admintrace_app):
     page = browser_context.new_page()
     failures: list[str] = []
     page.on("response", lambda r: failures.append(f"{r.status} {r.url}")
             if r.status >= 500 and "127.0.0.1" in r.url else None)
-    page.goto(clare_app.base_url, wait_until="domcontentloaded")
+    page.goto(admintrace_app.base_url, wait_until="domcontentloaded")
     page.wait_for_selector("#rp-question textarea", timeout=20_000)
     page.wait_for_timeout(1000)
     page.close()

@@ -1,4 +1,4 @@
-# Secrets, dependencies, and Claré's own security guarantees.
+# Secrets, dependencies, and AdminTrace's own security guarantees.
 name: security
 
 on:

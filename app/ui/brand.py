@@ -1,26 +1,26 @@
 """The mark and the wordmark.
 
-*Claré* is built on *clair* — clear — and the job is the whole name: French
-administration, made clear. Half the people who need this do not read French,
-and *clair* carries to English, Spanish, Italian and Portuguese speakers
-without translation.
+*AdminTrace* is the job in one word: French administration, traceable. Every
+answer leads back to the official page it came from, and the name says so in
+English and French alike — *trace* carries in both.
 
 The wordmark carries the brand; the mark only has to survive beside it at
-16px. So the mark says one thing and stops: two broken, faint rules — official
-text as it is met — resolving into a single clean stroke, with the acute of
-the É above it. Four paths. Inline SVG, so it takes its colour from the page
-and costs no request.
+16px. So the mark says one thing and stops: two broken, faint rules —
+official text as it is met — resolving into a single clean stroke, which is
+the trace. Three paths. Inline SVG, so it takes its colour from the page and
+costs no request.
 
-No flags anywhere. A flag is a country, and neither of these languages belongs
-to one; French speakers arriving from Dakar or Montréal are not served by
-being handed a tricolore. A language is named in its own language instead.
+No flags anywhere. A flag is a country, and neither of these languages
+belongs to one; French speakers arriving from Dakar or Montréal are not
+served by being handed a tricolore. A language is named in its own language
+instead.
 """
 
 from __future__ import annotations
 
 
 def mark(size: int = 28) -> str:
-    """Broken official lines resolving into one clear one, under an acute."""
+    """Broken official lines resolving into one clear one: the trace."""
     return f"""
 <svg class="rp-mark" width="{size}" height="{size}" viewBox="0 0 24 24"
      fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -31,8 +31,6 @@ def mark(size: int = 28) -> str:
   </g>
   <path class="rp-mark-clear" d="M3 18.9h16.5" stroke="var(--accent)"
         stroke-width="2.6" stroke-linecap="round"/>
-  <path class="rp-mark-acute" d="M15.6 5.4 18.4 2.6" stroke="var(--accent)"
-        stroke-width="2.2" stroke-linecap="round"/>
 </svg>
 """
 
@@ -41,7 +39,7 @@ def wordmark(size: int = 28) -> str:
     return f"""
 <div class="rp-brand">
   {mark(size)}
-  <span class="rp-wordmark">Clar<span class="rp-accent">é</span></span>
+  <span class="rp-wordmark">Admin<span class="rp-accent">Trace</span></span>
 </div>
 """
 
@@ -55,7 +53,7 @@ GLOBE = """
 </svg>
 """
 
-# The same four paths, flattened to one colour so it still reads at 16px.
+# The same three paths, flattened to one colour so it still reads at 16px.
 FAVICON = (
     "data:image/svg+xml,"
     "%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E"
@@ -64,6 +62,5 @@ FAVICON = (
     "%3Cpath d='M3 10h6.5M12.5 10h7'/%3E"
     "%3Cpath d='M3 14.4h4.5M10.5 14.4h4M17.5 14.4h2.5'/%3E%3C/g%3E"
     "%3Cpath stroke-width='2.6' d='M3 18.9h16.5'/%3E"
-    "%3Cpath stroke-width='2.2' d='M15.6 5.4 18.4 2.6'/%3E"
     "%3C/g%3E%3C/svg%3E"
 )

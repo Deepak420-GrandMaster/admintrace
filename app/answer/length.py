@@ -1,6 +1,6 @@
 """How long an answer should be, and whether it was.
 
-Claré's job is to make somebody read less, not to demonstrate that it read a
+AdminTrace's job is to make somebody read less, not to demonstrate that it read a
 lot. More sources must never mean a longer answer — the extra sources are so
 the relevant part can be *found*, not so all of them can be summarised.
 

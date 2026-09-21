@@ -1,4 +1,4 @@
-"""One command that says whether Claré is fit to deploy, and why not.
+"""One command that says whether AdminTrace is fit to deploy, and why not.
 
     uv run python -m app.verify
     uv run python -m app.verify --quick      # skip the browser layer
@@ -13,7 +13,7 @@ this command never flattens them into one.
 
 The exit code is a deployment gate, not a summary of the output. It asks a
 narrower question than "is everything green": is anything *we* are responsible
-for broken? An external site refusing us does not stop Claré from shipping;
+for broken? An external site refusing us does not stop AdminTrace from shipping;
 the system is built to say so honestly at answer time and the tests prove it
 does. A failing security check or a broken interface does stop it.
 
@@ -85,7 +85,7 @@ def _run_pytest(targets: list[str], env_extra: dict | None = None
     # Marks the child so the test that exercises this command knows it is
     # already inside it. Without it, verify runs the suite, the suite runs
     # verify, and the machine finds out the hard way.
-    environment = dict(os.environ, CLARE_VERIFY_CHILD="1", **(env_extra or {}))
+    environment = dict(os.environ, ADMINTRACE_VERIFY_CHILD="1", **(env_extra or {}))
     completed = subprocess.run(
         [sys.executable, "-m", "pytest", *targets, "-q", "--tb=no",
          "-p", "no:cacheprovider"],
@@ -99,7 +99,7 @@ def _run_pytest(targets: list[str], env_extra: dict | None = None
 
 
 def _failing_tests(targets: list[str], env_extra: dict | None = None) -> list[str]:
-    environment = dict(os.environ, CLARE_VERIFY_CHILD="1", **(env_extra or {}))
+    environment = dict(os.environ, ADMINTRACE_VERIFY_CHILD="1", **(env_extra or {}))
     completed = subprocess.run(
         [sys.executable, "-m", "pytest", *targets, "-q", "--tb=no",
          "-p", "no:cacheprovider", "-rf"],
@@ -122,20 +122,20 @@ def check_configuration() -> Layer:
 
 def check_offline() -> Layer:
     ok, summary = _run_pytest(["tests", "--ignore=tests/browser"],
-                              {"CLARE_NETWORK_TESTS": "0"})
+                              {"ADMINTRACE_NETWORK_TESTS": "0"})
     return Layer("Offline tests", Outcome.PASSED if ok else Outcome.FAILED,
                  summary, critical=True,
                  notes=[] if ok else _failing_tests(
                      ["tests", "--ignore=tests/browser"],
-                     {"CLARE_NETWORK_TESTS": "0"}))
+                     {"ADMINTRACE_NETWORK_TESTS": "0"}))
 
 
 def check_network() -> Layer:
-    if os.environ.get("CLARE_NETWORK_TESTS") != "1":
+    if os.environ.get("ADMINTRACE_NETWORK_TESTS") != "1":
         return Layer("Network tests", Outcome.SKIPPED,
-                     "set CLARE_NETWORK_TESTS=1 to reach the live web")
+                     "set ADMINTRACE_NETWORK_TESTS=1 to reach the live web")
     ok, summary = _run_pytest(["tests", "--ignore=tests/browser"],
-                              {"CLARE_NETWORK_TESTS": "1"})
+                              {"ADMINTRACE_NETWORK_TESTS": "1"})
     # Not critical: these depend on sites nobody here controls, and an
     # outage at a préfecture is not a reason to hold a release.
     return Layer("Network tests", Outcome.PASSED if ok else Outcome.FAILED,
@@ -153,20 +153,20 @@ def check_browser(quick: bool = False) -> Layer:
         return Layer("Browser", Outcome.NOT_CONFIGURED,
                      "playwright is not installed; `uv sync --extra render`")
     ok, summary = _run_pytest(["tests/browser/test_smoke.py"],
-                              {"CLARE_BROWSER_TESTS": "1"})
+                              {"ADMINTRACE_BROWSER_TESTS": "1"})
     return Layer("Browser smoke", Outcome.PASSED if ok else Outcome.FAILED,
                  summary, critical=True,
                  notes=[] if ok else _failing_tests(
                      ["tests/browser/test_smoke.py"],
-                     {"CLARE_BROWSER_TESTS": "1"}))
+                     {"ADMINTRACE_BROWSER_TESTS": "1"}))
 
 
 def check_security() -> Layer:
-    ok, summary = _run_pytest([*SECURITY_TESTS], {"CLARE_NETWORK_TESTS": "0"})
+    ok, summary = _run_pytest([*SECURITY_TESTS], {"ADMINTRACE_NETWORK_TESTS": "0"})
     return Layer("Security", Outcome.PASSED if ok else Outcome.FAILED,
                  summary, critical=True,
                  notes=[] if ok else _failing_tests(
-                     [*SECURITY_TESTS], {"CLARE_NETWORK_TESTS": "0"}))
+                     [*SECURITY_TESTS], {"ADMINTRACE_NETWORK_TESTS": "0"}))
 
 
 def check_sources() -> Layer:
@@ -261,7 +261,7 @@ def run(quick: bool = False) -> list[Layer]:
 
 def render(layers: list[Layer]) -> str:
     width = max(len(layer.name) for layer in layers) + 2
-    lines = ["CLARÉ VERIFICATION", ""]
+    lines = ["ADMINTRACE VERIFICATION", ""]
     for layer in layers:
         mark = "✗" if layer.outcome is Outcome.FAILED else " "
         lines.append(f"{mark} {layer.name:<{width}} {layer.outcome.value}")

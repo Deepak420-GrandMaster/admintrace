@@ -93,7 +93,7 @@ def download(settings: Settings | None = None) -> list[dict]:
     """Fetch the whole register in one file."""
     settings = settings or get_settings()
     request = urllib.request.Request(
-        SOURCE_URL, headers={"User-Agent": "sesame/0.1 (local research tool)"})
+        SOURCE_URL, headers={"User-Agent": "admintrace/0.1 (local research tool)"})
     try:
         with urllib.request.urlopen(request, timeout=300) as response:
             payload = json.load(response)

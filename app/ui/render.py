@@ -51,8 +51,8 @@ def _mark_french(text: str, lang: str = "en") -> str:
             continue
         gloss = term.explanation_fr if lang == "fr" else term.explanation_en
         source = ("service-public.gouv.fr" if term.is_official
-                  else ("écrit pour Claré" if lang == "fr"
-                        else "written for Claré"))
+                  else ("écrit pour AdminTrace" if lang == "fr"
+                        else "written for AdminTrace"))
         attrs = (f'class="rp-fr" tabindex="0" '
                  f'data-en="{html.escape(term.en, quote=True)}" '
                  f'data-gloss="{html.escape(gloss, quote=True)}" '

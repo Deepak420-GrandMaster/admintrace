@@ -1,7 +1,7 @@
 [project]
-name = "reperes"
+name = "admintrace"
 version = "0.1.0"
-description = "Grounded question answering for people newly arrived in France, over official French government sources."
+description = "Official-source AI for navigating French administration."
 readme = "README.md"
 requires-python = ">=3.11,<3.13"
 
@@ -34,7 +34,7 @@ packages = ["app"]
 testpaths = ["tests"]
 pythonpath = ["."]
 markers = [
-    "network: reaches the live web. Skipped unless CLARE_NETWORK_TESTS=1, so the\n    default suite stays offline, fast and immune to someone else's outage.",
-    "needs_answers: a browser test that needs a working model provider to produce an answer. Skipped as NOT CONFIGURED when CLARE_BROWSER_ANSWERS=0.",
-    "needs_corpus: a browser test that needs the locally built corpus (data/chroma). Skipped as NOT CONFIGURED when CLARE_BROWSER_CORPUS=0.",
+    "network: reaches the live web. Skipped unless ADMINTRACE_NETWORK_TESTS=1, so the\n    default suite stays offline, fast and immune to someone else's outage.",
+    "needs_answers: a browser test that needs a working model provider to produce an answer. Skipped as NOT CONFIGURED when ADMINTRACE_BROWSER_ANSWERS=0.",
+    "needs_corpus: a browser test that needs the locally built corpus (data/chroma). Skipped as NOT CONFIGURED when ADMINTRACE_BROWSER_CORPUS=0.",
 ]

@@ -1,4 +1,4 @@
-"""Claré — the local interface.
+"""AdminTrace — the local interface.
 
     uv run python -m app.ui.app     →  http://localhost:7860
 
@@ -51,13 +51,13 @@ STYLES = (Path(__file__).resolve().parent / "styles.css").read_text(encoding="ut
 # every one of them to survive f-string interpolation is how this file grows
 # bugs that only appear in the browser.
 _HEAD_TEMPLATE = r"""
-<title>Claré — French administration, made clear</title>
+<title>AdminTrace — official-source AI for French administration</title>
 <meta name="description" content="Understand French administrative
  procedures in plain English or French. Every answer comes from an official
  government page, with the link and the date it was last updated.">
 <meta name="robots" content="index, follow">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Claré — French administration, made clear">
+<meta property="og:title" content="AdminTrace — official-source AI for French administration">
 <meta property="og:description" content="Understand what to do, what you need,
  and where to go. Answers from official French government sources only.">
 <meta property="og:locale" content="en_GB">
@@ -446,7 +446,7 @@ def disclaimer_block(lang: str) -> str:
     return f"""
 <footer class="rp-footer">
   <div class="rp-footer-brand">
-    <span class="rp-footer-name">Clar<span class="rp-accent">&#233;</span></span>
+    <span class="rp-footer-name">Admin<span class="rp-accent">Trace</span></span>
     <span class="rp-footer-promise">{html.escape(t(lang, 'promise'))}</span>
   </div>
   <div class="rp-footer-notes">
@@ -1026,7 +1026,7 @@ def build() -> gr.Blocks:
     settings = get_settings()
     start = "en"
 
-    with gr.Blocks(title="Claré — French administration, made clear",
+    with gr.Blocks(title="AdminTrace — official-source AI for French administration",
                    analytics_enabled=False) as demo:
         # Masthead: brand hard left, language hard right, one row.
         with gr.Row(elem_classes="rp-topbar"):
@@ -1338,7 +1338,7 @@ def _warm_embedder() -> None:
         except Exception:  # noqa: BLE001 - validation falls back; never block startup
             pass
 
-    threading.Thread(target=load, name="clare-warm-embedder", daemon=True).start()
+    threading.Thread(target=load, name="admintrace-warm-embedder", daemon=True).start()
 
 
 def main() -> None:
@@ -1354,10 +1354,10 @@ def main() -> None:
     # waiting on the network, so serialising it bought nothing and cost the
     # second person in the queue a minute of staring at a spinner.
     demo.queue(default_concurrency_limit=int(
-        os.environ.get("CLARE_CONCURRENCY", "8")))
+        os.environ.get("ADMINTRACE_CONCURRENCY", "8")))
     demo.launch(
-        server_name=os.environ.get("CLARE_APP_HOST", "127.0.0.1"),
-        server_port=int(os.environ.get("CLARE_APP_PORT", "7860")),
+        server_name=os.environ.get("ADMINTRACE_APP_HOST", "127.0.0.1"),
+        server_port=int(os.environ.get("ADMINTRACE_APP_PORT", "7860")),
         css=STYLES,
         head=HEAD,
         theme=gr.themes.Base(),

@@ -1,14 +1,14 @@
-"""Browser tests against a Claré these tests start themselves.
+"""Browser tests against a AdminTrace these tests start themselves.
 
 Opt-in, like the network tests, and for the same reason: a suite that reaches
 the network should never be what breaks an offline build.
 
-    CLARE_BROWSER_TESTS=1 uv run pytest tests/browser
+    ADMINTRACE_BROWSER_TESTS=1 uv run pytest tests/browser
     uv run python -m app.browser_tests            # same thing, one command
 
 Nothing has to be running first. The session fixture starts the real
 application entrypoint on a free port, polls until it answers, and stops it
-afterwards — including when a test fails. Set ``CLARE_BROWSER_URL`` to point
+afterwards — including when a test fails. Set ``ADMINTRACE_BROWSER_URL`` to point
 at a server you started yourself and the fixture leaves it alone.
 
 Console errors fail the test that produced them. That is the point: a page can
@@ -42,11 +42,11 @@ BENIGN = (
 
 
 def _enabled() -> bool:
-    return os.environ.get("CLARE_BROWSER_TESTS") == "1"
+    return os.environ.get("ADMINTRACE_BROWSER_TESTS") == "1"
 
 
 def _tracing() -> bool:
-    return (os.environ.get("CLARE_BROWSER_TRACE") == "1"
+    return (os.environ.get("ADMINTRACE_BROWSER_TRACE") == "1"
             or os.environ.get("CI", "").lower() in {"1", "true", "yes"})
 
 
@@ -56,10 +56,10 @@ def _tracing() -> bool:
 #: and they are reported as not configured. Both default to available, so a
 #: developer's machine runs everything.
 _CAPABILITIES = {
-    "needs_answers": ("CLARE_BROWSER_ANSWERS",
+    "needs_answers": ("ADMINTRACE_BROWSER_ANSWERS",
                       "NOT CONFIGURED: no model provider in this environment "
                       "(set a GROQ_API_KEY secret to run answer tests)"),
-    "needs_corpus": ("CLARE_BROWSER_CORPUS",
+    "needs_corpus": ("ADMINTRACE_BROWSER_CORPUS",
                      "NOT CONFIGURED: the corpus is built locally and is not "
                      "available in this environment"),
 }
@@ -68,7 +68,7 @@ _CAPABILITIES = {
 def pytest_collection_modifyitems(config, items):
     if not _enabled():
         skip = pytest.mark.skip(
-            reason="set CLARE_BROWSER_TESTS=1 for browser tests "
+            reason="set ADMINTRACE_BROWSER_TESTS=1 for browser tests "
                    "(they start the app themselves)")
         for item in items:
             if "browser" in str(item.fspath):
@@ -90,12 +90,12 @@ def pytest_runtest_makereport(item, call):
 
 
 @pytest.fixture(scope="session")
-def clare_app():
+def admintrace_app():
     """The application under test, started here unless one was given."""
     if not _enabled():
         pytest.skip("browser tests are opt-in")
 
-    external = os.environ.get("CLARE_BROWSER_URL", "").strip()
+    external = os.environ.get("ADMINTRACE_BROWSER_URL", "").strip()
     if external:
         yield type("Given", (), {"base_url": external,
                                  "output": staticmethod(
@@ -107,11 +107,11 @@ def clare_app():
         with serve() as server:
             yield server
     except (RuntimeError, TimeoutError) as exc:
-        pytest.fail(f"could not start Claré for the browser suite: {exc}")
+        pytest.fail(f"could not start AdminTrace for the browser suite: {exc}")
 
 
 @pytest.fixture(scope="session")
-def browser_context(clare_app):
+def browser_context(admintrace_app):
     if not _enabled():
         pytest.skip("browser tests are opt-in")
     try:
@@ -137,7 +137,7 @@ def _slug(name: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]+", "_", name)[:120]
 
 
-def _save_failure(page, request, clare_app, console, requests_failed) -> list[str]:
+def _save_failure(page, request, admintrace_app, console, requests_failed) -> list[str]:
     """Everything a person needs to understand a browser failure, on disk."""
     ARTIFACTS.mkdir(parents=True, exist_ok=True)
     stem = _slug(request.node.name)
@@ -160,7 +160,7 @@ def _save_failure(page, request, clare_app, console, requests_failed) -> list[st
     record(".network.json",
            lambda p: p.write_text(json.dumps(requests_failed, indent=2),
                                   encoding="utf-8"))
-    record(".app.log", lambda p: p.write_text(clare_app.output(200),
+    record(".app.log", lambda p: p.write_text(admintrace_app.output(200),
                                               encoding="utf-8"))
     if _tracing():
         record(".trace.zip",
@@ -169,7 +169,7 @@ def _save_failure(page, request, clare_app, console, requests_failed) -> list[st
 
 
 @pytest.fixture
-def page(browser_context, clare_app, request):
+def page(browser_context, admintrace_app, request):
     """A page whose console errors fail the test, and which explains itself."""
     page = browser_context.new_page()
     problems: list[str] = []
@@ -196,7 +196,7 @@ def page(browser_context, clare_app, request):
     if _tracing():
         page.context.tracing.start_chunk(title=request.node.name)
 
-    page.goto(clare_app.base_url, wait_until="domcontentloaded")
+    page.goto(admintrace_app.base_url, wait_until="domcontentloaded")
     page.wait_for_selector("#rp-question textarea", timeout=20_000)
     page.console_problems = problems
 
@@ -215,17 +215,17 @@ def page(browser_context, clare_app, request):
     # diagnosing is worse than no diagnostic.)
     if failed:
         try:
-            saved = _save_failure(page, request, clare_app, console,
+            saved = _save_failure(page, request, admintrace_app, console,
                                   requests_failed)
             print(f"\n--- browser failure: {request.node.name}")
-            print(f"    url:        {clare_app.base_url}")
+            print(f"    url:        {admintrace_app.base_url}")
             print(f"    artifacts:  " + "\n                ".join(saved))
             if requests_failed:
                 print(f"    requests:   {len(requests_failed)} failed or 4xx/5xx")
                 for entry in requests_failed[:5]:
                     print(f"                {entry}")
             print("    app output:")
-            for line in clare_app.output(40).splitlines():
+            for line in admintrace_app.output(40).splitlines():
                 print(f"                {line}")
         except Exception as exc:  # noqa: BLE001 - see note above
             print(f"\n--- browser failure: {request.node.name} "

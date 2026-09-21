@@ -1,4 +1,4 @@
-"""Where Claré is actually strong, and where it is still guessing.
+"""Where AdminTrace is actually strong, and where it is still guessing.
 
     uv run python -m app.coverage_report
     uv run python -m app.coverage_report --json

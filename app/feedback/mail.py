@@ -26,7 +26,7 @@ def subject_for(record: dict) -> str:
     title = (record.get("ai_summary") or record.get("title")
              or record.get("user_report") or "New report")
     title = " ".join(str(title).split())[:80]
-    return f"[CLARÉ BUG][{severity}] {record.get('id', 'BUG-?')} — {title}"
+    return f"[ADMINTRACE BUG][{severity}] {record.get('id', 'BUG-?')} — {title}"
 
 
 def body_for(record: dict, local_path: str = "") -> str:
@@ -71,7 +71,7 @@ def body_for(record: dict, local_path: str = "") -> str:
 
 
 def source_change_subject(source_name: str, severity: str, summary: str) -> str:
-    return (f"[CLARÉ SOURCE CHANGE][{severity.upper()}] {source_name} — "
+    return (f"[ADMINTRACE SOURCE CHANGE][{severity.upper()}] {source_name} — "
             + " ".join((summary or "changed").split())[:70])
 
 

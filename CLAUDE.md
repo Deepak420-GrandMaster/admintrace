@@ -1,11 +1,11 @@
-# Claré — instructions for Claude Code
+# AdminTrace — instructions for Claude Code
 
-Claré answers questions about French administration from authoritative
+AdminTrace answers questions about French administration from authoritative
 official sources only. Python + Gradio; retrieval over the public-administration
 corpus plus a closed registry of official sites read live. Every claim an
 answer makes is checked against the evidence it came from.
 
-This file is Claré's own. The `career-ops` directory above it is a separate
+This file is AdminTrace's own. The `career-ops` directory above it is a separate
 repository with separate instructions; never stage, commit or publish
 anything outside `reperes/`.
 
@@ -17,7 +17,7 @@ without being asked.
 After completing a logical implementation task:
 
 1. **Run the relevant tests.** At minimum the offline suite
-   (`uv run pytest -q`). Add network (`CLARE_NETWORK_TESTS=1`) or browser
+   (`uv run pytest -q`). Add network (`ADMINTRACE_NETWORK_TESTS=1`) or browser
    (`uv run python -m app.browser_tests`) runs when the change touches those
    paths.
 2. **Inspect the change.** `git status` and `git diff`. Confirm every file
@@ -80,7 +80,7 @@ conversation or bug report is anonymised before it goes near `tests/`.
 Fetched pages stay in runtime storage; they are never committed. Only durable,
 reviewed registry changes are code: a live-verified new source, an approved
 canonical-domain change, corrected metadata. For those: update the registry,
-run the tests (including `CLARE_NETWORK_TESTS=1` for the affected source),
+run the tests (including `ADMINTRACE_NETWORK_TESTS=1` for the affected source),
 then ship. Never promote an unverified source change into the registry.
 
 ## Rules the codebase already enforces — do not work around them

@@ -441,7 +441,7 @@ def test_a_notification_failure_never_loses_the_change(monkeypatch, settings):
 def test_a_change_alert_never_carries_configuration():
     from app.feedback import mail
     subject = mail.source_change_subject("Préfecture", "high", "changed")
-    assert "CLARÉ SOURCE CHANGE" in subject
+    assert "ADMINTRACE SOURCE CHANGE" in subject
     assert "HIGH" in subject
     for secret in ("smtp", "password", "api_key"):
         assert secret not in subject.lower()

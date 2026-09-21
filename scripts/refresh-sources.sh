@@ -7,7 +7,7 @@
 # failure notification does the alerting.
 #
 #   crontab -e
-#   17 */6 * * * /path/to/reperes/scripts/refresh-sources.sh >> /tmp/clare-refresh.log 2>&1
+#   17 */6 * * * /path/to/reperes/scripts/refresh-sources.sh >> /tmp/admintrace-refresh.log 2>&1
 #
 # On macOS, launchd is better behaved than cron for this; see docs/SOURCES.md.
 set -euo pipefail
@@ -20,14 +20,14 @@ echo "=== $(date -u +%Y-%m-%dT%H:%M:%SZ) refreshing due sources ==="
 # should be known before its content is compared against yesterday's.
 uv run python -m app.live_source_check --write || true
 
-uv run python -m app.sync_sources --all --due --json > /tmp/clare-sync.json
+uv run python -m app.sync_sources --all --due --json > /tmp/admintrace-sync.json
 
 # A snapshot after every refresh, so a trend is visible before a symptom is.
 uv run python -m app.healthcheck --write >/dev/null || true
 uv run python -m app.production_report --write >/dev/null || true
 uv run python - <<'PY'
 import json, sys
-rows = json.load(open("/tmp/clare-sync.json"))
+rows = json.load(open("/tmp/admintrace-sync.json"))
 attention = [r for r in rows if r.get("severity") in ("critical", "high")
              and r.get("change") in ("substantive", "critical")]
 print(f"{len(rows)} page(s) synced, {len(attention)} needing review")

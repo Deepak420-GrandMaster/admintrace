@@ -33,12 +33,12 @@ def test_a_free_port_is_actually_free():
 
 
 def test_a_configured_test_port_is_honoured(monkeypatch):
-    monkeypatch.setenv("CLARE_TEST_PORT", "8123")
+    monkeypatch.setenv("ADMINTRACE_TEST_PORT", "8123")
     assert chosen_port() == 8123
 
 
 def test_an_unset_test_port_is_allocated(monkeypatch):
-    monkeypatch.delenv("CLARE_TEST_PORT", raising=False)
+    monkeypatch.delenv("ADMINTRACE_TEST_PORT", raising=False)
     assert chosen_port() > 0
 
 
@@ -59,7 +59,7 @@ def test_the_browser_suite_does_not_need_a_server_to_be_running():
     conftest = (PROJECT_ROOT / "tests" / "browser" / "conftest.py").read_text(
         encoding="utf-8")
     assert "serve(" in conftest, "the suite must start the app itself"
-    assert "clare_app" in conftest
+    assert "admintrace_app" in conftest
 
 
 def test_failure_artifacts_are_not_source_control():
@@ -71,7 +71,7 @@ def test_failure_artifacts_are_not_source_control():
 def test_the_app_entrypoint_reads_its_port_from_the_environment():
     """One server implementation. The harness starts what users run."""
     source = (PROJECT_ROOT / "app" / "ui" / "app.py").read_text(encoding="utf-8")
-    assert "CLARE_APP_PORT" in source and "CLARE_APP_HOST" in source
+    assert "ADMINTRACE_APP_PORT" in source and "ADMINTRACE_APP_HOST" in source
 
 
 # ------------------------------------------------------- deployment gate ----
@@ -223,7 +223,7 @@ def test_a_dry_run_shows_the_message_even_with_nothing_configured():
 
 
 @pytest.mark.skipif(
-    os.environ.get("CLARE_VERIFY_CHILD") == "1",
+    os.environ.get("ADMINTRACE_VERIFY_CHILD") == "1",
     reason="already running inside app.verify; spawning it again would recurse")
 def test_verify_reports_every_layer_and_gates_on_the_critical_ones():
     result = _cli("app.verify", "--quick", "--json")

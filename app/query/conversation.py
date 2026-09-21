@@ -1,7 +1,7 @@
 """What the conversation is still trying to do, across turns.
 
-The bug this exists to kill: someone asks how to validate their visa, Claré
-asks where in France they are, they answer "i live in antibes", and Claré asks
+The bug this exists to kill: someone asks how to validate their visa, AdminTrace
+asks where in France they are, they answer "i live in antibes", and AdminTrace asks
 where in France they are. The reply was read as a brand-new question, the
 original task was gone, and the reader was asked to repeat themselves.
 
@@ -49,7 +49,7 @@ class TurnType(str, Enum):
 
 
 class Field(str, Enum):
-    """The kinds of missing information Claré knows how to ask for."""
+    """The kinds of missing information AdminTrace knows how to ask for."""
 
     LOCATION = "location"
     ENTITY = "entity"
@@ -433,7 +433,7 @@ _EVENTS = (
 def trace(stage: str, **fields) -> None:
     """Developer trace of one conversation turn, off unless asked for.
 
-    Set CLARE_TRACE_CONVERSATION=1 to print the state transitions to the
+    Set ADMINTRACE_TRACE_CONVERSATION=1 to print the state transitions to the
     application's own stdout. Never reaches a reader, and never prints what
     they typed beyond the field being resolved — enough to answer "what did
     the app think happened", which is the question a clarification bug needs.
@@ -441,10 +441,10 @@ def trace(stage: str, **fields) -> None:
     import os
     import sys
 
-    if os.environ.get("CLARE_TRACE_CONVERSATION") != "1":
+    if os.environ.get("ADMINTRACE_TRACE_CONVERSATION") != "1":
         return
     detail = " ".join(f"{k}={v!r}" for k, v in fields.items() if v not in (None, ""))
-    print(f"[clare.conversation] {stage} {detail}", file=sys.stderr, flush=True)
+    print(f"[admintrace.conversation] {stage} {detail}", file=sys.stderr, flush=True)
 
 
 def record(event: str, settings=None, **fields) -> None:

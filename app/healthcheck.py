@@ -1,4 +1,4 @@
-"""One command that says whether Claré is well.
+"""One command that says whether AdminTrace is well.
 
     uv run python -m app.healthcheck
     uv run python -m app.healthcheck --json
@@ -109,7 +109,7 @@ def write(settings, payload: dict) -> tuple:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="app.healthcheck",
-                                     description="Is Claré well? Reads only.")
+                                     description="Is AdminTrace well? Reads only.")
     parser.add_argument("--json", action="store_true")
     parser.add_argument("--write", action="store_true",
                         help="save to data/health/latest.json and the history")
@@ -123,7 +123,7 @@ def main(argv: list[str] | None = None) -> int:
     else:
         s, f, r, i = (payload["sources"], payload["freshness"],
                       payload["review"], payload["incidents"])
-        print("CLARÉ HEALTH\n")
+        print("ADMINTRACE HEALTH\n")
         print("Sources")
         print(f"  {s['citable']}/{s['registered']} citable · {s['live']} live")
         print(f"  {len(s['blocked'])} blocked{': ' + ', '.join(s['blocked']) if s['blocked'] else ''}")

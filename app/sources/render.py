@@ -89,14 +89,14 @@ def render(url: str, *, source: Source, settings: Settings | None = None
 
     # Playwright's sync API keeps its event loop running in the thread that
     # opened it, so a second sync session on that same thread is refused
-    # outright: "Sync API inside the asyncio loop". Clare serves on asyncio
+    # outright: "Sync API inside the asyncio loop". AdminTrace serves on asyncio
     # and the browser tests hold a session of their own, so the calling
     # thread is not ours to make assumptions about. Do the browser work on a
     # thread we own, which by construction has no loop running on it.
     done: list[FetchResult] = []
     worker = threading.Thread(
         target=lambda: done.append(_render_on_this_thread(url, source, result)),
-        name=f"clare-render-{source.id}", daemon=True)
+        name=f"admintrace-render-{source.id}", daemon=True)
     worker.start()
     worker.join(RENDER_DEADLINE_S)
     if worker.is_alive():

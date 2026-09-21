@@ -16,11 +16,11 @@ from tests.browser.conftest import wait_for_answer, no_horizontal_overflow
 #: A hosted model answers in seconds; a local one on a laptop takes a minute
 #: or more for the same question. Configurable so one suite runs against
 #: either without a number in the source being wrong for one of them.
-ANSWER_TIMEOUT = int(os.environ.get("CLARE_ANSWER_TIMEOUT_MS", "90000"))
+ANSWER_TIMEOUT = int(os.environ.get("ADMINTRACE_ANSWER_TIMEOUT_MS", "90000"))
 
 
 def test_the_landing_page_loads_and_says_what_it_is(page):
-    assert page.locator(".rp-wordmark").inner_text().startswith("Clar")
+    assert page.locator(".rp-wordmark").inner_text().startswith("AdminTrace")
     assert page.locator(".rp-headline").is_visible()
     assert page.locator("#rp-question textarea").is_visible()
     assert page.locator(".rp-cat").count() >= 5

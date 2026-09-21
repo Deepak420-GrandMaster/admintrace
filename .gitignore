@@ -10,14 +10,14 @@ id_rsa*
 id_ed25519*
 
 # ------------------------------------------------------------ runtime data --
-# Everything under data/ is produced by running Claré, never authored:
+# Everything under data/ is produced by running AdminTrace, never authored:
 #   data/raw, data/extracted   the downloaded public-administration corpus
 #   data/chroma                local embeddings (hundreds of MB)
 #   data/cache, data/sources   fetched pages, versions, hashes, the audit log
 #   data/bugs, data/reports    REAL USER BUG REPORTS — private, never published
 #   data/production_status.json, data/status_history, data/health
 #                              scorecard and health snapshots, derived on demand
-# The registries Claré needs are versioned under app/ instead (sources,
+# The registries AdminTrace needs are versioned under app/ instead (sources,
 # jurisdictions, procedures, purposes, coverage, glossary).
 data/
 

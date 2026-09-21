@@ -1,4 +1,4 @@
-"""How fast Claré actually is, and what the provider is costing us.
+"""How fast AdminTrace actually is, and what the provider is costing us.
 
     uv run python -m app.performance_report
     uv run python -m app.performance_report --json
@@ -52,7 +52,7 @@ def main(argv: list[str] | None = None) -> int:
                           "targets": TARGET_SECONDS}, indent=2))
         return 0
 
-    print("CLARÉ PERFORMANCE\n")
+    print("ADMINTRACE PERFORMANCE\n")
     if not rows:
         print("  No answers have been timed yet. Ask something and run this again.")
         return 0

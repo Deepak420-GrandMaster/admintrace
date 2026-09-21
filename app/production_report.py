@@ -1,4 +1,4 @@
-"""What Claré can actually be trusted to do today.
+"""What AdminTrace can actually be trusted to do today.
 
     uv run python -m app.production_report
     uv run python -m app.production_report --json
@@ -71,7 +71,7 @@ def main(argv: list[str] | None = None) -> int:
     down = [s for s in sources if s.health is Health.UNAVAILABLE]
     stale = [s for s in citable if store.due(s, settings)]
 
-    print("CLARÉ PRODUCTION STATUS")
+    print("ADMINTRACE PRODUCTION STATUS")
     print()
     print("Official sources")
     print(f"  {len(sources)} registered · {len(citable)} citable · "

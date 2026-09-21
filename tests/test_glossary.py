@@ -22,7 +22,7 @@ def test_official_entries_name_the_definition_they_came_from():
             assert "service-public.gouv.fr" in term.provenance
         else:
             assert term.definition_id is None
-            assert "Claré" in term.provenance
+            assert "AdminTrace" in term.provenance
 
 
 def test_english_question_is_expanded_with_french_vocabulary():

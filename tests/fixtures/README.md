@@ -1,6 +1,6 @@
 # Test fixtures
 
-Small, versioned stand-ins for data Claré otherwise downloads at runtime, so
+Small, versioned stand-ins for data AdminTrace otherwise downloads at runtime, so
 the offline suite gives the same result on any machine — a laptop with the
 full caches, or a CI runner with none.
 

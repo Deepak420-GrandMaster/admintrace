@@ -2,11 +2,11 @@
 
 The offline tests here check the routing decisions. The ones marked
 ``network`` actually read montpellier-bs.com and are skipped unless
-``CLARE_NETWORK_TESTS=1`` — a test suite that fails because someone else's
+``ADMINTRACE_NETWORK_TESTS=1`` — a test suite that fails because someone else's
 web server is slow teaches you nothing, but a claim that live retrieval works
 is worthless without having done it, so both exist.
 
-    CLARE_NETWORK_TESTS=1 uv run pytest tests/test_live_mbs.py -v
+    ADMINTRACE_NETWORK_TESTS=1 uv run pytest tests/test_live_mbs.py -v
 """
 
 from __future__ import annotations
@@ -23,8 +23,8 @@ from app.sources import purpose
 from app.sources.registry import by_id, for_entity
 
 network = pytest.mark.skipif(
-    os.environ.get("CLARE_NETWORK_TESTS") != "1",
-    reason="set CLARE_NETWORK_TESTS=1 to reach the live web",
+    os.environ.get("ADMINTRACE_NETWORK_TESTS") != "1",
+    reason="set ADMINTRACE_NETWORK_TESTS=1 to reach the live web",
 )
 
 ENTITY = "montpellier-business-school"

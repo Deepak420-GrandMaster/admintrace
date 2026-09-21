@@ -22,7 +22,7 @@ pytestmark = pytest.mark.needs_answers
 #: A hosted model answers in seconds; a local one on a laptop can take a
 #: minute or more for the same question. Configurable so the same suite runs
 #: against either without a number in the source being wrong for one of them.
-ANSWER_TIMEOUT = int(os.environ.get("CLARE_ANSWER_TIMEOUT_MS", "120000"))
+ANSWER_TIMEOUT = int(os.environ.get("ADMINTRACE_ANSWER_TIMEOUT_MS", "120000"))
 
 #: What the page shows when the model provider has cut us off. Anything
 #: matching this is somebody else's quota, not a fault in the conversation

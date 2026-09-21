@@ -1,6 +1,6 @@
 # Official sources
 
-Claré answers from documents it retrieved and can show you. Two kinds:
+AdminTrace answers from documents it retrieved and can show you. Two kinds:
 
 * the **corpus** — the DILA publication of service-public.gouv.fr, ingested
   locally, which covers French public administration;
@@ -63,14 +63,14 @@ a change needs review, so the scheduler's own failure notification is the
 alert and there is no second alerting system to maintain.
 
 ```cron
-17 */6 * * * /path/to/reperes/scripts/refresh-sources.sh >> /tmp/clare-refresh.log 2>&1
+17 */6 * * * /path/to/reperes/scripts/refresh-sources.sh >> /tmp/admintrace-refresh.log 2>&1
 ```
 
 On macOS, launchd survives sleep better than cron:
 
 ```bash
-cp docs/io.clare.refresh.plist ~/Library/LaunchAgents/
-launchctl load ~/Library/LaunchAgents/io.clare.refresh.plist
+cp docs/io.admintrace.refresh.plist ~/Library/LaunchAgents/
+launchctl load ~/Library/LaunchAgents/io.admintrace.refresh.plist
 ```
 
 In CI, `.github/workflows/refresh-sources.yml` does the same every six hours

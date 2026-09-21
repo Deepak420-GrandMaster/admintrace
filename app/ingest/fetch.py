@@ -24,7 +24,7 @@ from app.config import Settings, get_settings
 
 # DILA serves public open data; a descriptive agent is simple courtesy, and
 # some government hosts reject the default urllib one outright.
-USER_AGENT = "reperes/0.1 (local research tool; DILA open data)"
+USER_AGENT = "admintrace/0.1 (local research tool; DILA open data)"
 
 MANIFEST_NAME = "manifest.json"
 

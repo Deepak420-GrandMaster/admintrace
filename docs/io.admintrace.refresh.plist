@@ -6,7 +6,7 @@
   "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>Label</key><string>io.clare.refresh</string>
+  <key>Label</key><string>io.admintrace.refresh</string>
   <key>ProgramArguments</key>
   <array>
     <string>/bin/bash</string>
@@ -15,7 +15,7 @@
   </array>
   <key>StartInterval</key><integer>21600</integer>
   <key>RunAtLoad</key><false/>
-  <key>StandardOutPath</key><string>/tmp/clare-refresh.log</string>
-  <key>StandardErrorPath</key><string>/tmp/clare-refresh.err</string>
+  <key>StandardOutPath</key><string>/tmp/admintrace-refresh.log</string>
+  <key>StandardErrorPath</key><string>/tmp/admintrace-refresh.err</string>
 </dict>
 </plist>

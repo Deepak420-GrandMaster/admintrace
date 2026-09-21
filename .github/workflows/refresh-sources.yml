@@ -43,8 +43,8 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: data/sources
-          key: clare-sources-${{ github.run_id }}
-          restore-keys: clare-sources-
+          key: admintrace-sources-${{ github.run_id }}
+          restore-keys: admintrace-sources-
 
       - name: Check source health
         run: uv run python -m app.live_source_check --json > health.json
@@ -73,4 +73,4 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: data/sources
-          key: clare-sources-${{ github.run_id }}
+          key: admintrace-sources-${{ github.run_id }}

@@ -151,7 +151,7 @@ def test_send_reports_failure_rather_than_raising(settings):
 def test_the_subject_line_leads_with_severity_and_id():
     subject = mail.subject_for({"id": "BUG-20260914-001", "severity": "high",
                                 "ai_summary": "Wrong source returned"})
-    assert subject.startswith("[CLARÉ BUG][HIGH] BUG-20260914-001")
+    assert subject.startswith("[ADMINTRACE BUG][HIGH] BUG-20260914-001")
     assert "Wrong source returned" in subject
 
 

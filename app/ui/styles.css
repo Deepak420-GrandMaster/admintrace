@@ -1,4 +1,4 @@
-/* Claré — French administration, made clear.
+/* AdminTrace — official-source AI for navigating French administration.
    =====================================================================
 
    The design problem: someone anxious, often reading their second or third
@@ -172,7 +172,7 @@ html, body { background: var(--paper); color-scheme: light; margin: 0; }
 
 .rp-brand { display: flex; align-items: center; gap: 10px; }
 .rp-mark { flex: 0 0 auto; color: var(--ink); overflow: visible; }
-.rp-mark-clear, .rp-mark-acute { transition: opacity var(--normal) var(--ease); }
+.rp-mark-clear { transition: opacity var(--normal) var(--ease); }
 .rp-wordmark {
   font-family: var(--sans); font-size: 22px; font-weight: 700;
   letter-spacing: -.025em; color: var(--ink); line-height: 1;

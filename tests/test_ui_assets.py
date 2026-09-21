@@ -118,8 +118,15 @@ def test_the_mark_and_the_favicon_stay_in_step():
     assert "M3 18.9h16.5" in brand.FAVICON
 
 
-def test_the_wordmark_keeps_its_accent():
-    assert "é" in brand.wordmark()
+def test_the_wordmark_reads_admintrace_and_keeps_its_emphasis():
+    """The name, and the half of it the accent colour picks out.
+
+    The emphasis used to fall on the é of Claré; it now falls on "Trace",
+    which is the half that says what the product does.
+    """
+    mark = brand.wordmark()
+    assert "AdminTrace" in mark.replace("<span class=\"rp-accent\">", "").replace("</span>", "")
+    assert "<span class=\"rp-accent\">Trace</span>" in mark
 
 
 # ------------------------------------------------- topics and the answer --

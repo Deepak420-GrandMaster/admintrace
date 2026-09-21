@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install Claré's local Git hooks. Hooks live in .git/hooks, which Git never
+# Install AdminTrace's local Git hooks. Hooks live in .git/hooks, which Git never
 # versions, so every clone runs this once.
 #
 #   scripts/install_git_hooks.sh               # pre-push guard only (recommended)

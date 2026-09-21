@@ -19,8 +19,8 @@ from app.sources.registry import Health, REFRESH_HOURS, by_id, load_registry
 from app.sources.render import available, render
 
 network = pytest.mark.skipif(
-    os.environ.get("CLARE_NETWORK_TESTS") != "1",
-    reason="set CLARE_NETWORK_TESTS=1 to reach the live web",
+    os.environ.get("ADMINTRACE_NETWORK_TESTS") != "1",
+    reason="set ADMINTRACE_NETWORK_TESTS=1 to reach the live web",
 )
 
 
@@ -225,7 +225,7 @@ def test_rendering_works_while_another_playwright_session_is_open():
     Its event loop keeps running in whichever thread opened the session, so a
     second `sync_playwright()` there dies with "Sync API inside the asyncio
     loop" — which surfaced as a source that looked unreachable rather than as
-    a bug in us. Clare serves on asyncio and the browser tests hold a session
+    a bug in us. AdminTrace serves on asyncio and the browser tests hold a session
     of their own, so rendering has to survive a caller that already has one.
     """
     from playwright.sync_api import Error as PlaywrightError

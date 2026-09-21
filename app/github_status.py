@@ -72,7 +72,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     info = status(fetch=args.fetch)
 
-    print("CLARÉ ↔ GITHUB\n")
+    print("ADMINTRACE ↔ GITHUB\n")
     print(f"  Branch        {info['branch']}")
     print(f"  Working tree  {info['working_tree']}"
           + (f" ({info['changed_files']} file(s))" if info['changed_files'] else ""))

@@ -60,7 +60,7 @@ def retrieve(question: str, settings) -> dict:
 
 
 def main(argv: list[str] | None = None) -> int:
-    argparse.ArgumentParser(description="Evaluate Claré retrieval.").parse_args(argv)
+    argparse.ArgumentParser(description="Evaluate AdminTrace retrieval.").parse_args(argv)
 
     settings = get_settings()
     spec = yaml.safe_load(QUESTIONS.read_text(encoding="utf-8"))

@@ -1,19 +1,59 @@
-# Claré
+# AdminTrace
 
-Grounded question answering for people who have recently arrived in France, or
-are about to.
+**Official-source AI for navigating French administration.**
 
-Ask in English or French. Answers come only from official French government
-sources, keep the French administrative vocabulary you will actually need at a
-counter, and cite each source by its French title with the date it was last
-updated. When the sources do not answer the question, Claré says so instead
-of guessing.
+AdminTrace answers questions about French administrative procedures from a
+controlled set of official sources, and refuses to answer when the evidence is
+insufficient. Ask in English or French; every answer cites the official page it
+came from, with the date that page was last updated.
 
-Everything that touches the corpus runs locally.
+> **AdminTrace is an independent personal project and is not affiliated with any
+> French administration.**
+
+## The problem
+
+The information exists. It is spread across service-public.gouv.fr, ANEF,
+préfecture sites, CAF, Ameli and a dozen others; it is written in legal French;
+and what a general-purpose assistant tells you about it may be three years out
+of date, or quietly invented, with no way to tell which.
+
+Worse, the plausible answer and the correct one look identical. Ask how to
+validate a long-stay visa and a model handed a préfecture's *renewal* page will
+give you the renewal deadline. The page is official. The quote is accurate. The
+answer is wrong, and nothing in it says so.
+
+## Core principles
+
+1. **The evidence decides what may be said.** The model writes the explanation;
+   it does not supply the facts. Claims that the sources do not state are
+   removed before a reader sees them.
+2. **A closed list of official sources.** Nothing outside the registry is ever
+   read or cited.
+3. **Refusing is a valid answer.** "I could not verify this" beats a fluent guess
+   about someone's visa.
+4. **Say which authority, and where.** A national rule applied at a local counter
+   is answered with both.
+5. **No administrative fact lives in code.** Deadlines, fees and document lists
+   reach a reader only from a retrieved page — enforced by a test.
+6. **Everything that touches the corpus runs locally.**
+
+## Screenshots
+
+Captured from the running application.
+
+| | |
+|---|---|
+| ![Home](docs/screenshots/01-home.png) | ![A question answered](docs/screenshots/02-basic-question.png) |
+| *The landing screen* | *An answer, with the official source it came from* |
+| ![Jurisdiction routing](docs/screenshots/03-jurisdiction-routing.png) | ![Verification](docs/screenshots/04-verification-or-refusal.png) |
+| *Where you are decides which authority answers* | *What the answer rests on* |
+
+![Sources](docs/screenshots/05-sources.png)
+*Everything indexed, and where it came from*
 
 ## Not legal advice
 
-Claré reports what official sources say and cites them. It cannot tell you
+AdminTrace reports what official sources say and cites them. It cannot tell you
 what to do about a refusal, an appeal, or your individual case. For that,
 contact the administration concerned. The interface says so on every screen.
 
@@ -28,10 +68,10 @@ data.gouv.fr under the **Licence Ouverte / Open Licence**.
 | Feed version | **3.5** (verified live; 3.3 is withdrawn, 3.4 is maintained in degraded mode) |
 | Particuliers | [dataset](https://www.data.gouv.fr/datasets/fiches-pratiques-et-ressources-de-service-public-gouv-fr-particuliers) · 5,584 files |
 | Entreprendre | [dataset](https://www.data.gouv.fr/datasets/fiches-pratiques-et-ressources-entreprendre-service-public-gouv-fr) · 2,646 files |
-| Indexed | 7,768 documents → 43,794 passages |
+| Indexed | 5,823 distinct documents → 43,794 passages |
 
 The Licence Ouverte requires stating the source and the date the information
-was last updated. Claré does that on every citation. It is also how a reader
+was last updated. AdminTrace does that on every citation. It is also how a reader
 decides whether to trust what they just read, so it is never stripped.
 
 Only the French source text is ingested. French is the legal source of truth,
@@ -47,7 +87,7 @@ retrieval against later.
 Requires [uv](https://docs.astral.sh/uv/) and Python 3.12.
 
 ```bash
-git clone <this repository> clare && cd clare
+git clone <this repository> admintrace && cd admintrace
 cp .env.example .env                    # then set GROQ_API_KEY — never commit .env
 uv sync --extra dev --extra render      # render: Playwright, for JS-built official sites
 uv run playwright install chromium
@@ -71,7 +111,7 @@ Never mix the three.
 
 ## Running it for real
 
-Claré answers from two kinds of evidence: the local corpus, and a closed list
+AdminTrace answers from two kinds of evidence: the local corpus, and a closed list
 of official sites read over the web. The second needs looking after, and these
 are the commands that do it. Full detail in [docs/SOURCES.md](docs/SOURCES.md).
 
@@ -137,7 +177,7 @@ responsible for broken?*
 | **Critical** — blocks a deploy | configuration, the offline suite (core backend, security, answer validation, entity and jurisdiction resolution, localization), the security checks, browser smoke |
 | **Non-critical** — reported, never hidden, never blocking | an individual external source unavailable or blocked, SMTP not configured, history not yet deep enough, a real-world change not yet observed, the network suite |
 
-CAF being behind a bot wall does not stop Claré shipping. The system is built
+CAF being behind a bot wall does not stop AdminTrace shipping. The system is built
 to say so at answer time, and the tests prove it does. A failing security
 check or a broken interface does stop it.
 
@@ -147,13 +187,13 @@ Tests that leave the machine are opt-in, so the default suite stays offline,
 fast, and immune to somebody else's outage:
 
 ```bash
-uv run pytest                                      # offline
-CLARE_NETWORK_TESTS=1 uv run pytest                # and the live web
+uv run pytest                                           # offline
+ADMINTRACE_NETWORK_TESTS=1 uv run pytest                # and the live web
 
 # Browser tests start the app themselves. Nothing to set up first.
-uv run python -m app.browser_tests --smoke         # ~15s, every deploy
-uv run python -m app.browser_tests                 # ~55s, every merge
-CLARE_BROWSER_TESTS=1 uv run pytest tests/browser  # same, via pytest
+uv run python -m app.browser_tests --smoke              # ~15s, every deploy
+uv run python -m app.browser_tests                      # ~55s, every merge
+ADMINTRACE_BROWSER_TESTS=1 uv run pytest tests/browser  # same, via pytest
 ```
 
 The smoke suite is the one worth running on every deploy: if it passes, the
@@ -170,21 +210,21 @@ second server implementation to drift from production. Useful knobs:
 
 | Variable | Default | |
 |---|---|---|
-| `CLARE_TEST_PORT` | a free port | pin the port instead of allocating one |
+| `ADMINTRACE_TEST_PORT` | a free port | pin the port instead of allocating one |
 | `APP_START_TIMEOUT_SECONDS` | `60` | how long to wait for the app to answer |
-| `CLARE_BROWSER_URL` | unset | use a server you started yourself; the suite starts nothing |
-| `CLARE_BROWSER_TRACE` | off (on under `CI`) | record a Playwright trace for failures |
+| `ADMINTRACE_BROWSER_URL` | unset | use a server you started yourself; the suite starts nothing |
+| `ADMINTRACE_BROWSER_TRACE` | off (on under `CI`) | record a Playwright trace for failures |
 
 When a browser test fails it writes a screenshot, the page HTML, the console,
 the failed requests, the app's own log and (with tracing on) a Playwright
 trace to `artifacts/browser/`, and prints the URL and that log to the terminal.
 The directory is gitignored: it is test output, never source.
 
-All three suites can run in one pass — `CLARE_NETWORK_TESTS=1
-CLARE_BROWSER_TESTS=1 uv run pytest`. Rendering does its browser work on a
+All three suites can run in one pass — `ADMINTRACE_NETWORK_TESTS=1
+ADMINTRACE_BROWSER_TESTS=1 uv run pytest`. Rendering does its browser work on a
 thread of its own precisely so that it can: Playwright's sync API refuses to
 start a second session on a thread that already holds one, which is also what
-would happen to a render called from inside the asyncio loop Clare serves on.
+would happen to a render called from inside the asyncio loop AdminTrace serves on.
 
 ### What to run, and how often
 
@@ -204,7 +244,7 @@ timer. Nothing below needs a second task system.
 `app.healthcheck` and `app.review_queue` read only and are safe from cron. An
 empty review queue is a success, not an error.
 
-### Working on Claré: GitHub is the canonical history
+### Working on AdminTrace: GitHub is the canonical history
 
 A finished change is tested, scanned, committed and pushed — in that order,
 by one command that stops at the first problem:
@@ -298,13 +338,100 @@ all. With `groq`, questions are sent to Groq; the corpus is not.
 ```
 question
   ├─ detect language ─────────────── hand-written EN/FR discrimination
+  ├─ resolve context ─────────────── entity, place, pending clarification
   ├─ if English: translate to a French search query
   ├─ glossary expansion ──────────── adds the French term a document actually uses
-  ├─ retrieve ─────────────────────── dense (bge-m3) + BM25, reciprocal rank fusion
-  ├─ gate, stage 1 ────────────────── cosine similarity threshold
-  ├─ gate, stage 2 ────────────────── do these passages answer the question?
+  ├─ route ───────────────────────── which authority owns this topic, and where
+  │    ├─ live official sources ──── registry allowlist only
+  │    └─ corpus ─────────────────── dense (bge-m3) + BM25, reciprocal rank fusion
+  ├─ select ──────────────────────── material relevance: entity, place, purpose
+  ├─ evidence gate ───────────────── deterministic; refuses without a model call
+  ├─ answer ──────────────────────── one model call, shown only the cited evidence
+  ├─ claim validation ────────────── every sentence checked against the evidence
   └─ answer in the asker's language, or refuse
 ```
+
+The stages are deliberately distinct, and each can refuse on its own:
+
+| Stage | What it decides |
+|---|---|
+| **Retrieval** | which passages of the local corpus are topically close |
+| **Live official-source access** | which registered official pages to read now, and whether they may be cited at all |
+| **Jurisdiction routing** | which authority owns the topic where the reader is |
+| **Answer generation** | how to say it — one model call, shown only the evidence that will be cited |
+| **Claim validation** | whether each sentence is actually supported by that evidence |
+| **Refusal** | what to say when any of the above leaves nothing |
+
+### Official-source policy
+
+AdminTrace reads **17 registered official websites** (`app/sources/registry.yml`)
+and nothing else. A source is listed only after it has been fetched, parsed and
+verified, and it is promoted to live querying only once a version of it has been
+stored — so a fresh install refuses local questions rather than answering from
+an unread page. Requests are https-only, respect robots, cap size and type, and
+validate every redirect hop: a site that redirects us off its own domain is
+refused, not followed. A source behind a bot wall is recorded as blocked and
+never bypassed.
+
+### Jurisdiction routing
+
+French immigration procedure is national law applied at a local counter, so
+"which préfecture" changes the answer. AdminTrace knows all 101 départements as
+geography, and resolves a reader's town to one of them. A département names a
+source only when that préfecture's own pages have been verified; otherwise the
+reader is told which préfecture decides and that its page is not among the
+registered sources. Being the local authority is not being the authority on
+every subject: a transport question is not routed to an immigration préfecture.
+
+### Claim-level verification
+
+After the answer is written, each of its sentences is checked against the
+evidence it came from — with no further model call. Figures are compared
+exactly: durations in digits or words, English or French, ranges included;
+amounts; dates; scores; and whether a deadline counts from expiry or from
+arrival. Named portals and authorities must appear in the evidence, not be
+inferred from a government domain. Each claim is tied to the procedure it
+belongs to, so a renewal deadline cannot be presented as a validation deadline.
+
+Similarity is used only to confirm two sentences share a subject, never to
+decide that a requirement is supported: measured on this corpus, a faithful
+English paraphrase of a French page and a plausible invention score in the same
+band. Unsupported and contradicted claims are removed; an invented link is
+stripped and the sentence around it kept. If nothing survives, one repair is
+attempted from compatible evidence only, and failing that the reader is told the
+answer could not be verified. An empty answer is never rendered as one.
+
+### Refusal behaviour
+
+Refusals are distinguished, because they mean different things to the reader:
+
+- **source gap** — the authority publishes nothing that answers this;
+- **authority unavailable** — the body that decides is known but could not be
+  read (CAF, behind a bot wall);
+- **needs clarification** — the answer genuinely differs by place, institution
+  or status, and one question is asked instead of averaging;
+- **could not verify** — something was written, and the evidence did not
+  support it.
+
+No refusal offers "closest pages we found". A page that failed the relevance
+gate is not a lead; it is a page about another subject.
+
+### Bilingual
+
+English and French throughout — interface, answers, glossary and refusals.
+French administrative vocabulary is kept in the answer, because that is the word
+the counter will use. Retrieval always runs against the French text: French is
+the legal source of truth and the government disclaims its own machine
+translations.
+
+### Freshness and unavailability
+
+Every citation carries the date the page itself stated, and a badge saying
+whether it was read live, served from a recent copy, or is stale. Sources are
+re-read on a schedule; a substantive change invalidates what it touched and is
+queued for review. A source that cannot be read is reported as unreachable
+rather than silently dropped, and its absence is visible in
+`app.source_report` and `app.production_report`.
 
 ### Why the gate has two stages
 
@@ -323,6 +450,12 @@ about booking préfecture appointments. They are topically close; they simply do
 not answer the question asked. Cosine similarity measures topical closeness,
 not answerability, so a second stage asks that question directly. It can only
 ever remove an answer, never add one.
+
+That second stage is the evidence gate, and it no longer starts at the model.
+Retrieval that is decisive either way — strong agreement across several
+documents, or nothing above the floor — is settled arithmetically, and the
+model is asked only when the scores are genuinely ambiguous. The thresholds
+come from the measured distribution above, not from taste.
 
 ### Why applicability is preserved
 
@@ -406,10 +539,26 @@ may be the gold set's error rather than the system's.
 
 ### Rate limits
 
-One question costs two model calls, because the answerability check sends the
-passages a second time. On Groq's free tier (8,000 tokens per minute) that is
-enough to hit a 429 on consecutive questions. The provider now waits out the
-interval the service reports and retries, twice, before surfacing the error.
+The answerability check used to send the passages to the model a second time,
+so every question cost two calls. On Groq's free tier — 8,000 tokens per minute,
+against which a requested `max_tokens` is *reserved*, not merely counted — two
+calls were enough to hit a 429 on consecutive questions.
+
+The evidence gate now decides the same thing from retrieval scores, and reaches
+the model only when those scores are ambiguous. Over the last 70 recorded
+answers on one machine that is a mean of 1.00 model calls per answer (maximum
+2), with a median answer time of 0.8s for procedural questions.
+
+The limit has not gone away, it has moved: 9 of those 70 answers were still
+rate-limited, because they were asked back to back by an automated script
+rather than by a person reading the replies. When the provider does refuse,
+the reported interval is waited out and retried twice, up to 35 seconds; a
+longer wait fails immediately and the interface says the provider is
+rate-limited, rather than spending two minutes to produce nothing.
+
+(Those figures are local telemetry, printed by `app.performance_report`. They
+are not committed — `data/` is runtime state — so they are reproducible on your
+own machine, not verifiable from this repository.)
 
 ## Known gaps
 
@@ -426,9 +575,15 @@ These are properties of the official corpus, not bugs:
 
 These need crowdsourced data rather than an official corpus.
 
-Not yet ingested, and recorded as future sources: ANEF, Campus France,
-CROUS/messervices.etudiant.gouv.fr, ameli.fr, caf.fr, urssaf.fr,
-impots.gouv.fr, visale.fr, ANTS/France Titres.
+Not in the corpus and not in the registry, so nothing is answered from them:
+urssaf.fr and visale.fr.
+
+ANEF, Campus France, CROUS, ameli.fr, impots.gouv.fr, ANTS/France Titres and
+six local authorities (five préfectures and the Paris police prefecture) are
+*registered* rather than ingested: they are read live from their own sites, not
+downloaded into the index. caf.fr is registered but its bot protection refuses
+automated reads, so it is recorded as blocked and never queried — the scorecard
+shows it as blocked rather than as working.
 
 The public directory of ~75,000 administrations is fetched and cached but
 deliberately not wired into answers yet. Until it is, a refusal that names an
@@ -453,7 +608,14 @@ tools/             glossary builder
 
 ## Licence and attribution
 
-Source data © DILA, published under the
+**Source data** © DILA, published under the
 [Licence Ouverte / Open Licence](https://www.etalab.gouv.fr/licence-ouverte-open-licence).
-Claré is not affiliated with, endorsed by, or operated by the French
-government.
+Institution records come from the ONISEP open-data register.
+
+**This code carries no licence file yet**, which under copyright means all
+rights reserved: nobody may reuse it until one is added. Add a LICENSE if that
+is not the intention.
+
+**AdminTrace is an independent personal project and is not affiliated with any
+French administration.** It is not endorsed by or operated by any government
+body, and it is not legal advice.

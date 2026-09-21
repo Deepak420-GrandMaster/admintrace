@@ -6,11 +6,11 @@ than it should have. So the lifecycle lives in one place and both entry
 points use it:
 
     uv run python -m app.browser_tests      # start, test, stop
-    CLARE_BROWSER_TESTS=1 uv run pytest tests/browser
+    ADMINTRACE_BROWSER_TESTS=1 uv run pytest tests/browser
 
 The second works because the session fixture in ``tests/browser/conftest.py``
 calls :func:`serve` when no external URL was given. Point
-``CLARE_BROWSER_URL`` at a server you started yourself and nothing here runs —
+``ADMINTRACE_BROWSER_URL`` at a server you started yourself and nothing here runs —
 useful when you want to keep one app up across several runs.
 
 The application started is the real entrypoint, ``app.ui.app``, on a free
@@ -55,13 +55,13 @@ def free_port() -> int:
 
 
 def chosen_port() -> int:
-    configured = os.environ.get("CLARE_TEST_PORT", "").strip()
+    configured = os.environ.get("ADMINTRACE_TEST_PORT", "").strip()
     return int(configured) if configured else free_port()
 
 
 @dataclass
 class Server:
-    """A running Claré, and everything needed to explain it if it misbehaves."""
+    """A running AdminTrace, and everything needed to explain it if it misbehaves."""
 
     base_url: str
     process: subprocess.Popen
@@ -141,10 +141,10 @@ def serve(port: int | None = None, timeout: float = START_TIMEOUT_S):
     and a keyboard interrupt all leave the port free.
     """
     port = port or chosen_port()
-    host = os.environ.get("CLARE_APP_HOST", "127.0.0.1")
+    host = os.environ.get("ADMINTRACE_APP_HOST", "127.0.0.1")
     base_url = f"http://{host}:{port}"
 
-    environment = dict(os.environ, CLARE_APP_HOST=host, CLARE_APP_PORT=str(port))
+    environment = dict(os.environ, ADMINTRACE_APP_HOST=host, ADMINTRACE_APP_PORT=str(port))
     # Gradio's own analytics call would be a network request on every start.
     environment.setdefault("GRADIO_ANALYTICS_ENABLED", "False")
     # Without this the app's startup lines sit in a pipe buffer and a failure
@@ -152,7 +152,7 @@ def serve(port: int | None = None, timeout: float = START_TIMEOUT_S):
     environment["PYTHONUNBUFFERED"] = "1"
 
     ARTIFACTS.mkdir(parents=True, exist_ok=True)
-    handle, log_name = tempfile.mkstemp(prefix="clare-app-", suffix=".log",
+    handle, log_name = tempfile.mkstemp(prefix="admintrace-app-", suffix=".log",
                                         dir=str(ARTIFACTS))
     log_path = Path(log_name)
     server = None
@@ -195,9 +195,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     target = ("tests/browser/test_smoke.py" if args.smoke else "tests/browser")
-    os.environ["CLARE_BROWSER_TESTS"] = "1"
+    os.environ["ADMINTRACE_BROWSER_TESTS"] = "1"
     if args.trace:
-        os.environ["CLARE_BROWSER_TRACE"] = "1"
+        os.environ["ADMINTRACE_BROWSER_TRACE"] = "1"
 
     import pytest
 

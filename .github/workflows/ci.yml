@@ -64,8 +64,8 @@ jobs:
     needs: tests
     timeout-minutes: 30
     env:
-      CLARE_BROWSER_ANSWERS: "0"
-      CLARE_BROWSER_CORPUS: "0"
+      ADMINTRACE_BROWSER_ANSWERS: "0"
+      ADMINTRACE_BROWSER_CORPUS: "0"
       CI: "true"
     steps:
       - uses: actions/checkout@v4

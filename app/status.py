@@ -1,4 +1,4 @@
-"""How much of Claré has actually been proven, and by what.
+"""How much of AdminTrace has actually been proven, and by what.
 
 Every capability here is *derived* from evidence on disk — versions, claims,
 audit records, registry health — and none of it is asserted in code. That is

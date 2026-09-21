@@ -31,7 +31,7 @@ STRINGS: dict[str, dict[str, str]] = {
                    "every answer comes from an official government page, with "
                    "the link and the date it was last checked.",
         "disclaimer_lead": "This isn't legal advice.",
-        "disclaimer_body": "Claré tells you what the official pages say, and "
+        "disclaimer_body": "AdminTrace tells you what the official pages say, and "
                            "shows you which ones. It can't advise you on a "
                            "refusal, an appeal, or your own particular case — "
                            "for that you need the administration itself.",
@@ -50,7 +50,7 @@ STRINGS: dict[str, dict[str, str]] = {
                           "letter. The ones marked official are defined by the "
                           "government itself; the rest we wrote plainly.",
         "glossary_search": "Search a word…",
-        "corpus_intro": "Everything Claré has read, and where it came from.",
+        "corpus_intro": "Everything AdminTrace has read, and where it came from.",
         "refresh": "Refresh",
         "empty": "Ask a question and the answer will appear here.",
         "debug_empty": "Ask something, and this panel will show exactly how the "
@@ -117,7 +117,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "provider_reachable": "reachable",
         "provider_unavailable": "unavailable",
         "gloss_official": "Official definition",
-        "gloss_authored": "Written for Claré",
+        "gloss_authored": "Written for AdminTrace",
         "study_label": "Studying somewhere? (optional)",
         "study_placeholder": "Start typing your university or school…",
         "study_none": "Not a student",
@@ -135,7 +135,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "sources_toggle_one": "Check it against the official page",
         "sources_toggle_many": "Check it against the {n} official pages",
         "you": "You",
-        "assistant": "Claré",
+        "assistant": "AdminTrace",
         "thinking": "Reading the official pages",
         "ask_another": "Ask another question",
         "new_question": "Start over",
@@ -228,7 +228,7 @@ STRINGS: dict[str, dict[str, str]] = {
                    "français ou en anglais — chaque réponse vient d'une page "
                    "officielle, avec le lien et la date.",
         "disclaimer_lead": "Ceci n'est pas un conseil juridique.",
-        "disclaimer_body": "Claré vous dit ce que disent les pages "
+        "disclaimer_body": "AdminTrace vous dit ce que disent les pages "
                            "officielles, et vous montre lesquelles. Il ne peut "
                            "pas vous conseiller sur un refus, un recours ou "
                            "votre situation personnelle — pour cela, adressez-"
@@ -249,7 +249,7 @@ STRINGS: dict[str, dict[str, str]] = {
                           "par l'administration ; les autres, nous les avons "
                           "écrits simplement.",
         "glossary_search": "Chercher un mot…",
-        "corpus_intro": "Tout ce que Claré a lu, et d'où cela vient.",
+        "corpus_intro": "Tout ce qu'AdminTrace a lu, et d'où cela vient.",
         "refresh": "Actualiser",
         "empty": "Posez une question, la réponse apparaîtra ici.",
         "debug_empty": "Posez une question et ce panneau montrera exactement "
@@ -320,7 +320,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "provider_reachable": "joignable",
         "provider_unavailable": "indisponible",
         "gloss_official": "Définition officielle",
-        "gloss_authored": "Rédigé pour Claré",
+        "gloss_authored": "Rédigé pour AdminTrace",
         "study_label": "Vous étudiez quelque part ? (facultatif)",
         "study_placeholder": "Tapez le nom de votre université ou école…",
         "study_none": "Je ne suis pas étudiant",
@@ -338,7 +338,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "sources_toggle_one": "Vérifier sur la page officielle",
         "sources_toggle_many": "Vérifier sur les {n} pages officielles",
         "you": "Vous",
-        "assistant": "Claré",
+        "assistant": "AdminTrace",
         "thinking": "Lecture des pages officielles",
         "ask_another": "Poser une autre question",
         "new_question": "Recommencer",

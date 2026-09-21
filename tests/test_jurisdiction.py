@@ -21,8 +21,8 @@ from app.sources.registry import Health, JurisdictionLevel, by_id, load_registry
 from app.sources.route import plan, topics, topics_for_question
 
 network = pytest.mark.skipif(
-    os.environ.get("CLARE_NETWORK_TESTS") != "1",
-    reason="set CLARE_NETWORK_TESTS=1 to reach the live web",
+    os.environ.get("ADMINTRACE_NETWORK_TESTS") != "1",
+    reason="set ADMINTRACE_NETWORK_TESTS=1 to reach the live web",
 )
 
 

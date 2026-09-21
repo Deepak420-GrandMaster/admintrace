@@ -1,7 +1,7 @@
 """Fetching a page from a registered source, and refusing everything else.
 
-The rules this enforces are the difference between "Claré can read official
-institution pages" and "Claré reads the internet":
+The rules this enforces are the difference between "AdminTrace can read official
+institution pages" and "AdminTrace reads the internet":
 
 * HTTPS only.
 * The host must belong to a registered source — checked **at every redirect
@@ -35,7 +35,7 @@ import httpx
 from app.config import Settings, get_settings
 from app.sources.registry import Source, for_domain, hostname_allowed
 
-USER_AGENT = "ClareBot/0.1 (+grounded question answering over official sources)"
+USER_AGENT = "AdminTraceBot/0.1 (+grounded question answering over official sources)"
 
 MAX_BYTES = 3_000_000
 MAX_REDIRECTS = 5
