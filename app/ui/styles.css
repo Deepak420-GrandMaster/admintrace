@@ -357,6 +357,15 @@ html, body { background: var(--paper); color-scheme: light; margin: 0; }
   font-size: 12.5px; line-height: 1.5; color: var(--ink-faint);
 }
 .rp-trust svg { flex: 0 0 auto; margin-top: 1px; color: var(--good); }
+
+/* The one thing a stranger arriving from a link needs to be told before they
+   type. Quiet, but never hidden — unlike .rp-trust it stays through the
+   conversation, because the follow-up field is where a passport number would
+   actually get typed. */
+.rp-privacy {
+  max-width: var(--col); margin: var(--s2) 0 0; padding-left: 22px;
+  font-size: 12.5px; line-height: 1.5; color: var(--ink-faint);
+}
 body.rp-answered .rp-trust,
 body.rp-answered .rp-cats { display: none !important; }
 

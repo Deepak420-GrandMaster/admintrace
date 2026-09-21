@@ -503,6 +503,7 @@ def trust_block(lang: str) -> str:
   </svg>
   <span>{html.escape(t(lang, 'trust'))}</span>
 </p>
+<p class="rp-privacy">{html.escape(t(lang, 'no_sensitive'))}</p>
 """
 
 

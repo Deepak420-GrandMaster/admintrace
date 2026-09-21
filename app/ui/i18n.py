@@ -19,6 +19,9 @@ STRINGS: dict[str, dict[str, str]] = {
         "subhead": "Ask in English or French. Every answer comes from an "
                    "official government page.",
         "eyebrow": "Official sources only",
+        "no_sensitive": "Don't enter sensitive personal information — passport "
+                        "or residence permit numbers, bank details, passwords "
+                        "or private documents.",
         "trust": "Every answer cites the page it came from, and the date that "
                  "page was last updated.",
         "send": "Send",
@@ -67,7 +70,10 @@ STRINGS: dict[str, dict[str, str]] = {
                           "so don't type anything into it you wouldn't send a "
                           "stranger. The one exception is a bug report — that "
                           "is saved, because it has to be, and only when you "
-                          "send one.",
+                          "send one. Please don't enter sensitive personal "
+                          "information such as passport numbers, residence "
+                          "permit numbers, bank details, passwords, or private "
+                          "documents.",
         "claims_unverified": "I couldn't verify an answer to this from the "
                              "official information available. Rather than "
                              "tell you something the pages don't actually "
@@ -216,6 +222,9 @@ STRINGS: dict[str, dict[str, str]] = {
         "subhead": "Posez votre question en français ou en anglais. Chaque "
                    "réponse vient d'une page officielle.",
         "eyebrow": "Uniquement des sources officielles",
+        "no_sensitive": "N'indiquez pas d'informations personnelles sensibles : "
+                        "numéro de passeport ou de titre de séjour, "
+                        "coordonnées bancaires, mots de passe, documents privés.",
         "trust": "Chaque réponse cite la page dont elle vient, et la date de "
                  "sa dernière mise à jour.",
         "send": "Envoyer",
@@ -268,7 +277,10 @@ STRINGS: dict[str, dict[str, str]] = {
                           "donc rien que vous ne confieriez pas à un inconnu. "
                           "Seule exception : un signalement de bug, qui est "
                           "enregistré, parce qu'il le faut, et seulement si "
-                          "vous en envoyez un.",
+                          "vous en envoyez un. N'indiquez pas d'informations "
+                          "personnelles sensibles : numéro de passeport, "
+                          "numéro de titre de séjour, coordonnées bancaires, "
+                          "mots de passe ou documents privés.",
         "claims_unverified": "Je n'ai pas pu vérifier de réponse à partir des "
                              "informations officielles disponibles. Plutôt "
                              "que de vous dire quelque chose que les pages "

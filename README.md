@@ -10,6 +10,32 @@ came from, with the date that page was last updated.
 > **AdminTrace is an independent personal project and is not affiliated with any
 > French administration.**
 
+### Live Demo
+
+**https://highly-lesser-protein-loved.trycloudflare.com**
+
+Source: **https://github.com/Deepak420-GrandMaster/admintrace**
+
+### Public Beta
+
+AdminTrace is currently exposed as a temporary public beta through a Cloudflare
+Quick Tunnel from the project owner's local machine. Availability depends on the
+host machine being online.
+
+Read that literally, because it is not hedging:
+
+- the demo answers only while that Mac is awake, the app is running and
+  `cloudflared` is running — any of the three stopping takes the link down;
+- a Quick Tunnel is issued a **random hostname**, so restarting the tunnel
+  produces a different URL and the address above stops resolving;
+- it is one machine with no redundancy, no uptime target and no scaling — it is
+  a demo of the real system, not production hosting;
+- answers are written by a hosted model on a free tier, so a burst of traffic
+  can exhaust the quota; the interface says so plainly instead of failing
+  silently.
+
+The GitHub repository is the permanent address. The tunnel URL is not.
+
 ## The problem
 
 The information exists. It is spread across service-public.gouv.fr, ANEF,
