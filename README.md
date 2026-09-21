@@ -641,9 +641,11 @@ tools/             glossary builder
 [Licence Ouverte / Open Licence](https://www.etalab.gouv.fr/licence-ouverte-open-licence).
 Institution records come from the ONISEP open-data register.
 
-**This code carries no licence file yet**, which under copyright means all
-rights reserved: nobody may reuse it until one is added. Add a LICENSE if that
-is not the intention.
+**This code** is released under the [MIT licence](LICENSE) — use it, change it,
+ship it, with the copyright notice kept. The licence covers the code in this
+repository and nothing else: the corpus is DILA's and carries its own terms,
+and the official pages read live belong to the administrations that publish
+them.
 
 **AdminTrace is an independent personal project and is not affiliated with any
 French administration.** It is not endorsed by or operated by any government
